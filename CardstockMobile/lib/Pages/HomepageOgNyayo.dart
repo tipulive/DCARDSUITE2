@@ -672,7 +672,7 @@ class _HomepageState extends State<Homepage> {
 
         // controller!.pauseCamera();
         //controller!.pauseCamera();
-        var ResultData=(await Get.put(CardQuery()).GetDetailCardOnline(CardModel(uid:'${result!.code}'))).data;
+        var ResultData=(await Get.put(CardQuery()).getDetailCardOnline(CardModel(uid:'${result!.code}'))).data;
         if(ResultData["status"])
         {
           setState(() {

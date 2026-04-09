@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 
 
 import 'Query/AdminQuery.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 //import 'api/firebaseApi.dart';
 //import 'firebase_options.dart';
@@ -26,7 +27,10 @@ void main() async{
   /*this will make apps not going to sleep Mode*/
 
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
 
+  // ✅ OPEN BOX FIRST
+  await Hive.openBox('myBox');
   /*await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

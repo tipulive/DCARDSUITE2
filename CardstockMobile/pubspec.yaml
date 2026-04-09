@@ -40,6 +40,8 @@ dependencies:
   #wakelock: ^0.6.2
   wakelock_plus: 1.2.8
   sqflite: ^2.3.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   path: ^1.8.2
   path_provider: ^2.1.2
   get: ^4.6.6
@@ -65,6 +67,7 @@ dependencies:
   cached_network_image: ^3.0.0
   flutter_cache_manager: ^3.3.2
   shared_preferences: ^2.2.2
+  flare_flutter: ^3.0.2
 
 dev_dependencies:
   flutter_test:

@@ -176,7 +176,7 @@ class _LoginState extends State<Login> {
                         onPressed: () {
                         },
                         child: Text(
-                          'Forgot Password?',
+                          'Forgot Password1?',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       ),

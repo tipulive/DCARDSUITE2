@@ -15,18 +15,19 @@ import '../../Query/StockQuery.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import '../../Pages/components/checkAppVersion.dart';
 import '../../Utilconfig/ConstantClassUtil.dart';
 import '../../Query/TextListController.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:get/get.dart';
+
+import 'CheckappVersion.dart';
+
 
 
 
 
 
 class SetDeptComp extends StatefulWidget {
-  const SetDeptComp({Key? key}) : super(key: key);
+  const SetDeptComp({super.key});
 
   @override
   State<SetDeptComp> createState() => _SetDeptCompState();
@@ -55,16 +56,19 @@ class _SetDeptCompState extends State<SetDeptComp> {
 
   String clientOrder="";
   String orderId="";
-  String viewOption="false";
+  //String viewOption="false";
+  String viewOption="true";
 
   final GlobalKey qrkey = GlobalKey(debugLabel: 'QR');
   Barcode?result;
   QRViewController?controller;
+  bool botSheet=false;
 
-
-
+  final TextListController logic = Get.put(TextListController());
+   String userProfile="";
+   String userName="";
   bool showOveray=false;
-
+  Map<String, bool> btnHideMap = {};
 
 
   @override
@@ -200,13 +204,13 @@ class _SetDeptCompState extends State<SetDeptComp> {
                             });
                             await viewData('test',false);
                           },
-                          child: Column(
+                          child: const Column(
                             children: [
-                              const SizedBox(
+                              SizedBox(
                                 height: 10,
                               ),
                               Row(
-                                children: const [
+                                children: [
                                   Icon(
                                     Icons.person,
                                     color: Colors.blue,
@@ -218,7 +222,7 @@ class _SetDeptCompState extends State<SetDeptComp> {
 
                                 ],
                               ),
-                              const Divider(
+                              Divider(
                                 height: 20, // Adjust the height as needed
                                 thickness: 0.2, // Adjust the thickness as needed
                                 color: Colors.grey,
@@ -238,10 +242,10 @@ class _SetDeptCompState extends State<SetDeptComp> {
                             await viewData('test',false);
 
                           },
-                          child: Column(
+                          child: const Column(
                             children: [
                               Row(
-                                children: const [
+                                children: [
                                   Icon(
                                     Icons.apartment,
                                     color: Colors.orange,
@@ -254,7 +258,7 @@ class _SetDeptCompState extends State<SetDeptComp> {
 
                                 ],
                               ),
-                              const Divider(
+                              Divider(
                                 height: 20, // Adjust the height as needed
                                 thickness: 0.2, // Adjust the thickness as needed
                                 color: Colors.grey,
@@ -302,11 +306,12 @@ class _SetDeptCompState extends State<SetDeptComp> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(50.0),
               ),
-              labelText: 'Search',
+              labelText: 'Search name or number',
             ),
             onChanged: (text) async{
 
-              viewData(text,true);
+              //
+              await viewData(text,true);
 
               //print(this._data[index]["total_var"]);
               // print("Text changed to: $text");
@@ -340,80 +345,42 @@ class _SetDeptCompState extends State<SetDeptComp> {
                         backgroundColor:getRandomColor(),
                         child: Icon(_getRandomIcon()),
                       ),
-                      title:Row(
+                      title:Text(
+                        _data[index]['name'].toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+
+
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            _data[index]['Phone'].toString(),
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
 
+                          const SizedBox(height: 2),
 
-                          Expanded(
-                            flex: 1,
-                            child: Stack(
-                              children: [
-
-                                Column(
-                                  children: [
-
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(0, 10, 0, 2),
-                                      child: RichText(
-                                        text: TextSpan(
-                                          text: "${_data[index]['name']}:",
-                                          style: DefaultTextStyle.of(context).style,
-                                          children: const <TextSpan>[
-
-
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-
-                              ],
+                          Text(
+                           "Dette:${_data[index]['debt']}",
+                            style: const TextStyle(
+                              color:Colors.green,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-
-                      subtitle: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 5, 0, 10),
-                        child: Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-
-                                Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-
-                                    const Icon(Icons.segment,color:Colors.orange,size:13,),
-                                    Text("Dept:${_data[index]['debt']}"),
-
-                                  ],
-                                ),
-                                if(viewOption=='true')
-                                   Wrap(
-                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                    children: [
-
-                                    const Icon(Icons.segment,color:Colors.orange,size:13,),
-                                    Text("By:${_data[index]['adminName']}"),
-
-                                    ],
-                                  ),
-
-                              ],
-                            ),
-
-
-                          ],
-                        ),
-                      ),
                       trailing:GestureDetector(
                           onTap: () async{
-
-                            showConfirmBottomSheet(_data[index]['myDeptId'],_data[index]['name']);
+                            setState(() {
+                              userProfile=_data[index]['myDeptId'];
+                              userName=_data[index]['name'];
+                            });
+                            await viewDeptUsers();
+                            await showConfirmBottomSheet();
                             /*Map<String, dynamic> clientDebt=
                             {
                               "debt":_data[index]['debt'],
@@ -490,6 +457,7 @@ class _SetDeptCompState extends State<SetDeptComp> {
     controller.scannedDataStream.listen((scanData) async{
       setState((){
         result=scanData;
+
       });
       //await scanMethod();
       // print("${result!.code}");
@@ -516,6 +484,40 @@ class _SetDeptCompState extends State<SetDeptComp> {
         //
       }
     });
+  }
+  Future<void> shareToWhatsApp(String phone, String message) async {
+    // 1. Prepare the URI
+    // If phone is empty, it opens the contact picker in WhatsApp
+    final String url = "whatsapp://send?phone=$phone&text=${Uri.encodeComponent(message)}";
+    final Uri uri = Uri.parse(url);
+
+    try {
+      // 2. Check if the URL can actually be opened
+      bool canLaunch = await canLaunchUrl(uri);
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalNonBrowserApplication,
+        );
+      } else {
+        // This usually triggers if WhatsApp is not installed
+        Get.snackbar(
+          "WhatsApp Required",
+          "WhatsApp is not installed on this device.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      // 3. Catch unexpected errors (malformed URLs, OS permission issues)
+      Get.snackbar(
+        "Launch Error",
+        "An unexpected error occurred: $e",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
   getDebt(qrScanData) async{
     try {
@@ -549,124 +551,629 @@ class _SetDeptCompState extends State<SetDeptComp> {
     return e;
     }
   }
-  void showConfirmBottomSheet(userProf,name) async{
-    String userProfile=userProf;
-    // Initialize the controller
-    final TextListController logic = Get.put(TextListController());
-    String userName=name;
+  viewDeptUsers() async
+  {
+
     final response = await myStockQuery.checkUserDept(User(uid:userProfile));
-
-    if (response != null) {
-      final result=response.data;
-      if(result["status"])
+    if (response != null)
       {
-        setState(() {
+        final result=response.data;
+        if(result["status"])
+        {
 
-          isLoading=false;
-          // dataSearch.clear();
-
-
-        });
-        final users=result["result"];
-        final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
-
-        // Output: 460
-        //
-        final double heightFactor = (users.length>1) ? 0.7 : 0.5;
-        Get.bottomSheet(
-          Container(
-            height: Get.height * heightFactor,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 5),
-
-                  // Title
-                  const Text(
-                    "Confirm?",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 5),
-                  Text("Total dettes:${totalD.toString()}"),
-                  const SizedBox(height: 5),
-
-                  // Action buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // YES action
-                        },
-                        child: const Text("Yes"),
-                      ),
-                      OutlinedButton(
-                        onPressed: Get.back,
-                        child: const Text("Cancel"),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 0),
-
-                  // User list
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: users.length,
-                      itemBuilder: (_, index) {
-                        final user = users[index];
-                        return UserCard(
-                          myIndex:index,
-                          client:userProfile,
-                          clientName:userName,
-                          name: user["Name"]!,
-                          uidOwner:user["uid"]!,
-                          price: user["dettes"]!,
-                          // We pass the controller tied to this specific UID
-                          controller: logic.getController(user["uid"]),
-
-
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-        );
-        //
-      }else{
-        setState(() {
-
-          isLoading=false;
-          // dataSearch.clear();
-
-
-        });
-        if(result["result"]==1){
-          checkAppVersion(title: "error", message: result["error"],primaryButtonText:"Download",primaryButtonUrl: result["downNew"]);
+          logic.setUsers(result["result"]);
+        }else{
+          return false;
         }
-      }
-    } else {
-      setState(() {
+      }else{
+      return false;
+    }
 
-        isLoading=false;
+  }
+  showPaidDetails(clientId,clientName) async{
+
+    final response = await myStockQuery.viewPaidDeptHist(User(uid:clientId));
+    if (response != null) {
+      final result = response.data;
+      if (result["status"]) {
+        logic.setPaidtHist(result["result"]);
+        setState(() {
+          // dataSearch.clear();
+
+
+        });
+
+        showPaidDetailBotsheet(result,clientId,clientName);
+      }
+    }
+
+  }
+  showPaidDetailBotsheet(result,clientId,clientName){
+
+    // print(users);
+    //final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+    Get.bottomSheet(
+      GetBuilder<TextListController>(
+          builder: (logicController) {
+            final users = logicController.paidHist; // <-- data stored in controller
+            final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+            final double heightFactor = (users.length>1) ? 0.7 : 0.5;
+            return Container(
+              height: Get.height * heightFactor,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 5),
+
+                    //Text("Total dettes:${totalD.toString()}"),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(color: Colors.black),
+                        children: [
+                          TextSpan(text: clientName),
+
+                          TextSpan(text: "Order Details:${totalD.toString()}"),
+                          WidgetSpan(
+                            child:  IconButton(
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.share, color: Colors.blueAccent),
+                              onPressed: ()async{
+                                // print(users);
+                                final List<Map<String, dynamic>> usersMap =
+                                List<Map<String, dynamic>>.from(users);
+
+                                final shareMsg = buildWhatsAppMessage(usersMap);
+                                await shareToWhatsApp("", shareMsg);
+
+
+                              },
+                            ),
+
+
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            // YES action
+                          },
+                          child: const Text("Yes"),
+                        ),
+                        OutlinedButton(
+                          onPressed: Get.back,
+                          child: const Text("Cancel"),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 0),
+
+                    // User list
+                    Flexible(
+
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: users.length,
+                        //itemCount: 1,
+                        itemBuilder: (_, index) {
+                          final user = users[index];
+                          return PaidDeptHist(
+                            myIndex:index,
+                            client:userProfile,
+                            clientName:userName,
+                            paidHist:user,
+                            name: userName,
+                            uidOwner:user["uid"]!,
+                            price: totalD,
+                            shareToWhatsApp:shareToWhatsApp,
+                            showOrderPaidHist:showPaidDetails,
+
+
+
+                            // We pass the controller tied to this specific UID
+                            controller: logic.getController(user["uid"]),
+                            updateBotSheet: updateBtnSheet,
+                            viewDeptUsers:viewDeptUsers,
+                            myFunct: () async{
+                              await viewData('test', false);
+                            },
+
+
+                          );
+
+
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+
+    ).whenComplete(() async{});
+  }
+showDeptDetails(clientId,clientName) async{
+
+  final response = await myStockQuery.viewDeptDetails(User(uid:clientId));
+
+
+  if (response != null) {
+    final result = response.data;
+    if (result["status"]) {
+      logic.setDeptHist(result["result"]);
+      setState(() {
         // dataSearch.clear();
 
 
       });
+
+      showDetailBotsheet(result,clientId,clientName);
+    }
+  }
+
+    }
+void showOrderDeptDetailHist(orderId,clientName,orderTotal,createdAt) async{
+  final response = await myStockQuery.viewSalesByUid(Topups(uid:orderId,startlimit:limit,endlimit:_page));
+
+  if (response != null) {
+    final result = response.data;
+    if (result["status"]) {
+      logic.setDeptDetailHist(result["result"]);
+      showOrderDeptDetailBotsheet(result,orderId,clientName,orderTotal,createdAt);
     }
 
   }
+  }
+  showOrderDeptDetailBotsheet(result,clientId,clientName,orderTotal,createdAt){
+
+    //final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+    Get.bottomSheet(
+      GetBuilder<TextListController>(
+          builder: (logicController) {
+            final users = logicController.deptDetailHist; // <-- data stored in controller
+            final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+            final double heightFactor = (users.length>1) ? 0.7 : 0.5;
+            return Container(
+              height: Get.height * heightFactor,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 5),
+                    Text("created By:$clientName"),
+
+                    //Text("Total dettes:${totalD.toString()}"),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(color: Colors.black),
+                        children: [
+
+
+                          TextSpan(text: "Order Total:$orderTotal"),
+                          WidgetSpan(
+                            child:  IconButton(
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.share, color: Colors.blueAccent),
+                              onPressed: ()async{
+                                // print(users);
+                                final List<Map<String, dynamic>> usersMap =
+                                List<Map<String, dynamic>>.from(users);
+
+                                final shareMsg = buildWhatsAppMessage(usersMap);
+                                await shareToWhatsApp("", shareMsg);
+
+
+                              },
+                            ),
+
+
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text("UID:$clientId", style: const TextStyle(color: Colors.deepOrange,fontSize: 10)),
+
+                        Text("Created:$createdAt", style: const TextStyle(color: Colors.deepOrange,fontSize: 10)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 0),
+
+                    // User list
+                    Flexible(
+
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: users.length,
+                        //itemCount: 1,
+                        itemBuilder: (_, index) {
+                          final user = users[index];
+                          return OrderDeptDetailHist(
+                            myIndex:index,
+                            client:userProfile,
+                            clientName:userName,
+                            deptDetailHist:user,
+                            name: userName,
+                            uidOwner:user["uid"]!,
+                            price: totalD,
+                            shareToWhatsApp:shareToWhatsApp,
+
+
+
+
+                            // We pass the controller tied to this specific UID
+                            controller: logic.getController(user["uid"]),
+                            updateBotSheet: updateBtnSheet,
+                            viewDeptUsers:viewDeptUsers,
+                            myFunct: () async{
+                              await viewData('test', false);
+                            },
+
+
+                          );
+
+
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+
+    ).whenComplete(() async{});
+  }
+    showDetailBotsheet(result,clientId,clientName){
+
+      //final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+      Get.bottomSheet(
+        GetBuilder<TextListController>(
+            builder: (logicController) {
+              final users = logicController.deptHist; // <-- data stored in controller
+              final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+              final double heightFactor = (users.length>1) ? 0.7 : 0.5;
+              return Container(
+                height: Get.height * heightFactor,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 5),
+
+                      //Text("Total dettes:${totalD.toString()}"),
+                      Text(clientName),
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.black),
+                          children: [
+                            //TextSpan(text: clientName),
+
+                            TextSpan(text: "Order Details:${totalD.toString()}"),
+                            WidgetSpan(
+                              child:  IconButton(
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(Icons.share, color: Colors.blueAccent),
+                                onPressed: ()async{
+                                  // print(users);
+                                  final List<Map<String, dynamic>> usersMap =
+                                  List<Map<String, dynamic>>.from(users);
+
+                                  final shareMsg = buildWhatsAppMessage(usersMap);
+                                  await shareToWhatsApp("", shareMsg);
+
+
+                                },
+                              ),
+
+
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      // Action buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              // YES action
+                            },
+                            child: const Text("Yes"),
+                          ),
+                          OutlinedButton(
+                            onPressed: Get.back,
+                            child: const Text("Cancel"),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 0),
+
+                      // User list
+                      Flexible(
+
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: users.length,
+                          //itemCount: 1,
+                          itemBuilder: (_, index) {
+                            final user = users[index];
+                            return OrderDeptHist(
+                              myIndex:index,
+                              client:userProfile,
+                              clientName:userName,
+                              deptHist:user,
+                              name: userName,
+                              uidOwner:user["OrderId"]!,
+                              price: totalD,
+                              shareToWhatsApp:shareToWhatsApp,
+                              showOrderDeptHist: showDeptDetails,
+                                showOrderDeptDetailHist:showOrderDeptDetailHist,
+
+
+
+
+                              // We pass the controller tied to this specific UID
+                              controller: logic.getController(user["OrderId"]),
+                              updateBotSheet: updateBtnSheet,
+                              viewDeptUsers:viewDeptUsers,
+                              myFunct: () async{
+                                await viewData('test', false);
+                              },
+
+
+                            );
+
+
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+        ),
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+
+      ).whenComplete(() async{});
+    }
+   showConfirmBottomSheet() async{
+
+
+        Get.bottomSheet(
+            GetBuilder<TextListController>(
+                builder: (logicController) {
+                  final users = logicController.users; // <-- data stored in controller
+                  final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+                  final double heightFactor = (users.length>1) ? 0.7 : 0.5;
+                  return Container(
+                    height: Get.height * heightFactor,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 5),
+
+                          // Title
+                          const Text(
+                            "Confirm?",
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 5),
+                          Text("Total dettes:${totalD.toString()}"),
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black),
+                            children: [
+
+                             // TextSpan(text: "Total dettes:${totalD.toString()}"),
+                              WidgetSpan(
+                                child:  IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(Icons.share, color: Colors.blueAccent),
+                                  onPressed: ()async{
+                                  // print(users);
+                                    final List<Map<String, dynamic>> usersMap =
+                                    List<Map<String, dynamic>>.from(users);
+
+                                    final shareMsg = buildWhatsAppMessage(usersMap);
+                                    await shareToWhatsApp("", shareMsg);
+
+
+                                  },
+                                ),
+
+
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 5),
+
+                          // Action buttons
+
+
+                          const SizedBox(height: 0),
+
+                          // User list
+                          Flexible(
+
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              //itemCount: users.length,
+                                itemCount: 1,
+                              itemBuilder: (_, index) {
+                                final user = users[index];
+                                final uid = user["uid"];
+                                //final controller = Get.find<TextListController>();
+                                return Obx(()=>UserCard(
+                                    myIndex:index,
+                                    client:userProfile,
+                                    clientName:userName,
+                                    name: userName,
+
+                                    uidOwner:uid!,
+                                    price: totalD,
+                                    shareToWhatsApp:shareToWhatsApp,
+                                    showOrderDeptHist:showDeptDetails,
+                                    showOrderPaidHist:showPaidDetails,
+
+                                    // We pass the controller tied to this specific UID
+                                    controller: logic.getController(user["uid"]),
+                                    updateBotSheet: updateBtnSheet,
+                                    viewDeptUsers:viewDeptUsers,
+                                    myFunct: () async{
+                                      await viewData('test', false);
+                                    },
+                                    myhideBtn: logic.btnHideMap[uid] ?? true,
+                                    hideBtn:(value){
+                                      setState(() {
+                                        logic.btnHideMap[uid] = value;
+                                      });
+                                    }
+
+
+                                )
+
+                                );
+
+                                    /*yanyayo UserCard(
+                                  myIndex:index,
+                                  client:userProfile,
+                                  clientName:userName,
+                                  name: user["Name"]!,
+                                  uidOwner:user["uid"]!,
+                                  price: user["dettes"]!,
+                                    shareToWhatsApp:shareToWhatsApp,
+
+
+                                  // We pass the controller tied to this specific UID
+                                  controller: logic.getController(user["uid"]),
+                                  updateBotSheet: updateBtnSheet,
+                                  viewDeptUsers:viewDeptUsers,
+                                  myFunct: () async{
+                                    await viewData('test', false);
+                                  },
+
+
+                                );*/
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+            ),
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+
+        ).whenComplete(() async{
+          if(botSheet)//when it update user dettes then close bottom sheet
+            {
+              await viewData('test', false);
+             updateBtnSheet(false);
+            }
+
+        });
+        //
+
+
+
+  }
+  String buildWhatsAppMessage(List<Map<String, dynamic>> data) {
+    // Helper to safely convert dynamic values to int
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    // Calculate total amount
+    final totalAmount = data.fold<int>(
+      0,
+          (sum, item) => sum + toInt(item['dettes']),
+    );
+
+    final buffer = StringBuffer();
+    buffer.writeln('TOTAL DETTES: $totalAmount');
+    buffer.writeln('====================\n');
+
+    // Determine padding for labels
+    const labelWidth = 8; // enough for 'Dettes  ' and 'Paid    '
+
+    for (var item in data) {
+      final name = (item['Name']?.toString() ?? 'UNKNOWN').toUpperCase();
+      final dettes = toInt(item['dettes']);
+      final paid = toInt(item['paidAmount']);
+
+      buffer.writeln(name);
+      buffer.writeln('--------------------');
+      buffer.writeln('${'Dettes'.padRight(labelWidth)}: $dettes');
+      buffer.writeln('${'Paid'.padRight(labelWidth)}  : $paid\n');
+      buffer.writeln('--------------------\n');
+    }
+
+    buffer.writeln('====================');
+
+    return buffer.toString();
+  }
+
+
+  updateBtnSheet(bool data){
+    setState(() {
+      botSheet=data;
+    });
+}
   paidDebt() async{
     try {
       (Get.put(StockQuery()).updateHideLoader(false));
@@ -762,11 +1269,12 @@ class _SetDeptCompState extends State<SetDeptComp> {
 
   }
   viewData(nameVal,searchVal) async{
+   // print("view Dept");
     if(isLoading) return;
     isLoading=true;
-    int limit=10;
-
-    var resultData=(await StockQuery().viewDept(Topups(startlimit:limit,endlimit:_page,name:nameVal,searchOption:searchVal,optionCase:viewOption))).data;
+    int limit=20;
+      var phone=((int.tryParse(nameVal) != null))?nameVal:"none";
+    var resultData=(await StockQuery().viewDept(Topups(startlimit:limit,endlimit:_page,name:nameVal,phone:phone,searchOption:searchVal,optionCase:viewOption))).data;
 
     if(resultData["status"])
     {
@@ -805,6 +1313,11 @@ class _SetDeptCompState extends State<SetDeptComp> {
 
 
       });
+      if(resultData["result"]==1){
+        var myResult=resultData;
+        checkAppVersion(title: "error", message: myResult["error"],primaryButtonText:"Download",primaryButtonUrl: myResult["downNew"]);
+      }
+
     }
   }
 
@@ -1437,9 +1950,19 @@ class UserCard extends StatelessWidget {
   final String clientName;
   final String name;
   final String uidOwner;
-  final int price;
+  final double price;
   final int myIndex;
   final TextEditingController controller; // Added this
+  final VoidCallback myFunct;
+  final Function(bool) updateBotSheet;
+  final Function (bool) hideBtn;
+  final bool myhideBtn;
+  final Function() viewDeptUsers;
+  final Function(String,String) shareToWhatsApp;
+  final Function(String,String) showOrderDeptHist;
+  final Function(String,String) showOrderPaidHist;
+
+  //final Function(String,String) showConfirmBottomSheet;
 
 
   const UserCard({
@@ -1451,7 +1974,18 @@ class UserCard extends StatelessWidget {
     required this.price,
     required this.myIndex,
     required this.controller,
+    required this.myFunct,
+    required this.hideBtn,
+    required this.myhideBtn,
+    required this.updateBotSheet,
+    required this.viewDeptUsers,
+    required this.shareToWhatsApp,
+    required this.showOrderDeptHist,
+    required this.showOrderPaidHist,
+
+    //required this.showConfirmBottomSheet,
   });
+
 
 
 
@@ -1501,19 +2035,24 @@ class UserCard extends StatelessWidget {
                     IconButton(
                       visualDensity: VisualDensity.compact, // Makes button smaller to save space
                       icon: const Icon(Icons.grid_4x4_rounded, color: Colors.grey),
-                      onPressed: () {},
+                      onPressed: () async{
+                        await showOrderPaidHist(client,clientName);
+                      },
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact, // Makes button smaller to save space
                       icon: const Icon(Icons.grid_4x4_rounded, color: Colors.orange),
-                      onPressed: () {},
+                      onPressed: () async{
+
+                        await showOrderDeptHist(client,clientName);
+                      },
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.share, color: Colors.blueAccent),
                       onPressed: ()async{
-                        final int phone=250790954158;
-                        String amount = controller.text;
+                        //final int phone=250790954158;
+                        //String amount = controller.text;
                         String shareMsg = "Muraho, $clientName Afite Ideni rya ${price.toString()} Asabwa kwishyura $name .";
 
                         // Call the function
@@ -1546,79 +2085,135 @@ class UserCard extends StatelessWidget {
                   child: TextField(
                       controller: controller, // Linked here,
                     textInputAction: TextInputAction.search,
+                    keyboardType: TextInputType.number,
 
+                      onChanged: (value) {
+                        final isValid =
+                            double.tryParse(value) != null &&
+                                value.isNotEmpty;
+
+                        /// Prevent unnecessary rebuilds
+                        if (isValid != myhideBtn) {
+                          hideBtn(isValid);
+                        }
+                      },
                     decoration: InputDecoration(
-                      hintText: 'Ayo Ngiye Kwishyura',
+                      hintText: 'Ayo Ngiye Kwishyura ',
                       suffixIcon: Padding(
                         padding: const EdgeInsets.only(right: 4),
 
-                        child: TextButton.icon(
+                        child: (myhideBtn)?TextButton.icon(
                           icon: const Icon(Icons.payment, size: 18),
                           label: const Text('Pay'),
                           onPressed:(){
                             //print(price);
                             var amount=controller.text;
-                            Get.dialog(
-                              AlertDialog(
-                                title: const Text('Confirmation?'),
-                                content: Text.rich(
-                                  TextSpan(
-                                    text: 'urashakako ', // Normal text
-                                    style: const TextStyle(color: Colors.black, fontSize: 16),
-                                    children: [
-                                      TextSpan(
-                                        text: ConstantClassUtil().capitalizeFirstLetter(clientName),
-                                        style: const TextStyle(
-                                            color: Colors.blue,
-                                            fontWeight: FontWeight.bold
+                            if(amount.isNotEmpty){
+                              Get.dialog(
+                                AlertDialog(
+                                  title: const Text('Confirmation?'),
+                                  content: Text.rich(
+                                    TextSpan(
+                                      text: 'urashakako ',
+                                      style: const TextStyle(color: Colors.black, fontSize: 16),
+                                      children: [
+                                        TextSpan(
+                                          text: ConstantClassUtil().capitalizeFirstLetter(clientName),
+                                          style: const TextStyle(
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                      ),
-                                      const TextSpan(text: ' Yishyura '), // Normal text
-                                      TextSpan(
-                                        text: ConstantClassUtil().capitalizeFirstLetter(name),
-                                        style: const TextStyle(
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.bold
+                                        const TextSpan(text: ' Yishyura '),
+                                        /*TextSpan(
+                                          text: ConstantClassUtil().capitalizeFirstLetter(name),
+                                          style: const TextStyle(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.bold),
+                                        ),*/
+                                        const TextSpan(text: ' amafaranga '),
+                                        TextSpan(
+                                          text: amount,
+                                          style: const TextStyle(
+                                              color: Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                              backgroundColor: Colors.black12),
                                         ),
-                                      ),
-                                      const TextSpan(text: ' amafaranga '), // Normal text
-                                      TextSpan(
-                                        text: amount,
-                                        style: const TextStyle(
-                                          color: Colors.orange, // Yellow is often hard to read, Orange/Amber is safer
-                                          fontWeight: FontWeight.bold,
-                                          backgroundColor: Colors.black12, // Optional: add a tiny background to make yellow pop
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                actions: [
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-
-                                      //primary: Colors.grey[300],
-                                      backgroundColor: Colors.red,
-                                      elevation:0,
+                                      ],
                                     ),
-                                    onPressed: () async{
-
-
-
-                                    },
-                                    child: const Text('Yes',style:TextStyle(
-                                        color: Colors.white
-                                    ),),
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Get.back(); // close the alert dialog
-                                    },
-                                    child: const Text('Close'),
+                                  actions: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () async {
+                                        await paidDet2(client, uidOwner, amount);
+                                      },
+                                      child: const Text('Yes', style: TextStyle(color: Colors.white)),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: (){
+                                        if (Get.isDialogOpen == true) {
+                                          Get.back();
+                                        }
+                                      },
+                                      child: const Text('Close'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            else{
+                              Get.dialog(
+                                AlertDialog(
+                                  title: const Text('Error !!!'),
+                                  content: Text.rich(
+                                    TextSpan(
+                                      text:  ConstantClassUtil().capitalizeFirstLetter(clientName),
+                                      style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold),
+
+                                      children: const [
+                                        TextSpan(
+                                          text:"Please Fill first Price Field ",
+                                          style: TextStyle(color: Colors.black, fontSize: 16),
+                                        ),
+
+
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
-                            );
+                                  actions: [
+
+                                    ElevatedButton(
+                                      onPressed: (){
+                                        if (Get.isDialogOpen == true) {
+                                          Get.back();
+                                        }
+                                      },
+                                      child: const Text('Close'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                           /* GetBuilder<TextListController>(
+                              builder: (showDialogController) {
+
+                                Future.microtask(() {
+                                 // if(showDialogController.dialog){
+
+                                 // }
+
+                                });
+
+                                return const SizedBox.shrink(); // 👈 MUST return a widget
+                              },
+                            );*/
+
+
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.white,
@@ -1627,7 +2222,11 @@ class UserCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ),
+                        ):const Icon(
+                        Icons.warning,
+                        color: Colors.red,
+                        size: 28,
+                      ),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -1645,39 +2244,618 @@ class UserCard extends StatelessWidget {
     );
   }
 
-  Future<void> shareToWhatsApp(String phone, String message) async {
-    // 1. Prepare the URI
-    // If phone is empty, it opens the contact picker in WhatsApp
-    final String url = "whatsapp://send?phone=$phone&text=${Uri.encodeComponent(message)}";
-    final Uri uri = Uri.parse(url);
+
+
+  paidDet2(client,uidOwner,amount) async{
 
     try {
-      // 2. Check if the URL can actually be opened
-      bool canLaunch = await canLaunchUrl(uri);
-
-      if (canLaunch) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalNonBrowserApplication,
-        );
-      } else {
-        // This usually triggers if WhatsApp is not installed
-        Get.snackbar(
-          "WhatsApp Required",
-          "WhatsApp is not installed on this device.",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-        );
+      (Get.put(StockQuery()).updateHideLoader(false));
+      var resultData=(await StockQuery().paidDept2(User(uid:client,inputData:num.parse(amount),uidCreator:uidOwner))).data;
+    if(resultData["status"])
+    {
+      updateBotSheet(true);
+      viewDeptUsers();
+      if (Get.isDialogOpen == true) {
+        Get.back();
       }
+      //TextListController().setDialog(false);
+
+      //await showConfirmBottomSheet(client,name);
+     // myFunct();
+   //view Data call
+
+    (Get.put(StockQuery()).clientDebt).clear();
+    (Get.put(StockQuery()).updateHideLoader(true));
+
+    (Get.put(StockQuery()).updateClientDebt(resultData["result"]));
+    if((Get.put(StockQuery()).hideComp))
+    {
+
+    }
+    else{
+
+    }
+    }
+    else{
+    (Get.put(StockQuery()).updateHideLoader(true));
+
+    }
+
+
     } catch (e) {
-      // 3. Catch unexpected errors (malformed URLs, OS permission issues)
-      print("WhatsApp Launch Error: $e");
-      Get.snackbar(
-        "Launch Error",
-        "An unexpected error occurred: $e",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+    (Get.put(StockQuery()).updateHideLoader(true));
+    }
+  }
+}
+class OrderDeptHist extends StatelessWidget {
+
+  final String client;
+  final String clientName;
+  final String name;
+  final String uidOwner;
+  final double price;
+  final int myIndex;
+  final Map<String, dynamic> deptHist;
+  final TextEditingController controller; // Added this
+  final VoidCallback myFunct;
+  final Function(bool) updateBotSheet;
+  final Function() viewDeptUsers;
+  final Function(String,String) shareToWhatsApp;
+  final Function(String,String) showOrderDeptHist;
+  final Function(String,String,String,String) showOrderDeptDetailHist;
+  //final Function(String,String) showConfirmBottomSheet;
+
+
+  const OrderDeptHist({
+    super.key,
+    required this.client,
+    required this.clientName,
+    required this.name,
+    required this.deptHist,
+    required this.uidOwner,
+    required this.price,
+    required this.myIndex,
+    required this.controller,
+    required this.myFunct,
+    required this.updateBotSheet,
+    required this.viewDeptUsers,
+    required this.shareToWhatsApp,
+    required this.showOrderDeptHist,
+    required this.showOrderDeptDetailHist,
+    //required this.showConfirmBottomSheet,
+  });
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(0),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Drag indicator
+                  Container(
+                    height: 4,
+                    width: 40,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        // Left Side: Icon and Text
+                        const Icon(Icons.person, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text( ConstantClassUtil().truncateWithEllipsis(ConstantClassUtil().capitalizeFirstLetter(deptHist["creator"]), 12), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+
+                            Text("User Paid:${deptHist["orderUserPaid"]}", style: const TextStyle(color: Colors.grey,fontSize: 13)),
+                            Text("Ideni:${deptHist["debt"]}", style: const TextStyle(color: Colors.red,fontSize: 13)),
+                           // const SizedBox(height: 14),
+                            //const Text("Name", style: TextStyle(color: Colors.grey,fontSize: 15)),
+                          ],
+                        ),
+
+                        // THE MAGIC: This pushes everything after it to the far right
+                        const Spacer(),
+
+                        // Right Side: Buttons
+
+                        IconButton(
+                          visualDensity: VisualDensity.compact, // Makes button smaller to save space
+                          icon: const Icon(Icons.grid_4x4_rounded, color: Colors.orange),
+                          onPressed: () async{
+                            //print(deptHist);
+                            await showOrderDeptDetailHist(deptHist["OrderId"],deptHist["creator"],deptHist["orderTotal"],deptHist["created_at"]);
+                          },
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.share, color: Colors.blueAccent),
+                          onPressed: ()async{
+                            //final int phone=250790954158;
+                            //String amount = controller.text;
+                            String shareMsg = "Muraho, $clientName Afite Ideni rya ${price.toString()} Asabwa kwishyura $name .";
+
+                            // Call the function
+                            await shareToWhatsApp("", shareMsg);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+                ],
+              ),
+              Positioned(
+                top:10,
+                left: 15,
+
+
+                child: Center(
+                  child: Text(
+                    'Uid:${deptHist["OrderId"]}',
+                    style: const TextStyle(color: Colors.deepOrange,fontSize: 10),
+                  ),
+                ),
+              ),
+              Positioned(
+                top:10,
+                right: 15,
+
+
+                child: Center(
+                  child: Text(
+                    '${deptHist["created_at"]}',
+                    style: const TextStyle(color: Colors.deepOrange,fontSize: 10),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom:10,
+                right: 28,
+
+
+                child: Center(
+                  child: Text(
+                    'Total:${deptHist["orderTotal"]}',
+                    style: const TextStyle(color: Colors.green,fontSize: 10),
+                  ),
+                ),
+              ),
+            ],
+          )
+        ),
+      ),
+    );
+  }
+
+
+
+  paidDet2(client,uidOwner,amount) async{
+
+    try {
+      (Get.put(StockQuery()).updateHideLoader(false));
+      var resultData=(await StockQuery().paidDept2(User(uid:client,inputData:num.parse(amount),uidCreator:uidOwner))).data;
+      if(resultData["status"])
+      {
+        updateBotSheet(true);
+        viewDeptUsers();
+        if (Get.isDialogOpen == true) {
+          Get.back();
+        }
+        //TextListController().setDialog(false);
+
+        //await showConfirmBottomSheet(client,name);
+        // myFunct();
+        //view Data call
+
+        (Get.put(StockQuery()).clientDebt).clear();
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+        (Get.put(StockQuery()).updateClientDebt(resultData["result"]));
+        if((Get.put(StockQuery()).hideComp))
+        {
+
+        }
+        else{
+
+        }
+      }
+      else{
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+      }
+
+
+    } catch (e) {
+      (Get.put(StockQuery()).updateHideLoader(true));
+    }
+  }
+}//this is orders that has dept
+class OrderDeptDetailHist extends StatelessWidget {
+
+  final String client;
+  final String clientName;
+  final String name;
+  final String uidOwner;
+  final double price;
+  final int myIndex;
+  final Map<String, dynamic> deptDetailHist;
+  final TextEditingController controller; // Added this
+  final VoidCallback myFunct;
+  final Function(bool) updateBotSheet;
+  final Function() viewDeptUsers;
+  final Function(String,String) shareToWhatsApp;
+
+  //final Function(String,String) showConfirmBottomSheet;
+
+
+  const OrderDeptDetailHist({
+    super.key,
+    required this.client,
+    required this.clientName,
+    required this.name,
+    required this.deptDetailHist,
+    required this.uidOwner,
+    required this.price,
+    required this.myIndex,
+    required this.controller,
+    required this.myFunct,
+    required this.updateBotSheet,
+    required this.viewDeptUsers,
+    required this.shareToWhatsApp,
+
+    //required this.showConfirmBottomSheet,
+  });
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(0),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Drag indicator
+                  Container(
+                    height: 4,
+                    width: 40,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        // Left Side: Icon and Text
+                        const Icon(Icons.person, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("${ConstantClassUtil().truncateWithEllipsis(ConstantClassUtil().capitalizeFirstLetter(deptDetailHist["productCode"]), 18)}(${deptDetailHist["pcs"]} pcs)", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold) ),
+
+                            Text("price:${deptDetailHist["price"]}", style: const TextStyle(color: Colors.grey,fontSize: 13)),
+                            Text("qty:${deptDetailHist["totalQty"]}", style: const TextStyle(color: Colors.red,fontSize: 13)),
+                            // const SizedBox(height: 14),
+                            //const Text("Name", style: TextStyle(color: Colors.grey,fontSize: 15)),
+                          ],
+                        ),
+
+                        // THE MAGIC: This pushes everything after it to the far right
+                        const Spacer(),
+
+                        // Right Side: Buttons
+
+
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.share, color: Colors.blueAccent),
+                          onPressed: ()async{
+                            //final int phone=250790954158;
+                            //String amount = controller.text;
+                            String shareMsg = "Muraho, $clientName Afite Ideni rya ${price.toString()} Asabwa kwishyura $name .";
+
+                            // Call the function
+                            await shareToWhatsApp("", shareMsg);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+                ],
+              ),
+
+
+              Positioned(
+                bottom:10,
+                right: 28,
+
+
+                child: Center(
+                  child: Text(
+                    'Total:${deptDetailHist["totalAmount"]}',
+                    style: const TextStyle(color: Colors.green,fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          )
+        ),
+      ),
+    );
+  }
+
+
+
+  paidDet2(client,uidOwner,amount) async{
+
+    try {
+      (Get.put(StockQuery()).updateHideLoader(false));
+      var resultData=(await StockQuery().paidDept2(User(uid:client,inputData:num.parse(amount),uidCreator:uidOwner))).data;
+      if(resultData["status"])
+      {
+        updateBotSheet(true);
+        viewDeptUsers();
+        if (Get.isDialogOpen == true) {
+          Get.back();
+        }
+        //TextListController().setDialog(false);
+
+        //await showConfirmBottomSheet(client,name);
+        // myFunct();
+        //view Data call
+
+        (Get.put(StockQuery()).clientDebt).clear();
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+        (Get.put(StockQuery()).updateClientDebt(resultData["result"]));
+        if((Get.put(StockQuery()).hideComp))
+        {
+
+        }
+        else{
+
+        }
+      }
+      else{
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+      }
+
+
+    } catch (e) {
+      (Get.put(StockQuery()).updateHideLoader(true));
+    }
+  }
+}
+class PaidDeptHist extends StatelessWidget {
+
+  final String client;
+  final String clientName;
+  final String name;
+  final String uidOwner;
+  final Map<String,dynamic>paidHist;
+  final double price;
+  final int myIndex;
+  final TextEditingController controller; // Added this
+  final VoidCallback myFunct;
+  final Function(bool) updateBotSheet;
+  final Function() viewDeptUsers;
+  final Function(String,String) shareToWhatsApp;
+  final Function(String,String) showOrderPaidHist;
+  //final Function(String,String) showConfirmBottomSheet;
+
+
+  const PaidDeptHist({
+    super.key,
+    required this.client,
+    required this.clientName,
+    required this.name,
+    required this.uidOwner,
+    required this.price,
+    required this.paidHist,
+    required this.myIndex,
+    required this.controller,
+    required this.myFunct,
+    required this.updateBotSheet,
+    required this.viewDeptUsers,
+    required this.shareToWhatsApp,
+    required this.showOrderPaidHist,
+    //required this.showConfirmBottomSheet,
+  });
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(0),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Drag indicator
+                  Container(
+                    height: 4,
+                    width: 40,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        // Left Side: Icon and Text
+                        const Icon(Icons.person, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text( ConstantClassUtil().truncateWithEllipsis(ConstantClassUtil().capitalizeFirstLetter(paidHist["creator"]), 12), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            const Text("Receiver", style: TextStyle(color: Colors.grey,fontSize: 15)),
+
+                          ],
+                        ),
+
+                        // THE MAGIC: This pushes everything after it to the far right
+                        const Spacer(),
+
+                        // Right Side: Buttons
+                        IconButton(
+                          visualDensity: VisualDensity.compact, // Makes button smaller to save space
+                          icon: const Icon(Icons.grid_4x4_rounded, color: Colors.grey),
+                          onPressed: () async{
+                            // await showOrderDeptHist(client,clientName);
+                          },
+                        ),
+
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.share, color: Colors.blueAccent),
+                          onPressed: ()async{
+                            //final int phone=250790954158;
+                            //String amount = controller.text;
+                            String shareMsg = "Muraho, $clientName Afite Ideni rya ${price.toString()} Asabwa kwishyura $name .";
+
+                            // Call the function
+                            await shareToWhatsApp("", shareMsg);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+                ],
+              ),
+              Positioned(
+                top:10,
+                left: 15,
+
+
+                child: Center(
+                  child: Text(
+                    'Uid:${paidHist["uid"]}',
+                    style: const TextStyle(color: Colors.deepOrange,fontSize: 10),
+                  ),
+                ),
+              ),
+              Positioned(
+                top:10,
+                right: 15,
+
+
+                child: Center(
+                  child: Text(
+                    '${paidHist["created_at"]}',
+                    style: const TextStyle(color: Colors.deepOrange,fontSize: 10),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom:10,
+                right: 28,
+
+
+                child: Center(
+                  child: Text(
+                    'Amount Paid:${paidHist["userPaid"]}',
+                    style: const TextStyle(color: Colors.green,fontSize: 10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  paidDet2(client,uidOwner,amount) async{
+
+    try {
+      (Get.put(StockQuery()).updateHideLoader(false));
+      var resultData=(await StockQuery().paidDept2(User(uid:client,inputData:num.parse(amount),uidCreator:uidOwner))).data;
+      if(resultData["status"])
+      {
+        updateBotSheet(true);
+        viewDeptUsers();
+        if (Get.isDialogOpen == true) {
+          Get.back();
+        }
+        //TextListController().setDialog(false);
+
+        //await showConfirmBottomSheet(client,name);
+        // myFunct();
+        //view Data call
+
+        (Get.put(StockQuery()).clientDebt).clear();
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+        (Get.put(StockQuery()).updateClientDebt(resultData["result"]));
+        if((Get.put(StockQuery()).hideComp))
+        {
+
+        }
+        else{
+
+        }
+      }
+      else{
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+      }
+
+
+    } catch (e) {
+      (Get.put(StockQuery()).updateHideLoader(true));
     }
   }
 }

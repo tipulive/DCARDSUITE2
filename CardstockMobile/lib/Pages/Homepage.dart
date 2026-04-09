@@ -35,6 +35,7 @@ import '../Utilconfig/image_card_widget.dart';
 
 import '../../../Query/PromotionQuery.dart';
 
+import '../models/Promotions.dart';
 import '../models/User.dart';
 
 
@@ -57,6 +58,7 @@ class _HomepageState extends State<Homepage> {
   List<dynamic> cartData = [];
   List<dynamic> users=[];
   List<dynamic>qrSearch = [];
+  bool buyBtn=false;
 
   PromotionQuery promotionState=Get.put(PromotionQuery());
   AdminQuery adminStatedata=Get.put(AdminQuery());
@@ -105,9 +107,126 @@ class _HomepageState extends State<Homepage> {
   String pageName="Home";
   Language langV=Language();
 
+  void showConfirmBottomSheet() async{
+    String userProfile=(myStockQuery.userProfile)["uid"];
+    // print("Total dettes: $userProfile");
+   // print((myStockQuery.userProfile)["uid"]);
+    setState(() {
+
+      showOver=true;
+      // dataSearch.clear();
 
 
-   void showConfirmBottomSheet() async{
+    });
+    final response = await myStockQuery.checkUserDept(User(uid:userProfile));
+
+    if (response != null) {
+      final result=response.data;
+      if(result["status"])
+      {
+        setState(() {
+
+          showOver=false;
+          // dataSearch.clear();
+
+
+        });
+        final users=result["result"];
+        final totalD = ConstantClassUtil().calcTotObjJSon(users, 'dettes');
+        final totalC=totalD+(Get.put(StockQuery()).dept);        // Output: 460
+        //
+        final double heightFactor = (users.length>1) ? 0.7 : 0.5;
+        Get.bottomSheet(
+          Container(
+            height: Get.height * heightFactor,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 5),
+
+                  // Title
+                  const Text(
+                    "Confirm?",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
+                  Text("Total dettes:${totalD.toString()} + ${(Get.put(StockQuery()).dept).toString()}=${totalC.toString()}"),
+                  const SizedBox(height: 5),
+
+                  // Action buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () async{
+                          // YES action
+                          await myOrderSubmit();
+                          Get.back();
+                        },
+                        child: const Text("Yes"),
+                      ),
+                      OutlinedButton(
+                        onPressed: Get.back,
+                        child: const Text("Cancel"),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 0),
+
+                  // User list
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: 1,
+                      itemBuilder: (_, index) {
+                        //final user = users[index];
+                        return UserCard(
+                          name:(myStockQuery.userProfile)["name"],
+                          price: totalD,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+        );
+        //
+      }else{
+        await myOrderSubmit();
+        setState(() {
+
+          showOver=false;
+          // dataSearch.clear();
+
+
+        });
+        if(result["result"]==1){
+          checkAppVersion(title: "error", message: result["error"],primaryButtonText:"Download",primaryButtonUrl: result["downNew"]);
+        }
+      }
+    } else {
+      setState(() {
+
+        showOver=false;
+        // dataSearch.clear();
+
+
+      });
+    }
+
+  }
+
+   /*void showConfirmBottomSheet() async{
      String userProfile=(myStockQuery.userProfile)["uid"];
     // print("Total dettes: $userProfile");
      setState(() {
@@ -163,8 +282,9 @@ class _HomepageState extends State<Homepage> {
                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                          children: [
                            ElevatedButton(
-                             onPressed: () {
+                             onPressed: () async{
                                // YES action
+                               await myOrderSubmit();
                              },
                              child: const Text("Yes"),
                            ),
@@ -221,9 +341,113 @@ class _HomepageState extends State<Homepage> {
          });
        }
 
+  }*/
+
+  myOrderSubmit() async{
+    //Get.back();
+    setState(() {
+
+      showOver=true;
+      // dataSearch.clear();
+
+
+    });
+
+    try {
+      var inputDataText=(inputDataDept.text=="")?"0":inputDataDept.text;
+
+      /* hano ngiye gutuma variable nzi resetting mbere ya submission */
+
+      String userProfile=(Get.put(StockQuery()).userProfile)["uid"];
+
+      String orderId=(Get.put(StockQuery()).order["resultData"][0]["uid"]);
+      num orderSum=(Get.put(StockQuery())).orderSum;
+      (Get.put(StockQuery()).updateHidePickClick(true));
+      List<dynamic> orderVal=[
+        {
+          "name":"unknown",
+          "uid":"none"
+        }
+      ];
+      num totalVal=0;
+
+      (Get.put(StockQuery()).updateSumOrder(totalVal));
+
+      setState(() {
+        //showOver=false;
+        cartData.clear();
+        //(Get.put(StockQuery()).updateOrder(orderVal));
+        (Get.put(StockQuery()).updateDeptOrder(0));
+        (Get.put(StockQuery()).updateOrder(orderVal));
+        inputDataDept.text="";
+
+        // dataSearch.clear();
+
+      });
+
+
+      //pickDefaultUser(true,true);
+
+      /* hano ngiye gutuma variable nzi resetting mbere ya submission */
+
+
+
+      var resultData=(await StockQuery().submitOrder(Participated(uid:"Nyota_1672353378"
+          ,uidUser:userProfile,subscriber:orderId,inputData:inputDataText),Promotions(
+          token:"$orderSum",reach:"1200",gain:"350",uid:"PointSales1"
+      ))).data;
+      if(resultData["status"])
+      {
+        //print(resultData);
+        setState(() {
+          showOver=false;
+          inputDataDept.text="";
+
+
+
+        });
+
+        pickDefaultUser(true,true);
+        /* num totalVal=0;
+
+                              (Get.put(StockQuery()).updateSumOrder(totalVal));
+
+                              setState(() {
+                                showOver=false;
+                                cartData.clear();
+                                //(Get.put(StockQuery()).updateOrder(orderVal));
+                                (Get.put(StockQuery()).updateDeptOrder(0));
+                                inputDataDept.text="";
+
+                                // dataSearch.clear();
+
+                              });
+                              (Get.put(StockQuery()).updateHidePickClick(true));
+                              pickDefaultUser(true,true);*/
+      }
+      else{
+
+        setState(() {
+
+          showOver=false;
+
+
+
+        });
+        pickDefaultUser(true,true);
+      }
+    } catch (e) {
+      setState(() {
+
+        showOver=false;
+
+
+
+      });
+      pickDefaultUser(true,true);
+    }
+
   }
-
-
 
   @override
 
@@ -257,6 +481,7 @@ class _HomepageState extends State<Homepage> {
     //FocusScope.of(context).unfocus();//hide keyboard on screen loadin
     return Scaffold(
      resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
+
 
       body:Stack(
         children: [
@@ -518,7 +743,42 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
               //Text("id ${(Get.put(StockQuery()).order["resultData"][0]["uid"])}"),
-              Text("Total:${(Get.put(StockQuery()).orderSum)}"),
+             // Text("Total:${(Get.put(StockQuery()).orderSum)}"),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(width: 16),
+                  Text(
+                    "Total: ${(Get.put(StockQuery()).orderSum)}",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8), // spacing between text and icon
+                  InkWell(
+                    onTap: ()async{
+                      final List<Map<String, dynamic>> orderMap =
+                      List<Map<String, dynamic>>.from(cartData);
+
+                      Map<String, dynamic> users = {
+                        "name":(Get.put(StockQuery()).order)["resultData"][0]["name"],
+
+                        "title": "Temporary Order"
+                      };
+
+                      final shareMsg =ConstantClassUtil().buildWhatsAppMessage(orderMap,users);
+                      await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+
+                    },
+                    child: const Icon(
+                      Icons.share, // choose any icon you want
+                      size: 20,
+                      color: Colors.blue,
+
+                    ),
+                  ),
+
+                ],
+              ),
+
               Padding(
                 padding: const EdgeInsets.fromLTRB(40,0,40,0),
                 child: Container(
@@ -566,12 +826,21 @@ class _HomepageState extends State<Homepage> {
                             ),
                             controller: inputDataDept,
                             onChanged: (value){
-                              if((double.tryParse(value) != null)){
+                              final myValue = int.tryParse(value);
+                              if(myValue != null && myValue >= 0){
                                 num deptVal=(Get.put(StockQuery()).orderSum)-num.parse(value);
                                 setState(() {
+                                  buyBtn=false;
                                   (Get.put(StockQuery()).updateDeptOrder(deptVal));
                                 });
 
+                              }else{
+
+                                num deptVal=0;
+                                setState(() {
+                                  buyBtn=true;
+                                  (Get.put(StockQuery()).updateDeptOrder(deptVal));
+                                });
                               }
 
 
@@ -581,15 +850,26 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
                       ),
-                      InkWell(
+                      (buyBtn)?const Icon(
+                        Icons.warning,
+                        color: Colors.orange,
+                        size: 28,
+                      ):InkWell(
                         onTap: () async{
                           // print("${inputDataDept.text} ${(Get.put(StockQuery())).orderSum } ${Get.put(StockQuery().order["resultData"][0]["uid"])}");
+                       int dept=int.tryParse((Get.put(StockQuery()).dept).toString())??0;
+                          if(dept>0) {
+                         showConfirmBottomSheet();
+                           }
+                          else{
+                            //submit order code
+                            await myOrderSubmit();
 
-                          showConfirmBottomSheet();
+                          }
 
 
                         },
-                        child: Container(
+                        child:Container(
                           padding: const EdgeInsets.all(10.0),
                           decoration: const BoxDecoration(
                             color: Colors.green,
@@ -820,7 +1100,7 @@ class _HomepageState extends State<Homepage> {
   }
   getCardDetail(resultCode) async{
     (Get.put(StockQuery()).updateHideLoader(false));
-    var resultData=(await CardQuery().GetDetailCardOnline(CardModel(uid:"$resultCode"))).data;
+    var resultData=(await CardQuery().getDetailCardOnline(CardModel(uid:"$resultCode"))).data;
     if(resultData["status"])
     {
       if (controller!= null) {
@@ -1572,6 +1852,7 @@ class _HomepageState extends State<Homepage> {
     if(resultData["status"])
     {
 
+
       (Get.put(StockQuery()).updateHideLoader(true));
 
       if(resultData["result"]!=0)
@@ -1834,23 +2115,41 @@ class _HomepageState extends State<Homepage> {
                       if (index < myController.usersPick.length) {
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: getRandomColor(),
-                              child: Icon(_getRandomIcon()),
-                            ),
-                            title: Text(myController.usersPick[index]["name"]),
-                            subtitle: Text(myController.usersPick[index]["PhoneNumber"]),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.add),
-                              iconSize: 23.0,
-                              color: Colors.blue,
-                              onPressed: () async {
-                                //print("${users[index]}");
-                  
-                                //print("search");
-                                (Get.put(StockQuery()).updateHideLoader(false));
-                                if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
+                          child: InkWell(
+                            onTap: () async{
+                              //copy of Add contact because it is one which is Og;
+                              (Get.put(StockQuery()).updateHideLoader(false));
+                              if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
+                                var userProfile = {
+                                  "uid": "${myController.usersPick[index]["uid"]}",
+                                  "name": "${myController.usersPick[index]["name"]}",
+                                  "email": "on@gmail.com",
+                                  "phone": "782389359",
+                                  "Ccode": "+250",
+                                  "country": "Rwanda",
+                                  "initCountry": "none",
+                                  "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                  "carduid": "TEALTD_7hEnj_1672352175"
+                                };
+                                setState(() {
+                                  (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                  (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                  (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                });
+                                Future.microtask(() {
+                                  Navigator.of(context).pop();
+                                });
+                              } else {
+
+                                var resultData = (await StockQuery().updateInOrder(
+                                    QuickBonus(
+                                        uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
+                                        productName: "productCode",
+                                        description: "comment",
+                                        status: "UpdateUserInOrder"),
+                                    Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
+                                    .data;
+                                if (resultData["status"]) {
                                   var userProfile = {
                                     "uid": "${myController.usersPick[index]["uid"]}",
                                     "name": "${myController.usersPick[index]["name"]}",
@@ -1865,21 +2164,32 @@ class _HomepageState extends State<Homepage> {
                                   setState(() {
                                     (Get.put(StockQuery()).updateUserProfile(userProfile));
                                     (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                    (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
                                   });
                                   Future.microtask(() {
                                     Navigator.of(context).pop();
                                   });
                                 } else {
-                  
-                                  var resultData = (await StockQuery().updateInOrder(
-                                      QuickBonus(
-                                          uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
-                                          productName: "productCode",
-                                          description: "comment",
-                                          status: "UpdateUserInOrder"),
-                                      Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
-                                      .data;
-                                  if (resultData["status"]) {
+                                  // Handle error
+                                }
+                              }
+                            },
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: getRandomColor(),
+                                child: Icon(_getRandomIcon()),
+                              ),
+                              title: Text(myController.usersPick[index]["name"]),
+                              subtitle: Text(myController.usersPick[index]["PhoneNumber"]),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.add),
+                                iconSize: 23.0,
+                                color: Colors.blue,
+                                onPressed: () async {
+
+                                  //print("search");
+                                  (Get.put(StockQuery()).updateHideLoader(false));
+                                  if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
                                     var userProfile = {
                                       "uid": "${myController.usersPick[index]["uid"]}",
                                       "name": "${myController.usersPick[index]["name"]}",
@@ -1894,15 +2204,47 @@ class _HomepageState extends State<Homepage> {
                                     setState(() {
                                       (Get.put(StockQuery()).updateUserProfile(userProfile));
                                       (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                      (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
                                     });
                                     Future.microtask(() {
                                       Navigator.of(context).pop();
                                     });
                                   } else {
-                                    // Handle error
+
+                                    var resultData = (await StockQuery().updateInOrder(
+                                        QuickBonus(
+                                            uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
+                                            productName: "productCode",
+                                            description: "comment",
+                                            status: "UpdateUserInOrder"),
+                                        Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
+                                        .data;
+                                    if (resultData["status"]) {
+                                      var userProfile = {
+                                        "uid": "${myController.usersPick[index]["uid"]}",
+                                        "name": "${myController.usersPick[index]["name"]}",
+                                        "email": "on@gmail.com",
+                                        "phone": "782389359",
+                                        "Ccode": "+250",
+                                        "country": "Rwanda",
+                                        "initCountry": "none",
+                                        "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                        "carduid": "TEALTD_7hEnj_1672352175"
+                                      };
+                                      setState(() {
+                                        (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                        (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                        (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                      });
+                                      Future.microtask(() {
+                                        Navigator.of(context).pop();
+                                      });
+                                    } else {
+                                      // Handle error
+                                    }
                                   }
-                                }
-                              },
+                                },
+                              ),
                             ),
                           ),
                         );
@@ -2367,6 +2709,8 @@ class _HomepageState extends State<Homepage> {
     });
 
   }
+
+
 //method
 }
 
@@ -2588,8 +2932,8 @@ class ProductSearchList extends StatelessWidget {
 
                                                 ),
                                                 onChanged: (text) {
-
-                                                  if((int.tryParse(text) != null)){
+                                                  final value = int.tryParse(text);
+                                                  if(value != null && value > 0){
                                                     searchResult[index]['req_qty']=text;
                                                     // print(searchResult[index]);
 
@@ -2976,7 +3320,7 @@ class CheckoutPage extends StatelessWidget {
 
 class UserCard extends StatelessWidget {
   final String name;
-  final int price;
+  final double price;
 
   const UserCard({
     super.key,

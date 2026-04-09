@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 
+
 import '../../../Utilconfig/HideShowState.dart';
 
 import '../../../models/Topups.dart';
@@ -572,9 +573,15 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
                       ),
 
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:getRandomColor(),
-                          child: Icon(_getRandomIcon()),
+                        leading: InkWell(
+                          onTap: () async{
+                           // print("share");
+
+                          },
+                          child: CircleAvatar(
+                            backgroundColor:getRandomColor(),
+                            child: Icon(_getRandomIcon()),
+                          ),
                         ),
                         title:Row(
 
@@ -783,6 +790,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
 
 
+
   Color getRandomColor() {
     Random random = Random();
     return Color.fromARGB(
@@ -913,7 +921,6 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
 
     var resultData=(await StockQuery().stockViewDeliver(Topups(uid:uidOrder,optionCase:productExist),QuickBonus(uid:productC))).data;
-    print("Data app :$resultData");
     if(resultData["status"])
     {
 
@@ -1208,7 +1215,6 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
   }
   void viewThisOrder() {
-    print("test Data");
 
     Get.bottomSheet(
 
@@ -1229,6 +1235,39 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
               child: Column(
                 children: [
 
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(color: Colors.black),
+                      children: [
+
+                        //TextSpan(text: "Total dettes:${totalD.toString()}"),
+                        WidgetSpan(
+                          child:  IconButton(
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.share, color: Colors.blueAccent),
+                            onPressed: ()async{
+                              // print(users);
+                              final List<Map<String, dynamic>> usersMap =
+                              List<Map<String, dynamic>>.from(thisListOrder);
+
+                             // final shareMsg = buildWhatsAppMessage(usersMap,orderData[1]);
+                              Map<String, dynamic> users = {
+                                "name": orderData[1],
+
+                                "title": "Order Sales"
+                              };
+                              final shareMsg =ConstantClassUtil().buildWhatsAppMessage(usersMap,users);
+                              await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+
+
+                            },
+                          ),
+
+
+                        ),
+                      ],
+                    ),
+                  ),
                   Center(child: Text("Client:${orderData[1]}")),
                   Center(child: Text("UID:${orderData[0]}")),
 

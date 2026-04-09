@@ -1,6 +1,8 @@
 import 'dart:math';
 
 
+import 'package:intl_phone_field/phone_number.dart';
+
 import '../../../Utilconfig/HideShowState.dart';
 import '../../../models/QuickBonus.dart';
 
@@ -11,7 +13,6 @@ import 'package:get/get.dart';
 import '../../../Query/StockQuery.dart';
 import 'package:flutter/material.dart';
 
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../Query/CardQuery.dart';
 import '../../models/Admin.dart';
@@ -23,7 +24,7 @@ import '../../../Utilconfig/ConstantClassUtil.dart';
 
 
 class ContactComp extends StatefulWidget {
-  const ContactComp({Key? key}) : super(key: key);
+  const ContactComp({super.key});
 
   @override
   State<ContactComp> createState() => _ContactCompState();
@@ -74,6 +75,7 @@ class _ContactCompState extends State<ContactComp> {
   String sortOrderVal="ASC";
 
   String phoneNumber="none";
+  String editUid="";
 
 
   TextEditingController uidData=TextEditingController();
@@ -156,73 +158,16 @@ class _ContactCompState extends State<ContactComp> {
                   backgroundColor:getRandomColor(),
                   child: Icon(_getRandomIcon()),
                 ),
-                title:Row(
-                  children: [
-
-
-                    Expanded(
-                      flex: 1,
-                      child: Stack(
-                        children: [
-
-                          Column(
-                            children: [
-
-                              Center(
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: "Total:",
-                                    style: DefaultTextStyle.of(context).style,
-                                    children: const <TextSpan>[
-
-
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                subtitle: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Column(
-
-                      children: [
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-
-                            const Icon(Icons.segment,color:Colors.orange,size:13,),
-                            Text("${(_data.isNotEmpty)?_data[0]['totSpending']:0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
-
-                          ],
-                        ),
 
 
 
-
-
-
-                      ],
-                    ),
-
-                  ],
-                ),
                 trailing:GestureDetector(
                     onTap: () async{
                       formReset();
-                      addSpending();
+                      addContact();
 
                     },
-                    child:const Icon(Icons.currency_exchange,size:35,color:Colors.orange)
+                    child:const Icon(Icons.person_add_alt,size:35,color:Colors.orange)
                 )
 
               //trailing: Text()
@@ -367,8 +312,9 @@ class _ContactCompState extends State<ContactComp> {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.edit),
-                                  onPressed: () {
-                                    updateSpending(_data[index]);
+                                  onPressed: () async{
+                                    // await updateSpending(_data[index]);
+                                    await editContactShow(_data[index]);
                                     // Handle the first icon tap
 
                                   },
@@ -915,7 +861,7 @@ class _ContactCompState extends State<ContactComp> {
     });
 
     var resultData=(await CardQuery().getNumberDetailCardOnline(Admin(uid: "tets", subscriber: "test",phone:phoneNumber,Ccode: uidInput4.text))).data;
-    //print(resultData);
+    //return resultData;
     if(resultData["status"])
     {
       uidData.text=resultData["UserDetail"]["uid"];
@@ -924,7 +870,7 @@ class _ContactCompState extends State<ContactComp> {
       initCountry.text=resultData["UserDetail"]["initCountry"];
       password.text=resultData["UserDetail"]["password"]??'none';
       Get.put(HideShowState()).isValid(false);
-      //print(resultData);
+
       setState(() {
         isValid=true;
         isLoading=false;
@@ -935,7 +881,7 @@ class _ContactCompState extends State<ContactComp> {
       uidData.text="";
       name.text="";
       email.text="";
-     // initCountry.text="";
+      // initCountry.text="";
       password.text="";
       setState(() {
         isValid=false;
@@ -945,12 +891,14 @@ class _ContactCompState extends State<ContactComp> {
 
 
     }
+    //print(resultData);
+
   }
   addUserMethod() async{
 
     try {
       (Get.put(StockQuery()).updateHideLoader(false));
-      var resultData=(await CardQuery().CreateAssignCardEventOnline(CardModel(uid:"none"),Admin(phone:uidInput.text,name:name.text,email:email.text,Ccode:uidInput4.text,initCountry:initCountry.text,country:uidInput5.text,password:password.text,uid: "no need", subscriber:"no need",status:"noCard"))).data;
+      var resultData=(await CardQuery().createAssignCardEventOnline(CardModel(uid:"none"),Admin(phone:uidInput.text,name:name.text,email:email.text,Ccode:uidInput4.text,initCountry:initCountry.text,country:uidInput5.text,password:password.text,uid: "no need", subscriber:"no need",status:"noCard"))).data;
      //print(resultData);
       if(resultData["status"])
       {
@@ -976,8 +924,465 @@ class _ContactCompState extends State<ContactComp> {
 
 
   }
+  editUserMethod() async{
+    print(editUid);
+    try {
+      (Get.put(StockQuery()).updateHideLoader(false));
+      var resultData=(await CardQuery().editAssignCardEventOnline(CardModel(uid:editUid),Admin(phone:uidInput.text,name:name.text,email:email.text,Ccode:uidInput4.text,initCountry:initCountry.text,country:uidInput5.text,password:password.text,uid: "no need", subscriber:"no need",status:"noCard"))).data;
+      //print(resultData);
+      if(resultData["status"])
+      {
 
-  void addSpending() async{
+        viewData('test',false);
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+        (Get.put(StockQuery()).updateClientDebt(resultData["result"]));
+        formReset();
+      }
+      else{
+        //print(resultData);
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+      }
+
+
+    } catch (e) {
+      (Get.put(StockQuery()).updateHideLoader(true));
+    }
+
+
+  }
+   editContactShow(Map<String, dynamic> indexData) async{
+   /* uidData.text=indexData["uid"];
+    name.text=indexData["name"];
+    uidInput.text=indexData["PhoneNumber"];*/
+     String fullPhone = indexData["PhoneNumber"];
+     editUid=indexData["uid"];
+     final phone = PhoneNumber.fromCompleteNumber(
+       completeNumber: fullPhone,
+     );
+
+     String initialCountryCode = phone.countryISOCode; // ✅ "CD"
+     uidInput.text = phone.number;
+     name.text=indexData["name"];
+     String clientPhone=phone.number;
+     String clientName=indexData["name"];
+     uidInput4.text="+${phone.countryCode}";
+     uidData.text=indexData["uid"];
+     Get.put(HideShowState()).isValid(true);
+
+
+     Get.bottomSheet(
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return
+            Stack(
+              children: [
+                Container(
+                  padding:const EdgeInsets.all(2.0),
+                  height: 320,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+
+                        // (result!=null)?Text("barcode Type ${describeEnum(result!.format)} Data ${result!.code}"): const Text("Scan Code"),
+
+                        GetBuilder<StockQuery>(
+                          builder: (controller) {
+                            //return Text('Data: ${_controller.data}');
+                            return Column(
+                              children: [
+                                Padding(
+                                  padding:const EdgeInsets.fromLTRB(8,5,8,0),
+                                  child: Card(
+                                    elevation:0,
+                                    margin: const EdgeInsets.symmetric(vertical:1,horizontal:5),
+                                    //color:Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15.0),
+                                      //side: BorderSide(color:_data[0]["color_var"]??true?Colors.white:Colors.green, width: 2),
+                                    ),
+
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor:getRandomColor(),
+                                        child: Icon(_getRandomIcon()),
+                                      ),
+                                      title:const Row(
+                                        children: [
+
+
+                                          Expanded(
+                                            flex: 1,
+                                            child: Stack(
+                                              children: [
+
+                                                Center(child: Text("Edit User"))
+
+
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      subtitle: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+
+
+                                        ],
+                                      ),
+
+
+                                      //trailing: Text()
+                                    ),
+                                  ),
+                                ),
+
+                              ],
+                            );
+                          },
+                        ),
+                        if((Get.put(StockQuery()).paidDeptScanHide))
+                          Container(
+
+
+                            padding:const EdgeInsets.fromLTRB(5,0,10,0),
+
+
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
+                              ),
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 5.0,),
+
+                                  Container(
+                                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                                    child:  IntlPhoneField(
+                                      initialCountryCode:initialCountryCode,
+                                      controller: uidInput,
+                                      autofocus: true,
+
+                                      decoration: InputDecoration(
+                                        labelText: 'Phone Number',
+                                        border: const OutlineInputBorder(
+                                          borderSide: BorderSide(),
+                                        ),
+                                        suffixIcon:Obx(() => Get.put(HideShowState()).isNumberValid.value?const Icon(Icons.done,color:Colors.green,):const Icon(Icons.dangerous,color:Colors.red,)),
+
+
+                                      ),
+
+
+                                      onChanged: (phone) async{
+                                        name.text=clientName;
+
+                                        if((uidInput.text).isPhoneNumber)
+                                        {
+
+                                            await getDataFromNo(phone.number);
+                                            if(phone.number==clientPhone) {
+                                              name.text=clientName;
+                                              Get.put(HideShowState()).isValid(true);
+                                            }
+                                            name.text=clientName;
+
+
+
+                                        }
+                                        else{
+                                          Get.put(HideShowState()).isValid(false);
+                                          uidData.text="";
+                                          name.text=clientName;
+                                          email.text="";
+                                          // initCountry.text="";
+                                          password.text="";
+                                        }
+
+
+                                        //uidInput4.text=phone.countryCode;
+                                        //uidInput2.text=phone.number;
+                                        // uidInput2.text=phone.countryISOCode;
+                                        //print(phone.completeNumber);
+
+
+
+                                      },
+
+                                      onCountryChanged: (country) {
+
+                                        uidInput4.text="+${country.dialCode}";
+                                        uidInput5.text=country.name;
+                                        initCountry.text=country.code;
+
+                                        if((uidInput.text).isPhoneNumber)
+                                        {
+
+                                          getDataFromNo(uidInput.text);
+                                          if(phone.number==clientPhone) {
+                                            name.text=clientName;
+                                            Get.put(HideShowState()).isValid(true);
+                                          }
+                                          name.text=clientName;
+                                        }
+                                        else{
+                                          Get.put(HideShowState()).isValid(false);
+                                          uidData.text="";
+                                          name.text=clientName;
+                                          email.text="";
+                                          // initCountry.text="";
+                                          password.text="";
+                                        }
+                                        // print('Country changed to: ' + country.name);
+                                        // print('Country changed to: ' + country.dialCode);
+                                      },
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible: false,
+                                    child: TextField(
+                                      controller: uidData,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'uid',
+                                        hintText: 'uid',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.fromLTRB(16,0, 16, 0),
+                                    child: TextField(
+                                      controller: name,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+
+                                        labelText: 'name',
+                                        hintText: 'name',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible: false,
+                                    child: TextField(
+                                      controller: email,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'email',
+                                        hintText: 'email',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+
+                                  Visibility(
+                                    visible:false,
+                                    child: TextField(
+                                      controller: uidInput4,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'Ccode',
+                                        hintText: 'Ccode',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible: false,
+                                    child: TextField(
+                                      controller: uidInput5,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'Country',
+                                        hintText: 'Enter Country',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible: false,
+                                    child: TextField(
+                                      controller: initCountry,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'Country',
+                                        hintText: 'Enter Country',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible:false,
+                                    child: TextField(
+                                      controller:password,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'password',
+                                        hintText: 'password',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible:false,
+                                    child: TextField(
+                                      controller:status,
+                                      //obscureText: true,
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                        border: OutlineInputBorder(),
+                                        labelText: 'status',
+                                        hintText: 'status',
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                        ),
+
+                                      ),
+                                    ),
+                                  ),
+                                  Visibility(
+                                    visible: false,
+                                    child: Container(
+                                      padding: const EdgeInsets.fromLTRB(16,16,16,0),
+                                      child: TextField(
+                                        controller:carduid,
+                                        //obscureText: true,
+                                        decoration: const InputDecoration(
+                                          contentPadding: EdgeInsets.symmetric(vertical: 3,horizontal: 3),
+                                          border: OutlineInputBorder(),
+                                          labelText: 'cardui',
+                                          hintText: 'cardui',
+                                          hintStyle: TextStyle(
+                                            color: Colors.grey,
+                                          ),
+
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  //Qr Show
+
+                                  //Qr Show
+
+
+
+
+
+                                  const SizedBox(height: 5.0,),
+                                  Obx(() => Get.put(HideShowState()).isNumberValid.value?FloatingActionButton.extended(
+                                      label: const Text('Edit User'), // <-- Text
+                                      backgroundColor: Colors.black,
+                                      foregroundColor: Colors.white,
+                                      icon: const Icon( // <-- Icon
+                                        Icons.add,
+                                        size: 24.0,
+                                      ),
+                                      onPressed: () =>{
+                                        //paidDebt()
+                                        editUserMethod(),
+                                        formReset(),
+
+
+                                      }):const Text("")),
+
+
+
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        const SizedBox(height:2.0,),
+                        //if(!(Get.put(StockQuery()).paidDeptScanHide))
+
+
+
+
+
+                      ],
+                    ),
+                  ),
+                ),
+                GetBuilder<StockQuery>(
+                  builder: (myLoadercontroller) {
+                    //return Text('Data: ${_controller.data}');
+                    return
+                      (myLoadercontroller.hideLoader)?
+                      const Text(""):
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            alignment: Alignment.center,
+                            color: Colors.white70,
+                            child: const CircularProgressIndicator(),
+                          ),
+                        ),
+                      );
+                  },
+                ),
+
+              ],
+            );
+
+        },
+      ),
+    ).whenComplete(() {
+
+    });
+
+  }
+  void addContact() async{
 
     Get.bottomSheet(
       StatefulBuilder(
@@ -1022,16 +1427,16 @@ class _ContactCompState extends State<ContactComp> {
                                         backgroundColor:getRandomColor(),
                                         child: Icon(_getRandomIcon()),
                                       ),
-                                      title:Row(
+                                      title:const Row(
                                         children: [
 
 
                                           Expanded(
                                             flex: 1,
                                             child: Stack(
-                                              children: const [
+                                              children: [
 
-                                                Text("Add User")
+                                                Center(child: Text("Add User"))
 
 
                                               ],
@@ -1040,9 +1445,9 @@ class _ContactCompState extends State<ContactComp> {
                                         ],
                                       ),
 
-                                      subtitle: Row(
+                                      subtitle: const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
+                                        children: [
 
 
                                         ],
@@ -1320,8 +1725,9 @@ class _ContactCompState extends State<ContactComp> {
                                   Obx(() => Get.put(HideShowState()).isNumberValid.value?FloatingActionButton.extended(
                                       label: const Text('Add User'), // <-- Text
                                       backgroundColor: Colors.black,
+                                      foregroundColor: Colors.white,
                                       icon: const Icon( // <-- Icon
-                                        Icons.thumb_up,
+                                        Icons.add,
                                         size: 24.0,
                                       ),
                                       onPressed: () =>{
@@ -1406,14 +1812,13 @@ class _ContactCompState extends State<ContactComp> {
     }
 
   }
-  void updateSpending(indexData) {
-    //print(indexData);
-
+   updateSpending(Map<String, dynamic> indexData) {
+    print(indexData);
     actionStatus="Edit_otherSpending";
-    uidEdit.text=indexData["spendId"];
-    balance.text=indexData["spending"];
-    purpose.text=indexData["purpose"];
-    commentData.text=indexData["commentData"];
+    uidEdit.text=indexData["uid"];
+    balance.text=indexData["platform"];
+    purpose.text=indexData["name"];
+    commentData.text=indexData["PhoneNumber"];
     Get.bottomSheet(
 
       StatefulBuilder(
@@ -1575,6 +1980,8 @@ class _ContactCompState extends State<ContactComp> {
       // Get.put(HideShowState()).isDelivery(0);
       //do whatever you want after closing the bottom sheet
     });
+
+
 
   }
 

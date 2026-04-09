@@ -710,7 +710,7 @@ class _HomepageState extends State<Homepage> {
   }
   getCardDetail(resultCode) async{
     (Get.put(StockQuery()).updateHideLoader(false));
-    var resultData=(await CardQuery().GetDetailCardOnline(CardModel(uid:"$resultCode"))).data;
+    var resultData=(await CardQuery().getDetailCardOnline(CardModel(uid:"$resultCode"))).data;
     if(resultData["status"])
     {
       if (controller!= null) {

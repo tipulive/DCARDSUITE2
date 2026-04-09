@@ -352,6 +352,7 @@ class _SetOrderCompState extends State<SetOrderComp> {
                                             padding: const EdgeInsets.fromLTRB(0, 10, 0, 2),
                                             child: InkWell(
                                               onTap: () async{
+
                                                 setState(() {
                                                   productExist="false";
                                                   showOveray=true;
@@ -1463,7 +1464,9 @@ class _SetOrderCompState extends State<SetOrderComp> {
   }
 
   changeQtyCount(index,text){
-    if((double.tryParse(text) != null)){
+    final value = int.tryParse(text);
+    //if((double.tryParse(text) != null)){
+    if(value != null && value > 0){
       (Get.put(HideShowState()).delivery)[index]["currentQty"]=num.parse(text);
 
       num deliver=(((Get.put(HideShowState()).delivery)[index]["totalQty"])!=((Get.put(HideShowState()).delivery)[index]["totalCount"]))?((num.parse((Get.put(HideShowState()).delivery)[index]["totalQty"])-num.parse((Get.put(HideShowState()).delivery)[index]["totalCount"]))):0;
@@ -1868,7 +1871,7 @@ class _SetOrderCompState extends State<SetOrderComp> {
   getCardDetail(resultCode) async{
     // print("hello");
     //(Get.put(StockQuery()).updateHideLoader(false));
-    var resultData=(await CardQuery().GetDetailCardOnline(CardModel(uid:"$resultCode"))).data;
+    var resultData=(await CardQuery().getDetailCardOnline(CardModel(uid:"$resultCode"))).data;
     if(resultData["status"])
     {
 

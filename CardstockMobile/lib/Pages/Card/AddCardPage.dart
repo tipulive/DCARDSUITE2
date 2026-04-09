@@ -503,7 +503,7 @@ uidInput7.text=checkcode;
                             // print( (await ParticipatedQuery().getAllParticipateEventOnline()).data["status"])
                             //print( (await PromotionQuery().getAllPromotionEventOnline()),
 
-                            if((await CardQuery().CreateAssignCardEventOnline(CardModel(uid:uidInput7.text),Admin(phone:uidInput.text,name:uidInput2.text,email:uidInput3.text,Ccode:uidInput4.text,initCountry:initCountry.text,country:uidInput5.text,password:uidInput6.text,uid: "no need", subscriber:"no need",status:"Card"))).data["status"])
+                            if((await CardQuery().createAssignCardEventOnline(CardModel(uid:uidInput7.text),Admin(phone:uidInput.text,name:uidInput2.text,email:uidInput3.text,Ccode:uidInput4.text,initCountry:initCountry.text,country:uidInput5.text,password:uidInput6.text,uid: "no need", subscriber:"no need",status:"Card"))).data["status"])
                               {
                                 setState(() {
                                   showOveray=false;

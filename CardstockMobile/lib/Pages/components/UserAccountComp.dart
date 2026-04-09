@@ -317,7 +317,7 @@ class _UserAccountCompState extends State<UserAccountComp> {
                           if(resultData["status"])
                             {
 
-                              await Get.put(CardQuery()).updateCardState((await Get.put(CardQuery()).GetDetailCardOnline(CardModel(uid:'${(Get.put(CardQuery()).obj)["resultData"]["UserDetail"]["carduid"]}'))).data),
+                              await Get.put(CardQuery()).updateCardState((await Get.put(CardQuery()).getDetailCardOnline(CardModel(uid:'${(Get.put(CardQuery()).obj)["resultData"]["UserDetail"]["carduid"]}'))).data),
                               setState(() {
                                 Get.put(CardQuery()).obj;
                               }),

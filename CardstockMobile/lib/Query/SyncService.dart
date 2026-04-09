@@ -42,7 +42,7 @@ class SyncService { //online and offline download
 
 
        //return response.data;
-       return (await CardQuery().SynCardUpdated(CardModel(uid:"hello"),Syncon(result:response.data)));
+       return (await CardQuery().synCardUpdated(CardModel(uid:"hello"),Syncon(result:response.data)));
      } else {
        return false;
        //print(false);
@@ -83,7 +83,7 @@ class SyncService { //online and offline download
         {
           //print((await apiData())["products"][i]["title"])
           //print((response.data));
-          await CardQuery().SyncOffCardDownload(CardModel(uid:(response.data)["result"][i]["uid"],uidCreator:(response.data)["result"][i]["uidCreator"],subscriber:(response.data)["result"][i]["subscriber"]),Syncoff(uid:(response.data)["SyncUid"],versionCount:(response.data)["CurrentVersion"],VersionOnline:(response.data)["versionCountOnline"]));
+          await CardQuery().syncOffCardDownload(CardModel(uid:(response.data)["result"][i]["uid"],uidCreator:(response.data)["result"][i]["uidCreator"],subscriber:(response.data)["result"][i]["subscriber"]),Syncoff(uid:(response.data)["SyncUid"],versionCount:(response.data)["CurrentVersion"],VersionOnline:(response.data)["versionCountOnline"]));
           //await CardQuery().SyncOffCardDownload(CardData, syncoffdata)
         }
         //await CardQuery().SyncOffCardDownload();

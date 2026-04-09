@@ -120,7 +120,7 @@ getSearchAllStockOnline(Topups topupData,BonusModel bonusData)async{
     };
 
     String authToken =(adminStateData.obj)["result"][0]["AuthToken"];
-    var url="${ConstantClassUtil.StockLink}/viewSearchAllStock";
+    var url="${ConstantClassUtil.stockLink}/viewSearchAllStock";
     var response = await Dio().get(url,
       options: Options(headers: {
         HttpHeaders.contentTypeHeader: "application/json",
@@ -156,7 +156,7 @@ getPreviousPriceOnline(Topups topupData,BonusModel bonusData)async{
     };
 
     String authToken =(adminStateData.obj)["result"][0]["AuthToken"];
-    var url="${ConstantClassUtil.StockLink}/cardSearchPreviousPrice";
+    var url="${ConstantClassUtil.stockLink}/cardSearchPreviousPrice";
     var response = await Dio().get(url,
       options: Options(headers: {
         HttpHeaders.contentTypeHeader: "application/json",

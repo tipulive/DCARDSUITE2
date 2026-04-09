@@ -1384,6 +1384,53 @@ class StockQuery extends GetxController{
 
     }
   }
+  Future<dynamic> paidDept2(User userData) async {
+    // 1. Move the Dio instance to a global/static variable or dependency injection
+    final dio = Dio();
+
+    // 2. Extract AuthToken with a safety check
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("Error: AuthToken is missing");
+      return false;
+    }
+
+    // 3. Prepare payload (avoiding hardcoded strings where possible)
+    final Map<String, dynamic> params = {
+    "uidUser":userData.uid,
+    "OwnerAmount":userData.uidCreator,
+    "inputData": userData.inputData,
+    "commentData":"my Money"
+    };
+print(params);
+    try {
+      final response = await dio.post(
+        "${ConstantClassUtil.urlLink}/PaidDept",
+        options: Options(headers: {
+          HttpHeaders.contentTypeHeader: "application/json",
+          HttpHeaders.authorizationHeader: "Bearer $authToken"
+        }),
+        data: params, // Dio automatically encodes Map to JSON
+      );
+
+      if (response.statusCode == 200) {
+        //print("paid2");
+       return response;
+      }
+
+      return false;
+    } on DioException catch (e) {
+      // 4. Specific error logging for debugging
+     // debugPrint("API Error: ${e.response?.statusCode} - ${e.message}");
+
+      return false;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return false;
+    }
+  }
   paidDept(User userData) async{
 
     try {
@@ -1512,8 +1559,106 @@ class StockQuery extends GetxController{
       return null;
     }
   }
+  Future<dio.Response?> viewSalesByUid2(Topups topupData) async {
+    try {
+      final dioClient = dio.Dio();
 
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
 
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/viewSalesByUid",
+        queryParameters: {
+          "orderId":topupData.uid,
+          "LimitEnd":topupData.startlimit,
+          "LimitStart":topupData.endlimit,  //page
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
+  Future<dio.Response?> viewDeptDetails(User userData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/viewDeptDetails",
+        queryParameters: {
+          "uidUser": userData.uid,
+          "searchOption":false,
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
+  Future<dio.Response?> viewPaidDeptHist(User userData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/viewPaidDept",
+        queryParameters: {
+          "uidUser": userData.uid,
+          "searchOption":false,
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
   viewDept(Topups topupData) async{//balance and Bonus Widthdraw History
     try {
 
@@ -1522,8 +1667,10 @@ class StockQuery extends GetxController{
         "LimitStart":topupData.endlimit,  //page
         "LimitEnd":topupData.startlimit,//limit
         "name":topupData.name,
+        "phoneNumber":topupData.phone,
         'viewAll':topupData.optionCase??'false',
-        "searchOption":topupData.searchOption
+        "searchOption":topupData.searchOption,
+        "app_vers":AppInfo.version
 
 
       };
@@ -1559,6 +1706,47 @@ class StockQuery extends GetxController{
 
     }
   }//calculate safari Interet
+  Future<dio.Response?> viewPaidDept2(User userData ,Topups topupData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final data = {
+        "searchOption":topupData.searchOption,
+        "app_vers":AppInfo.version,
+        "uidUser":userData.uid,
+        "detteOwner":userData.uidCreator,
+        "status":userData.status,
+        "LimitStart":topupData.endlimit,  //page
+        "LimitEnd":topupData.startlimit,//limit
+        "name":topupData.name,
+
+      };
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.post(
+        "${ConstantClassUtil.urlLink}/viewPaidDept",
+        data: data, // 👈 POST body
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
 
   viewPaidDept(Topups topupData) async{//balance and Bonus Widthdraw History
     try {
