@@ -822,6 +822,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
     var resultData=(await StockQuery().viewAnySales(Topups(startlimit:limit,endlimit:_page,name:nameVal,optionCase:"$searchVal",advancedSearch:advancedSearch,created_at:thisDate,updated_at:toDate))).data;
 
+    print(resultData);
     if(resultData["status"])
     {
 

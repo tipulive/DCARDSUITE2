@@ -18,7 +18,8 @@ class ConstantClassUtil extends GetxController
   /*static const String urlApp =
       "https://stockapi.appdev.live";*/
   static const String urlApp =
-      "https://stockapi.appdev.live";
+  "https://suburban-assist-encryption-selected.trycloudflare.com";
+     // "https://stockapi.appdev.live";
 
   static const String urlLink = "$urlApp/api";
 
@@ -70,6 +71,31 @@ class ConstantClassUtil extends GetxController
       // If the input is neither a number nor a string, return null
       return null;
     }
+  }
+  // This is to convert for what my promotion generator will understand
+  Map<String, dynamic> convertCart(List<dynamic> items) {
+    int total = 0;
+    int count = 0;
+
+    for (var item in items) {
+     /* total += item['totalAmount'] as int;
+      count += item['totalQty'] as int;*/
+      total += int.tryParse(item['totalAmount'].toString()) ?? 0;
+      count += int.tryParse(item['totalQty'].toString()) ?? 0;
+    }
+
+    return {
+      "total": total,
+      "count": count,
+      "card": true,
+      "items": items.map((item) => {
+        "productName":item['productCode'].toString(),
+       /* "price": item['price'],
+        "qty": item['totalQty'],*/
+        "price": num.tryParse(item['price'].toString()) ?? 0,
+        "qty": int.tryParse(item['totalQty'].toString()) ?? 0,
+      }).toList(),
+    };
   }
   double calcTotObjJSon(List<dynamic> list, String key) {
     return list.fold(0, (sum, item) {

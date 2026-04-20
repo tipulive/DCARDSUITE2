@@ -37,6 +37,8 @@ import '../../../Query/PromotionQuery.dart';
 
 import '../models/Promotions.dart';
 import '../models/User.dart';
+import '../Utilconfig/Promotion.dart';
+import '../Utilconfig/CardTest.dart';
 
 
 
@@ -1847,8 +1849,11 @@ class _HomepageState extends State<Homepage> {
   pickDefaultUser(resetOrder,isOrderNotExist) async{
 
     (Get.put(StockQuery()).updateHideLoader(false));
-    var resultData=(await StockQuery().searchUser(User(uid:"",name:"anyName",phone:"any",platform:"4000",status:"Default"),Topups(optionCase:"false",startlimit:1,searchOption:false))).data;
+    //var resultData=(await StockQuery().searchUser(User(uid:"",name:"anyName",phone:"any",platform:"4000",status:"Default"),Topups(optionCase:"false",startlimit:1,searchOption:false))).data;
+    var resultData=(await StockQuery().pickDefault());
 
+//print((myStockQuery.userProfile));
+    //print(resultData);
     if(resultData["status"])
     {
 
@@ -1861,12 +1866,15 @@ class _HomepageState extends State<Homepage> {
         (Get.put(StockQuery()).updateHideLoader(true));
         var userProfile =
         {
-          "uid": "${resultData["result"][0]["uid"]}",
-          "name": "${resultData["result"][0]["name"]}",
+         /* "uid": "${resultData["result"][0]["uid"]}",
+          "name": "${resultData["result"][0]["name"]}",*/
+         "uid": resultData["uid"],
+         "name":resultData["name"],
 
           "email": "on@gmail.com",
           "phone": "782389359",
           "Ccode": "+250",
+          "default":"true",
           "country": "Rwanda",
           "initCountry": "none",
           "PhoneNumber": "none",
@@ -1880,7 +1888,8 @@ class _HomepageState extends State<Homepage> {
     (Get.put(StockQuery()).updateUserProfile(userProfile));
     List<dynamic> orderVal=[
       {
-        "name":"${resultData["result"][0]["name"]}",
+        //"name":"${resultData["result"][0]["name"]}",
+        "name": resultData["name"],
         "uid":"${(resetOrder==true)?'none':(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"
       }
     ];
@@ -1888,7 +1897,8 @@ class _HomepageState extends State<Homepage> {
       (Get.put(StockQuery()).updateOrder(orderVal));
     });
   }else{
-    changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
+   // changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
+    changeUserInOrder(resultData["uid"],resultData["name"],"0789");
   }
 
 
@@ -2019,6 +2029,14 @@ class _HomepageState extends State<Homepage> {
 
           });
 
+         // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
+        // print(cartData);
+        // print(ConstantClassUtil().convertCart(cartData));
+          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+          //
+          print(cartD);
+          var result1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
+          print(result1);
 
         }
         else{

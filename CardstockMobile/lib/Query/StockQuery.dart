@@ -17,6 +17,7 @@ import '../Utilconfig/ConstantClassUtil.dart';
 
 import '../models/Topups.dart';
 import '../models/QuickBonus.dart';
+import '../network/api_client.dart';
 
 
 
@@ -335,7 +336,48 @@ class StockQuery extends GetxController{
       //return false;
     }
 
-  }//not done Spending as depense
+  }
+  Future<dynamic> pickDefault() async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "permKey":"default",
+      "permV":true,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/UseDefault", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+  //not done Spending as depense
   searchUser(User user,Topups topData) async{
     try {
 
@@ -1183,7 +1225,7 @@ class StockQuery extends GetxController{
   }
   stockCount(Topups topupData,QuickBonus product,User user) async{
 
-    print("Type of Variable :${(product.qty).runtimeType}");
+    //print("Type of Variable :${(product.qty).runtimeType}");
     try {
 
       var params =  {
@@ -1227,11 +1269,11 @@ class StockQuery extends GetxController{
 
       } else {
         //return false;
-        print("Type of Variable :${(product.qty).runtimeType}");
+       // print("Type of Variable :${(product.qty).runtimeType}");
       }
     } catch (e) {
       //return false;
-      print("Type of Variable :${(product.qty).runtimeType}");
+      //print("Type of Variable :${(product.qty).runtimeType}");
 
     }
 
@@ -1385,6 +1427,47 @@ class StockQuery extends GetxController{
     }
   }
   Future<dynamic> paidDept2(User userData) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "uidUser": userData.uid,
+      "OwnerAmount": userData.uidCreator,
+      "inputData": userData.inputData,
+      "commentData": "my Money",
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/PaidDept", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+  /*Future<dynamic> paidDept2(User userData) async {
     // 1. Move the Dio instance to a global/static variable or dependency injection
     final dio = Dio();
 
@@ -1430,7 +1513,7 @@ print(params);
       debugPrint("Unexpected Error: $e");
       return false;
     }
-  }
+  }*/
   paidDept(User userData) async{
 
     try {

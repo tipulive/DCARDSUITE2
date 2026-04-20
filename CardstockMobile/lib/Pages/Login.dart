@@ -12,6 +12,9 @@ import '../Query/AdminQuery.dart';
 import '../Utilconfig/HideShowState.dart';
 import '../models/Admin.dart';
 import '../Utilconfig/ConstantClassUtil.dart';
+import '../Utilconfig/CardTest.dart';
+import '../Utilconfig/PromotionService.dart';
+import '../Utilconfig/Promotion.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 
@@ -174,9 +177,15 @@ class _LoginState extends State<Login> {
 
                       TextButton(
                         onPressed: () {
+
+                         // var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
+                          var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
+                          print(JsonEncoder.withIndent('  ').convert(result1));
+                          print(result1);
+
                         },
                         child: Text(
-                          'Forgot Password1?',
+                          'Forgot Password?',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       ),

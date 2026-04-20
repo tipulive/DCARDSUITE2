@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 import 'Pages/routes.dart';
 import 'Query/StockQuery.dart';
+import 'Utilconfig/CardTest.dart';
 import 'Utilconfig/ConstantClassUtil.dart';
 import 'Utilconfig/AppInfo.dart';
 
@@ -17,6 +18,9 @@ import 'package:get/get.dart';
 
 import 'Query/AdminQuery.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+import 'Utilconfig/Promotion.dart';
+import 'Utilconfig/PromotionService.dart';
 
 //import 'api/firebaseApi.dart';
 //import 'firebase_options.dart';
@@ -155,6 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
   {
     super.initState();
     //getapi();
+    checkPromo();
     checkAuth();
   }
   @override
@@ -164,6 +169,10 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+   checkPromo(){
+     var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
+     print(const JsonEncoder.withIndent('  ').convert(result1));
+  }
   checkAuth() async{
     await Future.delayed(const Duration(seconds: 3));
     if(await Get.put(AdminQuery()).auth()==0)//no data in localDb
