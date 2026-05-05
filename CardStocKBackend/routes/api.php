@@ -56,6 +56,7 @@ Route::get('/PrintCard','CompanyController@CompanyPrintCard')->name('CompanyPrin
 Route::post('/CreateUser','CompanyController@CompanyCreateUser')->name('CompanyCreateUser');
 Route::post('/CreateUserAssign','CompanyController@CompanyCreateUserAssign')->name('CompanyCreateUserAssign');
 Route::post('/EditUserAssign','CompanyController@CompanyEditUserAssign')->name('CompanyEditUserAssign');
+Route::post('/DeleteUserAssign','CompanyController@CompanyDeleteUserAssign')->name('CompanyDeleteUserAssign');
 Route::get('/GetNumberDetail','CompanyController@CompanyGetNumberDetail')->name('CompanyGetNumberDetail');
 Route::get('/GetCardDetail','CompanyController@CompanyGetCardDetail')->name('CompanyGetCardDetail');
 Route::post('/CreateCard','CompanyController@CompanyCreateCard')->name('CompanyCreateCard');
@@ -63,6 +64,12 @@ Route::post('/CreateMultipleCard','CompanyController@CompanyCreateMultipleCard')
 Route::post('/AssignCard','CompanyController@CompanyAssignCard')->name('CompanyAssignCard');
 Route::get('/CompanySyncCardDownload','CompanyController@CompanySyncCardDownload')->name('CompanySyncCardDownload');
 Route::post('/CompanySyncUpload','CompanyController@CompanySyncUpload')->name('CompanySyncUpload');
+Route::post('/getPromo','CompanyController@CompanyPromoget')->name('CompanyPromoget');
+Route::post('/CreatePromo','CompanyController@CompanyCreatePromo')->name('CompanyCreatePromo');
+Route::post('/EditPromo','CompanyController@CompanyEditPromo')->name('CompanyEditPromo');
+Route::post('/DeletePromo','CompanyController@CompanyDeletePromo')->name('CompanyDeletePromo');
+Route::post('/paidAdmin','CompanyController@CompanyPaidSuperAdmin')->name('CompanyPaidSuperAdmin');
+Route::post('/addPromo','CompanyController@CompanyAddPromo')->name('CompanyAddPromo');
 Route::post('/CreatePromotionEvent','CompanyController@CompanyCreatePromotionEvent')->name('CompanyCreatePromotionEvent');
 Route::post('/EditPromotionEvent','CompanyController@CompanyEditPromotionEvent')->name('CompanyEditPromotionEvent');
 Route::get('/GetAllPromotionEvent','CompanyController@CompanyGetAllPromotionEvent')->name('CompanyGetAllPromotionEvent');
@@ -126,6 +133,7 @@ Route::post('/EditStockQty','CompanyController@EditStockQty')->name('EditStockQt
 Route::post('/deleteStockQty','CompanyController@deleteStockQty')->name('deleteStockQty');
 Route::post('/EditStockFactPrice','CompanyController@EditStockFactPrice')->name('EditStockFactPrice');
 Route::get('/updateDataOrder','CompanyController@updateDataOrder')->name('updateDataOrder');
+Route::post('/UseDefault','CompanyController@UseDefault')->name('UseDefault');
 Route::post('/placeOrder','CompanyController@placeOrder')->name('placeOrder');
 Route::get('/EditTOrder','CompanyController@EditTOrder')->name('EditTOrder');
 Route::get('/EditOrder','CompanyController@EditOrder')->name('EditOrder');//Edit Original Order
@@ -142,6 +150,10 @@ Route::post('/UpdatecalculateTemp','CompanyController@UpdatecalculateTemp')->nam
 Route::post('/DeleteCalculateTemp','CompanyController@DeleteCalculateTemp')->name('DeleteCalculateTemp');
 Route::get('/GetAllcalculateTemp','CompanyController@GetAllcalculateTemp')->name('GetAllcalculateTemp');
 Route::get('/UseThisCalculateTemp','CompanyController@UseThisCalculateTemp')->name('UseThisCalculateTemp');
+/*dettes*/
+Route::post('/checkDette','CompanyController@checkDette')->name('checkDette');
+/*dettes*/
+
 Route::post('/SubmitOrder','CompanyController@SubmitOrder')->name('SubmitOrder');
 Route::get('/viewAnySales','CompanyController@viewAnySales')->name('viewAnySales');
 Route::get('/viewSales','CompanyController@viewSales')->name('viewSales');
@@ -150,6 +162,7 @@ Route::get('/GetDebt','CompanyController@GetDebt')->name('GetDebt');
 Route::post('/PaidDept','CompanyController@PaidDept')->name('PaidDept');
 Route::post('/EditPaidDept','CompanyController@EditPaidDept')->name('EditPaidDept');
 Route::get('/viewDept','CompanyController@viewDept')->name('viewDept');
+Route::get('/viewDeptDetails','CompanyController@viewDeptDetails')->name('viewDeptDetails');
 Route::get('/viewPaidDept','CompanyController@viewPaidDept')->name('viewPaidDept');
 Route::get('/viewSafeBalance','CompanyController@viewSafeBalance')->name('viewSafeBalance');
 Route::get('/viewBorrowBalance','CompanyController@viewBorrowBalance')->name('viewBorrowBalance');

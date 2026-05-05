@@ -16,6 +16,9 @@ use App\Http\Controllers\CompanyController;
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::get('/promotion', function () {
+    return view('promotion');
+});
 Route::get('/cbm', function () {
     return view('cbm');
 });

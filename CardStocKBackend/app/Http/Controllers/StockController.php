@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\ParticipateController;
+use App\Http\Controllers\PromotionController;
 use DB;
 use Auth;
 use Illuminate\Support\Str;
@@ -28,6 +29,455 @@ class StockController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
+
+public function paidSuperAdmin($input){//paid Admin
+    if($this->addSubscriber($input))
+    {
+        if($this->paidAdminHistory($input))
+        {
+            if($this->UpdateAdminRecord($input))
+            {
+                return true;
+
+            }else{
+                throw new \Exception("Unable to update Admin Records");
+            }
+        }
+        else{
+            throw new \Exception("Unable add payment History");
+        }
+
+    }else{
+        throw new \Exception("Error adding on Subscriber Account please Contact System Admin");
+    }
+
+}
+
+public function paidAdminHistory($input){
+    return DB::table("repaidAdmins")
+            ->insert([
+                "uid"=>$uid,//uid of paid
+                "uidPaid"=>Auth::user()->uid,//who paid borrower(ni Admin uri kwishyura ideni)
+                "uidReceiver"=>$input['uidReceiver'],//Owner of Debt
+                "subscriber"=>Auth::user()->subscriber,
+                "amount"=>$input['amount'],
+                "systemUid"=>$input['systemUid']??'PointSales1',
+                "status"=>'Paid',
+                "purpose"=>$input['purpose']??'none',
+                "commentData"=>$input['commentData']??'none',
+                "created_at"=>$this->today
+
+            ]);
+}
+public function CreateUid(){
+    $orderId=$input['orderIdFromEdit']??'none';
+    $uid =($orderId=='none')?"UID"."_".Str::random(2).""."_".date(time()):$orderId;
+   return $uid;
+
+
+}
+public function AddPromo($input)
+{
+
+            return (new PromotionController)->promo($input);
+
+
+
+}
+    /*public function AddPromo($input){
+        //return (new PromotionController)->promo($input);
+        //return (new PromotionController)->promo($input);
+
+
+
+           try {
+            $input["myOrderId"]=$input["OrderId"]??$this->CreateUid();
+            $check=DB::transaction(function () use ($input) {
+                $input["req_qtySub"]=$input["req_qty"];
+                $input["productCodeSub"]=$input["productCode"];
+                $this->UpdateSafariOrderHistory($input);
+            });
+            return response([
+                "status" => true,
+                "result" =>$input["myOrderId"]
+            ]);
+
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+
+
+
+    }*/
+    //this will give me product based on orders
+    public function ChooseProductInSafari($input){//this is a good one choose Product In Safari
+        return DB::select("
+        SELECT
+            s.id,
+            s.safariId,
+            s.qty,
+            p.price,
+            p.productCode
+        FROM safariproducts s
+        INNER JOIN products p ON s.productCode = p.productCode
+            AND s.subscriber = p.subscriber
+        WHERE s.subscriber = ?
+            AND s.productCode = ?
+            AND s.qty > 0
+        ORDER BY s.id ASC
+        FOR UPDATE
+    ", [Auth::user()->subscriber, $input['productCodeSub']]);
+
+    }
+
+    public function UpdateSafariOrderHistory($input){
+        $products = $this->ChooseProductInSafari($input);
+        if($products) {
+            $allocated = [];
+            $data = [];
+            $dataQty = [];
+            $totalAmount = 0;
+            $totalQty = 0;
+            $remaining = $input["req_qtySub"];
+
+            foreach ($products as $product) {
+                if ($remaining <= 0) break;
+
+                $take = min($product->qty, $remaining);
+
+                $input["SoldOut"] = $take;
+                $input["qtyData"] = $product->qty - $take;
+                $input["totAm"] = $take * $product->price;
+                $totalAmount += $take * $product->price;
+                $totalQty += $take;
+                $input["safariId"] = $product->safariId;
+
+                $dataQty[] = $take; // Fixed missing semicolon
+                $this->UpdateSafariStock($input);
+                $data[] = [
+                    'uid' => $input["myOrderId"],
+                    'userid' => $input['uidUser'] ?? $input['uidClient'],
+                    'safariId' => $input["safariId"],
+                    "order_creator" => Auth::user()->uid,
+                    "subscriber" => Auth::user()->subscriber,
+                    'productCode' => $product->productCode,
+                    'price' => $product->price,
+                    'qty' => $take,
+                    'qty_count' => $take,
+                    'total' => $input["totAm"],
+                    'OrderData' => json_encode([]),
+                    'comment_count' => json_encode([]),
+                    "created_at" => $this->today,
+                    "updated_at" => $this->today
+                ];
+
+                $allocated[] = [
+                    'id' => $product->id,
+                    'safariId' => $product->safariId,
+                    'qty' => $take,
+                    'price' => $product->price,
+                    'remaining' => $product->qty - $take
+                ];
+
+                $remaining -= $take;
+            }
+
+            $totalAllocated = $input["req_qtySub"] - $remaining;
+
+            if ($remaining === 0 && $input["req_qtySub"] > 0) {
+                // ✅ RETURN AFTER THE LOOP (not inside it)
+               /* $input["totalPromoT"]=$totalAmount;
+                $input["totalQtyT"]= $totalQty;*/
+
+              /*  $additionalFields = [
+                    "bonusValue" =>$totalAmount,
+                    "giftQty" => $totalQty,
+                ];
+
+                $data[] = array_merge($data, $additionalFields);*/
+                if($this->OrderCheck($input,$data))
+                {
+
+
+                    return [
+                        "totalPromo"=>$totalAmount,  // Remove var_dump
+                        "totalQty"=>$totalQty
+                    ];
+                 // throw new \Exception("Something Wrong1");
+                }
+                else{
+                  throw new \Exception("Something Wrong1");
+                }
+            } else {
+                throw new \Exception("insufficient Quantity of " . $input["productCodeSub"]);
+            }
+        } else {
+            throw new \Exception("Product " . $input["productCodeSub"] . " Is not exist");
+        }
+    }
+    public function OrderCheck($input,$data){
+        if($this->CreateOrderHistory($data))
+        {
+            if($this->checkUpdateProduct($input))
+            {
+                return true;
+
+                /*if($this->UpdateOrderHistWithTotal($input))
+                {
+                    return true;
+                    //throw new \Exception("Something Wrong1");
+                }
+                else{
+                    throw new \Exception("Something Wrong I can not Update Order With Total");
+                }*/
+            }
+            else{
+                throw new \Exception($input["productCodeSub"]." Product is not enough on stock please add more");
+            }
+        }
+        else{
+            throw new \Exception("Something Wrong Order Not Created");
+        }
+
+    }
+    public function UpdateSafariStock($input){
+
+     return DB::update("update safariproducts set qty=:qty,SoldOut=SoldOut+:SoldOut,TotSoldAmount=TotSoldAmount+:totAm,updated_at=:updated_at where safariId=:safariId and productCode=:productCode and subscriber=:subscriber",array(
+        "qty"=>$input["qtyData"],
+        "SoldOut"=>$input["SoldOut"],
+        "totAm"=>$input["totAm"],
+        "subscriber"=>Auth::user()->subscriber,
+        "safariId"=>$input["safariId"],
+        "productCode"=>$input["productCodeSub"],
+        "updated_at"=>$this->today
+        ));
+    }
+
+    public function promotion($input){
+        $check=DB::select("select uid,promoschema from promotion where uid=:uid",[
+            "uid"=>$input["uid"]//promoID
+        ]);
+    }
+
+    //new update Reusable Methods
+    public function UpdateOrderHistoryTotal($input){
+        return DB::update("update orderhistories set
+        all_total=:all_total,custom_price=:custom_price,
+        paidStatus ='checked',orderDebt=:orderDebt,order_creator=:order_creator
+        where uid=:uid and userid=:userid limit 200",array(
+            "uid"=>$input["OrderIdSub"],
+            "userid"=>$input["uidUserSub"]??Auth::user()->uid,
+            "orderDebt"=>$input["orderDebtSub"],
+            "all_total"=>$input['all_totalSub'],
+            "custom_price"=>$input['inputDataSub'],
+            "order_creator"=>$input['order_creatorSub']??Auth::user()->uid
+       ));
+    }
+
+    public function CreateOrderHistory($data){
+
+      return DB::table("orderhistories")
+            ->insert($data);
+
+    }
+
+    public function UpdateAdminRecord($input){
+        return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and status=:status  limit 1",array(
+            // "uid"=>$uidCreator,
+              "bonus"=>$input["bonusSub"]??'0',
+              "safeBalance"=>$input["safeBalanceSub"]??'0',
+             "uid"=>$input["uidUserSub"]??Auth::user()->uid,
+             "status"=>$input["statusSub"]??'Sales',
+             "balance"=>$input['balanceSub']??'0',
+             "dettes"=>$input["detteSub"]??'0',
+             "promoAmount"=>$input["promoAmountSub"]??"0",
+             "promoAsset"=>$input["promoAssetSub"]??"0",
+             "proAssetQty"=>$input["proAssetQtySub"]??"0",
+             "outPromoAmount"=>$input["outPromoAmountSub"]??"0",
+             "outPromoAsset"=>$input["outPromoAssetSub"]??"0",
+             "outProAssetQty"=>$input["outProAssetQtySub"]??"0",
+
+             "updated_at"=>$this->today
+         ));
+    }
+    public function checkUpdateProduct($input){
+        return DB::update("update products set qty_sold=qty_sold+:qty_sold where subscriber=:subscriber and productCode=:productCode and qty>=qty_sold+:qty_req limit 1",array(
+            "productCode"=>$input["productCodeSub"],
+            "qty_sold"=>$input["req_qtySub"],
+            "qty_req"=>$input["req_qtySub"],
+            "subscriber"=>Auth::user()->subscriber
+         ));
+    }
+    public function UpdateOrderHistWithTotal($input)
+    {
+        return DB::update("
+        UPDATE orderhistories o
+        JOIN (
+            SELECT uid, SUM(total) AS total_sum
+            FROM orderhistories
+            WHERE uid = :uid1
+            GROUP BY uid
+        ) t ON o.uid = t.uid
+        SET o.all_total = t.total_sum,
+        o.custom_price=t.total_sum,
+        order_creator=:order_creator,
+        paidStatus='checked',
+        o.orderDebt=t.total_sum-:inputData
+        WHERE o.uid = :uid2
+    ", [
+        "uid1" => $input["OrderId"],
+        "inputData"=>$input['inputData'],
+        "order_creator"=>$input["UserId"],
+        "uid2" => $input["OrderId"]
+    ]);
+    }
+
+    public function NewSubmitOrder($input)//not yet finished
+{
+    $input["totalPromoT"]=$input["totalPromoT"]??0;
+    $input["totalPromoQtyT"]=$input["totalPromoQtyT"]??0;
+    if($this->checkDuplicateOrder($input))
+    {
+        throw new \Exception("This Order exist please submit New One");
+    }
+    else{
+
+        $sum=$this->checkSumOrder($input);
+
+        if($sum!=0)
+        {
+
+            $input['all_total']=$sum-$input["totalPromoT"];
+            $input["amountSub"]=$sum;//Tea Stock Amount
+            $input["dettes"]=$input['all_total']-$input['inputData'];
+            $input["detteSub"]=$input["dettes"];
+            $input['balanceSub']=$sum;
+            $input['paidStatus'] = ($input['inputData'] == $input['all_total']) ? 'paid' : (($input['inputData'] > $input['all_total']) ? 'paidReturn' : 'dettes');
+         if($this->UpdateOrderHistWithTotal($input)){
+            if($this->CreateOrder($input))
+            {
+
+                if($this->CheckDettes($input))
+                {
+
+                  if($this->UpdateAdminRecord($input))
+                  {
+                    return true;
+
+                  }else{
+                      throw new \Exception("Unable to update Admin Records");
+                  }
+                }else{
+                    throw new \Exception("Error On checking dettes and Subscriber Account please Contact System Admin");
+                }
+
+            }else{
+                throw new \Exception("Unable to Create Order");
+            }
+         }
+         else{
+            throw new \Exception("Something Wrong I can not Update OrderHistory With Total");
+         }
+        }else{
+            throw new \Exception("Order Can not be submitted");
+        }
+    }
+}
+public function checkSumOrder($input){
+    $checkSum=DB::select("select sum(total) as total from orderhistories where uid=:uid and userid=:userid limit 2000",[
+        "uid"=>$input["OrderId"],
+        "userid"=>$input["uidUser"]
+    ]);
+    if($checkSum)
+    {
+        return $checkSum[0]->total;
+    }
+    else{
+        return 0;
+    }
+}
+public function checkDuplicateOrder($input){
+    return DB::select("select uid from orders where uid=:uid limit 1",[
+        "uid"=>$input["OrderId"]
+        ]);
+}
+
+public function CreateOrder($input){
+    return DB::table("orders")
+    ->insert([
+        "uid"=>$input["OrderId"],//orderId
+        "total"=>$input['all_total'],
+        "paid"=>$input['inputData'],
+        "debt"=>$input['all_total']-$input['inputData'],
+        "paidStatus"=>$input["paidStatus"],
+        "promotionUid"=>$input['uid']??'none',
+        "reach"=>$input['reach']??'none',
+        "gain"=>$input['gain']??'none',
+        "systemUid"=>$input['systemUid']??'none',
+        "uidUser"=>($input['uidUser']??$uidCreator),
+       // "uidCreator"=>$uidCreator,
+        "uidCreator"=>$input["UserId"],
+        "subscriber"=>$input["subscriber"],
+        //"temporalData"=>"none",
+        "commentData"=>$input['commentData']??'none',
+        "created_at"=>$this->today,
+        "updated_at"=>$this->today
+    ] );
+}
+
+    public function updateOrders($input){
+        return DB::update("
+        UPDATE orders SET
+            total = total + :total,
+            paid = paid + :paid,
+            debt = debt + :debt,
+
+            Status = :Status,
+
+            commentData = :commentData,
+            reach = reach + :reach,
+            gain = gain + :gain,
+            updated_at = :updated_at
+        WHERE uid = :uid
+    ", [
+        "total" => $input["totalSub"] ?? "0",
+        "paid" => $input["paidSub"] ?? "0",
+        "debt" => $input["debtSub"] ?? "0",
+
+        "Status" => $input["StatusSub"] ?? "none",
+
+        "commentData" => $input["commentData"] ?? null,
+        "reach" => $input["reach"] ?? "0",
+        "gain" => $input["gain"] ?? "0",
+        "uid" => $input["uid"],
+        "updated_at" => $this->today
+    ]);
+    }
+    public function addSubscriber($input){
+        return DB::update("update subscriber set amount=amount+:amount,stockpurchase=stockpurchase+:stockpurchase,received=received+:received,dettes=dettes+:dettes,spending=spending+:spending,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid limit 1",[
+            "amount"=>$input["amountSub"]??"0",
+            "stockpurchase"=>$input["stockpurchaseSub"]??"0",
+            "received"=>$input["receivedSub"]??"0",
+            "dettes"=>$input["dettesSub"]??"0",
+            "spending"=>$input["spendingSub"]??"0",
+            "promoAmount"=>$input["promoAmountSub"]??"0",
+            "promoAsset"=>$input["promoAssetSub"]??"0",
+            "proAssetQty"=>$input["proAssetQtySub"]??"0",
+            "outPromoAmount"=>$input["outPromoAmountSub"]??"0",
+            "outPromoAsset"=>$input["outPromoAssetSub"]??"0",
+            "outProAssetQty"=>$input["outProAssetQtySub"]??"0",
+            "uid"=>$input["subscriber"],
+            "updated_at"=>$this->today
+        ]);
+
+    }
+    //new update Reusable Methods
     public function upload(Request $request)
 {
 
@@ -2596,6 +3046,9 @@ else{
 
 
     }
+
+
+
     public function testorderPlace($results,$input,$uid){
         $req_qty=$input['req_qty'];
         $productCode=$input['productCode'];
@@ -3444,9 +3897,177 @@ public function swipeSales($input){//not done
 
 
 }
+public function paid_dettes($input){
+
+    try{
+
+        $check=DB::transaction(function () use ($input) {
+            $subscriber=Auth::user()->subscriber;
+            $uidUser=$input['uidUser'];
+            $OwnerAmount=$input['OwnerAmount'];
+            $inputData=$input['inputData'];
+            $checkUpdate=DB::update("update dettes set updated_at=:updated_at, paidAmount=paidAmount+:amount where uid=:uid and uidUser=:uidUser and subscriber=:subscriber limit 1",[
+                "updated_at"=>$this->today,
+                "uid"=>$OwnerAmount,
+                "uidUser"=>$uidUser,
+                "subscriber"=>$subscriber,
+                "amount"=>$inputData
+            ]);
+            if($checkUpdate)
+            {
+                $uid=Str::random(2).""."_".date(time());
+                $checkInsert=DB::table("paid_dettes")
+                ->insert([
+                    "uid"=>$uid,
+                    "uidUser"=>$uidUser,
+                     "uidReceiver"=>$OwnerAmount,//owner of dettes
+                     "uidCreator"=>Auth::user()->uid,//who received amount as admin
+                     "amount"=>$inputData,//amount
+                     "safeAmount"=>$inputData,//amount
+                     "subscriber"=>$subscriber,
+                     "paidStatus"=>'Received',
+                     "commentData"=>$input['commentData']??'none',
+                     "created_at"=>$this->today
+
+                ]);
+                if($checkInsert){
+                    $checkUpdat=DB::update("update admnin_records set dettes=dettes-:amount where uid=:uid and subscriber=:subscriber and status=:status limit 1",[
+
+                        "status"=>'Sales',
+                        "uid"=>$OwnerAmount,
+                        "subscriber"=>Auth::user()->subscriber,
+                        "amount"=>$inputData,
+                    ]);
+                    if($checkUpdat)
+                    {
+                         $checkUP=DB::update("update subscriber set dettes=dettes-:dettes where uid=:uid limit 1",[
+                        "dettes"=>$inputData,
+                        "uid"=>Auth::user()->subscriber,
+                        ]);
+
+                    if($checkUP)
+                    {
+                        DB::update("update users set detV=detV-:detV where uid=:uid and subscriber=:subscriber limit 1",[
+                            "uid"=>$uidUser,
+                            "subscriber"=>Auth::user()->subscriber,
+                            "detV"=>$inputData,
+                        ]);
+                        return array(
+                            //"data"=>$checkData[0]->total_debt,
+                            "status"=>true,
+                            "message"=>"Insert done"
+
+
+                         );
+                    }else{
+                        DB::rollback();
+                        return array(
+
+                            "status"=>false,
+                            "message"=>"something wrong please Contact system Admin"
+                        );
+                    }
+
+                    }else{
+                        DB::rollback();
+                        return array(
+
+                            "status"=>false,
+                            "message"=>"something wrong please Contact system Admin"
+
+
+                         );
+                    }
+
+                }
+                else{
+                    DB::rollback();
+                    return array(
+
+                        "status"=>false,
+                        "message"=>"something wrong please Contact system Admin"
+
+
+                     );
+                }
+            }
+            else{
+                DB::rollback();
+                return array(
+
+                    "status"=>false,
+                    "message"=>"something wrong please Contact system Admin"
+
+
+                 );
+            }
+
+        });
+        return response($check,200);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        // throw $e;
+         return response()->json(['error' => 'An error occurred',
+     'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+    }
+
+
+}
+public function detteHistory($input){
+
+
+}
+public function checkDette($input){
+    //dette_and_paid:means it will show all dettes he has taken from start to today
+    //$adminUid=$input["adminUid"]??Auth::user()->uid;
+    $check=DB::select("select
+    Max(dettes.amount) as dette_and_paid,
+    Max(dettes.paidAmount) as paidAmount,
+
+    Max(dettes.amount-dettes.paidAmount) as dettes,
+
+    Max(admins.name) as Name,
+    Max(admins.uid) as uid
+    from dettes
+    inner join admins on dettes.uid=admins.uid
+    where dettes.subscriber=:subscriber and dettes.uidUser=:uidUser
+    GROUP BY dettes.id
+
+    ",[
+        "subscriber"=>Auth::user()->subscriber,
+        "uidUser"=> $input["uidUser"]
+    ]);
+    if($check){
+        return response([
+
+            "status"=>true,
+            "result"=>$check,
+
+
+
+
+
+            ],200);
+    }else{
+        return response([
+
+            "status"=>false,
+            "result"=>$check,
+
+
+
+
+
+            ],200);
+    }
+
+}
+
+
 public function SubmitOrder($input){
 
-        $check_InputData=$input['all_total']-$input['inputData'];//all_total :niyo total ya orders,custom_price or inputData=niyo client yishyuye cash
+      /*  $check_InputData=$input['all_total']-$input['inputData'];//all_total :niyo total ya orders,custom_price or inputData=niyo client yishyuye cash
 
         if($input['all_total']>$input['inputData'])
         {
@@ -3460,19 +4081,101 @@ public function SubmitOrder($input){
 
 
 
-        }
+        }*/
+        return (new PromotionController)->Promo($input);
 
-//$check_InputData<=0?(new ParticipateController)->participate($input):$this->notparticipate();//means client azaba yishyuye yose nta deni afite
 
     }
+    public function CheckDettes($input){
+        if(($input["dettes"])>0)
+        {
+            $OwnerDettes=$input["adminUid"]??$input["UserId"];
+            $check=DB::update("update dettes set amount=amount+:amount,uidCreator=:uidCreator,created_at=:created_at where subscriber=:subscriber and uid=:uid and uidUser=:uidUser",[
+                "uid"=>$OwnerDettes,
+                "uidUser"=>$input["uidUser"],
+                "subscriber"=>$input["subscriber"],
+                "amount"=>$input["dettes"],
+                "uidCreator"=>$input["UserId"],
+                "created_at"=>$this->today,
+
+            ]);
+            //error it is here
+
+            if($check){
+                $input["dettesSub"]=$input["dettes"];
+                      if($this->addSubscriber($input))
+                    {
+
+                        if($this->updateUserDettes($input))
+                        {
+                               return true;
+                        }else{
+                            throw new \Exception("Error updating User dettes please Contact System Admin");
+                        }
+
+                    }else{
+                        throw new \Exception("Error adding on Subscriber Account please Contact System Admin");
+                    }
+
+                //return true;
+            }else{
+                $Checkdettes=DB::table("dettes")
+                ->insert([
+                    "uid"=>$OwnerDettes,
+                    "uidUser"=>$input["uidUser"],
+                    "subscriber"=>Auth::user()->subscriber,
+                    "amount"=>$input["dettes"],
+                    "uidCreator"=>Auth::user()->uid,
+                    "created_at"=>$this->today,
+                ]);
+                if($Checkdettes){
+                    $input["dettesSub"]=$input["dettes"];
+                    if($this->addSubscriber($input))
+                    {
+
+                        if($this->updateUserDettes($input))
+                        {
+                            return true;
+                        }else{
+                            throw new \Exception("Error updating User dettes please Contact System Admin");
+                        }
+
+                    }else{
+                        throw new \Exception("Error adding on Subscriber Account please Contact System Admin");
+                    }
+                }else{
+                    throw new \Exception("Error on Inserting Dette  please Contact System Admin");
+                }
+
+
+
+            }
+        }
+        else{
+             if($this->addSubscriber($input))
+             {
+              return true;
+             }else{
+                throw new \Exception("Error adding on Subscriber Account please Contact System Admin");
+             }
+
+        }
+
+    }
+    public function updateUserDettes($input){
+        return DB::update("update users set detV=detV+:detV,updated_at=:updated_at where uid=:uid and subscriber=:subscriber limit 1",[
+            "uid"=>$input["uidUser"],
+            "subscriber"=>Auth::user()->subscriber,
+            "detV"=>$input["dettes"],
+            "updated_at"=>$this->today
+        ]);
+
+    }
+
     public function admin_record($input){
-
-
-        try{
-
-
-            $checks=DB::transaction(function () use ($input) {
-                $uidCreator=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
+        DB::beginTransaction();
+        try {
+            $uidCreator=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
             $subscriber=Auth::user()->subscriber;
             $systemUid=$input['systemUid'];
             $mamaUid="MSolange_1709926940";
@@ -3486,8 +4189,9 @@ public function SubmitOrder($input){
       return $checkAvoid;
  }
  else{
-      $checkSum=DB::select("select sum(total) as total from orderhistories where uid=:uid limit 2000",[
-                "uid"=>$input["OrderId"]
+      $checkSum=DB::select("select sum(total) as total from orderhistories where uid=:uid and userid=:userid limit 2000",[
+                "uid"=>$input["OrderId"],
+                "userid"=>$input["uidUser"]
             ]);
 
 
@@ -3555,16 +4259,39 @@ public function SubmitOrder($input){
             ] );
 
 
-                $check=DB::update("update admnin_records set balance=balance+:balance,dettes=dettes+:dettes where uid=:uid and systemUid=:systemUid limit 1",array(
+
+
+                $check=DB::update("update admnin_records set balance=balance+:balance,dettes=dettes+:dettes where uid=:uid and systemUid=:systemUid and status='Sales'  limit 1",array(
                    // "uid"=>$uidCreator,
                     "uid"=>$UserId,
                     "systemUid"=>$input['systemUid'],
                     "balance"=>$input['all_total'],
                     "dettes"=>($input['all_total']-$input['inputData'])
                 ));
+                $input["amountSub"]=$input['all_total'];
+                $input["dettes"]=$input['all_total']-$input['inputData'];
+
                 if($check)
                 {
-                    return $check;
+                    if($this->CheckDettes($input))
+                    {
+                        DB::commit();
+
+                        return response([
+                            "status"=>true,
+                            "result"=>$check,
+                        ],200);
+                    }
+                    else{
+                        DB::rollBack();
+                        return response([
+                            "err"=>"something wrong",
+                            "status"=>false,
+                            "result"=>$check,
+                        ],200);
+                    }
+
+
                 }
                 else{
                     $dataInsert=DB::table("admnin_records")
@@ -3578,33 +4305,33 @@ public function SubmitOrder($input){
                         "dettes"=>($input['all_total']-$input['inputData'])
 
                     ]);
-                    return $dataInsert;
+                    DB::commit();
+                    return response([
+
+                        "status"=>true,
+                        "result"=>$dataInsert,
+
+
+
+
+
+                        ],200);
                 }
            }
  }
 
 
- });
 
+        }
+        catch (\Exception $e) {
+         DB::rollBack();
 
-            return response([
-
-                "status"=>true,
-                "result"=>$checks,
-
-
-
-
-
-                ],200);
-
-
-            } catch (\Exception $e) {
-                DB::rollback();
-               // throw $e;
-                return response()->json(["status"=>false,'error' => 'An error occurred',
-            'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
-            }
+         return response()->json([
+             'error' => 'An error occurred',
+             'errorPrint' => $e->getMessage(),
+             'errorCode' => $e->getLine(),
+         ], 500);
+     }
 
     }
     public function SearchSales($input)
@@ -4511,12 +5238,17 @@ public function SubmitOrder($input){
     public function PaidDept($input){
 
 
+      return $this->paid_dettes($input);
+      /*return response([
+          "result"=>$input
+      ],200);*/
 
+   //  return $this->dettesPaid($input);
 
-     return $this->dettesPaid($input);
-    // return (new ParticipateController)->participate($input);
 
     }
+
+
 
     public function dettesPaid($input){
         $subscriber=Auth::user()->subscriber;
@@ -4793,6 +5525,7 @@ public function SubmitOrder($input){
         SELECT
             Max(orders.uidUser) as myDeptId,
             MAX(users.name) AS name,
+            Max(users.PhoneNumber) AS Phone,
             Max(admnin_records.dettes) AS totDept,
             Max(orders.debt) AS debt
         FROM orders
@@ -4831,7 +5564,7 @@ public function SubmitOrder($input){
     }
     }
 
-    public function SearchAllDept($input){
+    /*public function SearchAllDept($input){
         $item = strtolower($input["name"]);
         $itemSearch='%'.$item.'%';
 
@@ -4892,8 +5625,118 @@ public function SubmitOrder($input){
 
        ],200);
     }
+    }*/
+    public function SearchAllDept($input){
+        $item = strtolower($input["name"]);
+        $itemSearch='%'.$item.'%';
+        $sort=$input["sortData"]??'ASC';
+        $name=strtolower($input["name"] ?? 'none');
+        $phoneNumber=strtolower($input["phoneNumber"] ??'none');
+
+        list($queryData, $itemName) = ($input["phoneNumber"]!='none')
+        ? (['users.PhoneNumber', '%' . $phoneNumber . '%'])
+        : (['users.name', '%' . $name . '%']);
+        $check = DB::select("
+        WITH total_dettes AS (
+            SELECT
+                SUM(admnin_records.dettes) AS totDept
+            FROM
+                admnin_records
+            WHERE
+                admnin_records.status = 'Sales'
+                AND admnin_records.subscriber = :adminSubscriber1
+        )
+        SELECT
+            users.uid AS myDeptId,
+            users.name AS name,
+            users.PhoneNumber AS Phone,
+            users.detV AS debt,
+            (SELECT totDept FROM total_dettes) AS totDept
+        FROM
+            users
+        WHERE
+            users.subscriber = :subscriber
+            AND users.detV != 0
+            AND $queryData LIKE :itemName
+        ORDER BY
+            users.detV $sort
+    ", [
+        'adminSubscriber1' => Auth::user()->subscriber,
+        'subscriber'       => Auth::user()->subscriber,
+        "itemName" => $itemName
+    ]);
+
+
+    if($check)
+    {
+
+       return response([
+           "status"=>true,
+           "result"=>$check,
+           "search"=>true
+
+       ],200);
     }
-    public function viewAllDept($input){
+    else{
+       return response([
+           "status"=>true,
+           "result"=>0,
+
+       ],200);
+    }
+    }
+    public function viewAllDept($input){//this is new
+        if($input["searchOption"]=='true') return $this->SearchAllDept($input);
+        $sort=$input["sortData"]??'DESC';
+        $check = DB::select("
+        WITH total_dettes AS (
+            SELECT
+                SUM(admnin_records.dettes) AS totDept
+            FROM
+                admnin_records
+            WHERE
+                admnin_records.status = 'Sales'
+                AND admnin_records.subscriber = :adminSubscriber1
+        )
+        SELECT
+            users.uid AS myDeptId,
+            users.name AS name,
+            users.PhoneNumber AS Phone,
+            users.detV AS debt,
+            (SELECT totDept FROM total_dettes) AS totDept
+        FROM
+            users
+        WHERE
+            users.subscriber = :subscriber
+            AND users.detV != 0
+        ORDER BY
+            users.detV $sort
+    ", [
+        'adminSubscriber1' => Auth::user()->subscriber,
+        'subscriber'       => Auth::user()->subscriber
+    ]);
+
+
+
+     if($check)
+     {
+
+        return response([
+            "status"=>true,
+            "result"=>$check,
+
+        ],200);
+     }
+     else{
+        return response([
+            "status"=>true,
+            "result"=>0,
+
+        ],200);
+     }
+
+     }
+    /*public function viewAllDept($input){
         if($input["searchOption"]=='true') return $this->SearchAllDept($input);
          $check = DB::select("
          WITH total_dettes AS (
@@ -4950,7 +5793,7 @@ public function SubmitOrder($input){
         ],200);
      }
 
-     }
+     }*/
 
     public function viewDeptDetails($input){
    if($input["searchOption"]=='true') return $this->SearchDeptDetails($input);
@@ -4958,17 +5801,16 @@ public function SubmitOrder($input){
         SELECT
             Max(orders.uid) as OrderId,
             MAX(users.name) AS name,
-            MAX(admins.CompanyName) AS CompanyName,
-            Max(admnin_records.dettes) AS totDept,
-            MAX(orders.debt) AS debt
+            MAX(admins.name) AS creator,
+            MAX(orders.total) AS orderTotal,
+            MAX(orders.paid) AS orderUserPaid,
+            MAX(orders.debt) AS debt,
+            MAX(orders.created_at) AS created_at
         FROM orders
-        INNER JOIN admnin_records ON orders.uidCreator =admnin_records.uid
         INNER JOIN users ON orders.uidUser = users.uid
         INNER JOIN admins ON orders.uidCreator=admins.uid
         WHERE orders.subscriber = :subscriber
-            AND orders.uidCreator = :uidCreator
-            AND admnin_records.status ='Sales'
-            AND admnin_records.subscriber=:adminSubscriber
+            AND orders.uidUser = :uidUser
             AND orders.paidStatus='dettes'
             GROUP BY orders.id
             ORDER BY orders.id DESC
@@ -4976,8 +5818,8 @@ public function SubmitOrder($input){
         LIMIT 100
     ", [
         'subscriber' => Auth::user()->subscriber,
-        'adminSubscriber' => Auth::user()->subscriber,
-        'uidCreator' =>Auth::user()->uid,
+        'uidUser' => $input["uidUser"]
+
     ]);
 
     if($check)
@@ -5050,6 +5892,82 @@ public function SubmitOrder($input){
     }
     }
     public function viewPaidDept($input){//view Paid means is to view all whether owner received or not
+        if($input["searchOption"]=='true') return $this->SearchPaidDept($input);
+        $check = DB::select("
+        SELECT
+
+            MAX(users.name) AS name,
+            MAX(admins.name) AS creator,
+            MAX(paid_dettes.amount) AS userPaid,
+            MAX(paid_dettes.uid) AS uid,
+            MAX(paid_dettes.created_at) AS created_at
+        FROM paid_dettes
+        INNER JOIN users ON paid_dettes.uidUser = users.uid
+        INNER JOIN admins ON paid_dettes.uidCreator=admins.uid
+        WHERE paid_dettes.subscriber = :subscriber
+            AND paid_dettes.uidUser = :uidUser
+            AND paid_dettes.paidStatus='Received'
+            GROUP BY paid_dettes.id
+            ORDER BY paid_dettes.id DESC
+
+        LIMIT 100
+    ", [
+        'subscriber' => Auth::user()->subscriber,
+        'uidUser' => $input["uidUser"]
+
+    ]);
+
+    if($check)
+    {
+
+       return response([
+           "status"=>true,
+           "result"=>$check,
+
+       ],200);
+    }
+    else{
+       return response([
+           "status"=>true,
+           "result"=>0,
+
+       ],200);
+    }
+
+    }
+   /* public function viewPaidDept($input){//view Paid means is to view all whether owner received or not
+        if($input["searchOption"]=='true') return $this->SearchPaidDept($input);
+           $check = DB::select("
+             select d.amount,ad.name as receiver,ad.uid as receiverUid,d.created_at
+             from paid_dettes d
+             inner join admins ad on ad.uid=d.uidCreator
+             where d.uidUser=:uidUser and d.uidReceiver=:uidReceiver and d.status=:status order by d.id desc
+       ", [
+           'uidUser'=>$input["uidUser"],
+           'uidReceiver'=>$input["detteOwner"],
+           'status'=>$input["status"]??'none',
+       ]);
+
+
+       if($check)
+       {
+
+          return response([
+              "status"=>true,
+              "result"=>$check,
+
+          ],200);
+       }
+       else{
+          return response([
+              "status"=>true,
+              "result"=>0,
+
+          ],200);
+       }
+
+       }*/
+    /*public function viewPaidDept($input){//view Paid means is to view all whether owner received or not
      if($input["searchOption"]=='true') return $this->SearchPaidDept($input);
         $check = DB::select("
         SELECT
@@ -5096,7 +6014,7 @@ public function SubmitOrder($input){
        ],200);
     }
 
-    }
+    }*/
     public function SearchSafeBalance($input)
     {
         $item = strtolower($input["name"]);

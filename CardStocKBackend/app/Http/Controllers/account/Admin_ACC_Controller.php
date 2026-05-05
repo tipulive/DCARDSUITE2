@@ -57,12 +57,27 @@ public function update($input)
         ));
     if($check)
     {
-     return response([
-         "status"=>true,
-         "userProfileName"=>Auth::user()->name,
-         "result"=>$check,
+        $checkUpdate=DB::update("update users set name=:name where uid=:uid and subscriber=:subscriber",[
+            "uid"=>Auth::user()->uid,
+            "name"=>$name,
+            "subscriber"=>Auth::user()->subscriber,
+        ]);
+        if($checkUpdate){
+            return response([
+                "status"=>true,
+                "userProfileName"=>Auth::user()->name,
+                "result"=>$check,
 
-     ],200);
+            ],200);
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$check,
+
+            ],200);
+        }
+
     }
     else{
      return response([

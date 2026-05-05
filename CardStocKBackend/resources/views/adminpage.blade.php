@@ -401,7 +401,7 @@ table th {
 
                                     <li class="app-sidebar__heading">Promotion</li>
                             <li class="mm-active">
-                                <a href="#" aria-expanded="true">
+                                <a href="/promotion" aria-expanded="true">
                                     <i class="metismenu-icon pe-7s-rocket"></i>Promotion
                                     <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
                                 </a>

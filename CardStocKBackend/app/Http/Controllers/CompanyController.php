@@ -587,7 +587,51 @@ class CompanyController extends Controller
         }
 
     }
+    public function UseDefault(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new AuthUserRegisterController)->UserDefault($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+    }
     public function placeOrder(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
         if(Auth::check())
         {
 
@@ -614,7 +658,16 @@ class CompanyController extends Controller
 
             ],200);
         }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
 
+        ],200);
+    }
     }
 
     public function EditTOrder(Request $request){
@@ -1056,7 +1109,53 @@ class CompanyController extends Controller
             ],200);
         }
     }
+
+    public function checkDette(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->checkDette($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+    }
+
     public function SubmitOrder(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
         if(Auth::check())
         {
 
@@ -1083,6 +1182,16 @@ class CompanyController extends Controller
 
             ],200);
         }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
     }
     public function viewAnySales(Request $request){
         if(Auth::check())
@@ -1255,14 +1364,63 @@ class CompanyController extends Controller
         }
     }
     public function viewDept(Request $request){
+
+//
+if(env('APP_VERS')===$request->input('app_vers'))
+{
+if(Auth::check())
+{
+
+if(Auth::user()->platform==$this->platform1)
+    {
+        $input=$request->all();
+
+        return (new StockController)->viewDept($input);
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>$this->Admin_Auth_result_error,
+            "error"=>$this->Admin_Auth_error,
+
+        ],200);
+    }
+}
+else{
+    return response([
+        "status"=>false,
+        "result"=>$this->Admin_Auth_result_error,
+        "error"=>$this->Admin_Auth_error,
+
+    ],200);
+}
+}
+else{
+return response([
+    "status"=>false,
+    "result"=>1,
+    "downNew"=>env('APP_DOWN'),
+    "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+],200);
+}
+//
+
+
+    }
+    public function viewDeptDetails(Request $request){
+
+        //
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
         if(Auth::check())
         {
 
-            if(Auth::user()->platform==$this->platform1)
+        if(Auth::user()->platform==$this->platform1)
             {
                 $input=$request->all();
 
-                return (new StockController)->viewDept($input);
+                return (new StockController)->viewDeptDetails($input);
             }
             else{
                 return response([
@@ -1281,7 +1439,20 @@ class CompanyController extends Controller
 
             ],200);
         }
-    }
+        }
+        else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+        }
+        //
+
+
+            }
     public function viewPaidDept(Request $request){
         if(Auth::check())
         {
@@ -2349,6 +2520,8 @@ public function CompanySafariCalculate(Request $request){
     }
 
     public function CompanyCreateUserAssign(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
         if(Auth::check())
         {
 
@@ -2379,9 +2552,20 @@ public function CompanySafariCalculate(Request $request){
 
             ],200);
         }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
 
+        ],200);
+    }
     }
     public function CompanyEditUserAssign(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
         if(Auth::check())
         {
 
@@ -2412,6 +2596,278 @@ public function CompanySafariCalculate(Request $request){
 
             ],200);
         }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+    public function CompanyDeleteUserAssign(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new AuthUserRegisterController)->UserDeleteByCompanyAssign($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+    public function CompanyPromoget(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new PromotionController)->Promoget($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+	}
+    public function CompanyCreatePromo(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new PromotionController)->CreatePromo($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+	}
+    public function CompanyEditPromo(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new PromotionController)->EditPromo($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+	}
+    public function CompanyDeletePromo(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new PromotionController)->DeletePromo($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+	}
+    public function CompanyPaidSuperAdmin(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new StockController)->paidSuperAdmin($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+	}
+    public function CompanyAddPromo(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
+        if(Auth::check())
+        {
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+                return (new StockController)->AddPromo($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+
+
 
     }
     public function CompanyCreatePromotionEvent(Request $request){
@@ -3128,6 +3584,9 @@ public function CompanySafariCalculate(Request $request){
 
     }
     public function CompanyTopupGetCompanyRecord(Request $request){//add money to your country
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+
         if(Auth::check())
         {
 
@@ -3156,7 +3615,16 @@ public function CompanySafariCalculate(Request $request){
 
             ],200);
         }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
 
+        ],200);
+    }
 
 
 

@@ -70,14 +70,137 @@ class AuthUserRegisterController extends Controller
                  ],200);
                 }
     }
+    public function UserDefault($input){
 
+       // return $this->changePermission($input);
+       DB::beginTransaction();
+
+       try {
+
+
+       if($this->UserCreated()==1){
+
+       if($this->changePermission($input))
+       {
+        DB::commit();
+        return response([
+            "status"=>true,
+            "default"=>$input["permV"],
+            "name"=>Auth::user()->name,
+            "uid"=>Auth::user()->uid,
+            "result"=>"user Default Set",
+           // "Auth"=>Auth::user()
+
+
+        ],200);
+
+       }else{
+        DB::rollBack();
+        return response([
+            "status"=>true,
+            "name"=>Auth::user()->name,
+            "uid"=>Auth::user()->uid,
+            "default"=>$input["permV"],
+            "result"=>"Status not edited"
+
+        ],200);
+       }
+
+
+       }
+       else{
+        DB::rollBack();
+        return response([
+            "status"=>false,
+            "default"=>false,
+            "result"=>"user Not created"
+
+        ],200);
+       }
+
+    }
+       catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'An error occurred',
+            'errorPrint' => $e->getMessage(),
+            'errorCode' => $e->getLine(),
+        ], 500);
+    }
+    }
+
+    public function UserCreated(){
+        $checkUser=DB::select("select uid from users where uid=:uid and subscriber=:subscriber",[
+            "uid"=>Auth::user()->uid,
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+        if($checkUser){
+            return 1;
+        }
+        else{
+
+            $check=DB::table("users")
+            ->insert([
+                'name'=>Auth::user()->name,
+                'email'=>Auth::user()->email.""."_".date(time()),
+                'Ccode'=>Auth::user()->phone.""."_".date(time()),
+                'phone'=>Auth::user()->phone.""."_".date(time()),
+                'PhoneNumber'=>Auth::user()->phone.""."_".date(time()),
+                'uidCreator'=>Auth::user()->uid,
+
+                'subscriber'=>Auth::user()->subscriber,
+                'platform'=>env('PLATFORM4'),
+                'password' =>"none",
+                //'passdecode' =>$input['password'],
+                'initCountry'=>"none",
+                'country'=>"none",
+                "carduid"=>"none",
+                'uid'=>Auth::user()->uid,
+                'created_at'=>$this->today,
+
+            ]);
+            if($check){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+
+    }
+    public function changePermission($input){
+        $key = $input["permKey"];
+        $value =$input["permV"];
+
+        $check = DB::update("
+            UPDATE admins
+            SET permission = JSON_SET(
+                IF(JSON_VALID(permission), permission, '{}'),
+                ?, ?
+            )
+            WHERE uid = ?
+        ", [
+            '$.' . $key,
+            json_encode($value), // important
+            Auth::user()->uid
+        ]);
+if($check){
+    return true;
+}
+else{
+    return 0;
+}
+    }
     public function UserCreatedByCompanyAssign($input) //create User and Assigned With new Cards
     {
 
         $PhoneNumber=$input['Ccode']."".$input['phone'];
         $email=$input['email']."_".date(time());
-        $check=DB::select("select PhoneNumber,email,carduid from users where PhoneNumber=:PhoneNumber or email=:email limit 2",array(
-         "PhoneNumber"=>$PhoneNumber,
+        $check=DB::select("select PhoneNumber,email,carduid from users where subscriber=:subscriber and( PhoneNumber=:PhoneNumber or email=:email) limit 2",array(
+
+        "subscriber"=>Auth::user()->subscriber,
+        "PhoneNumber"=>$PhoneNumber,
          "email"=>$email,
         ));
         if($check)
@@ -225,6 +348,7 @@ class AuthUserRegisterController extends Controller
         {
           if($this->EditCard($input))
           {
+
               return $this->UpdateUserQuery($input);
           }
           else{
@@ -236,7 +360,9 @@ class AuthUserRegisterController extends Controller
             ],200);
           }
         }else{
-            if($this->searchUserEdit($input))
+
+
+         if($this->searchUserEdit($input))
           {
             return response([
                 "status"=>false,
@@ -246,6 +372,7 @@ class AuthUserRegisterController extends Controller
             ],200);
           }
           else{
+
             return $this->UpdateUserQuery($input);
           }
         }
@@ -254,6 +381,41 @@ class AuthUserRegisterController extends Controller
 
 
 
+    }
+    public function UserDeleteByCompanyAssign($input) //Edit User Phone and
+    {
+        $check=DB::select("select userid from orderhistories where userid=:userid limit 1",array(
+            "userid"=>$input["uid"]
+        ));
+        if($check){
+            return response([
+                "status"=>false,
+                "result"=>"0",
+                "message"=>"This User have orders history you can't delete it"
+
+            ],200);
+        }
+        else{
+            $checkDelete=DB::delete("delete from users where uid=:uid limit 1",array(
+                "uid"=>$input["uid"]
+            ));
+            if($checkDelete)
+            {
+                return response([
+                    "status"=>true,
+                    "result"=>$checkDelete
+
+                ],200);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$checkDelete
+
+                ],200);
+            }
+
+        }
     }
     public function EditCard($input)
     {
@@ -268,9 +430,29 @@ class AuthUserRegisterController extends Controller
     $PhoneNumber=$input['Ccode']."".$input['phone'];
     $email=$input['email'];
     $uid=$input['uid'];
-   $check=DB::select("select *from users where PhoneNumber=:PhoneNumber and uid!='$uid' limit 1",array(
-       "PhoneNumber"=>$PhoneNumber));
-      return $check;
+   $check=DB::select("select PhoneNumber,uid from users where uid=:uid or PhoneNumber=:PhoneNumber and subscriber=:subscriber limit 2",array(
+       "uid"=>$uid,
+       "PhoneNumber"=>$PhoneNumber,
+       "subscriber"=>Auth::user()->subscriber
+    ));
+    if($check)
+    {
+    if(count($check)>1)
+    {
+
+     return true;//phone number exist for another user
+    }
+    else{
+     if($check[0]->PhoneNumber==$PhoneNumber && $check[0]->uid!=$uid)
+     {
+         return true;//phone number exist for another user
+     }
+     return false;//phone number not exist for another user
+    }
+
+    }else{
+     return true;//phone number and uid not exist which is not possible because uid must exist but we will return true to stop update and make user add new phone number
+    }
 
     }
     public function UpdateUserQuery($input)
@@ -278,7 +460,7 @@ class AuthUserRegisterController extends Controller
         $carduid=$input["carduid"];
         $queryCard=strtolower($input["status"])!='card'?"":",carduid='$carduid'";
         $PhoneNumber=$input['Ccode']."".$input['phone'];
-        $email=$input['email'];
+        $email=$input['email']??$input['name'].""."@".date(time());;
         $check2=DB::update("update users set phone=:phone,PhoneNumber=:PhoneNumber,name=:name,email=:email,Ccode=:Ccode,password=:password,country=:country,initCountry=:initCountry,updated_at=:updated_at $queryCard where uid=:uid limit 1",array(
             "uid"=>$input["uid"],
             'name'=>strtolower($input['name']),

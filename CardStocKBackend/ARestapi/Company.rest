@@ -1,9 +1,13 @@
 @baseUrl = http://localhost:8000/api
-@email=company@gmail.com
+##@email=company@gmail.com
+##@PhoneNumber=+250782389359
+@app_vers=1.0.0
+@email=ceke@gmail.com
+##@PhoneNumber=+243464646
+##@password=1
 @PhoneNumber=+250782389359
 @password=1
-@Auth_token=930|BjxHjsVfUDpupNubej1I6ZA5QVdDQLNeTfdpx5E9
-
+@Auth_token=962|a1i5jItgxzfVTt5nhyC8J4S6yHnhYmsBTjACmlql
 ### Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
@@ -22,7 +26,71 @@ Content-Type: application/json
 "PhoneNumber": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+#### UseDefault
+POST  {{baseUrl}}/UseDefault
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
 
+{
+
+"permKey":"default",
+ "permV":false,
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### UseDefault
+POST  {{baseUrl}}/getPromo
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"permKey":"default",
+ "permV":false,
+
+ "safari":false,
+
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### UseDefault
+POST  {{baseUrl}}/paidAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"permKey":"default",
+ "permV":false,
+
+ "safari":false,
+
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### UseDefault
+POST  {{baseUrl}}/addPromo
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"OrderId":"UID_h7_1776009159",
+"permKey":"default",
+ "permV":false,
+
+ "safari":false,
+
+ "app_vers":"{{app_vers}}"
+
+
+
+}
 ### USSD ###
 
 POST  {{baseUrl}}/buyElectricity/
@@ -74,15 +142,16 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"name": "fh",
+"name": "venande",
   "email": "",
   "Ccode": "+243",
-  "phone": "788888888",
+  "phone": "782389359",
   "initCountry": "CD",
   "country": "Congo,Democratic Republic of the Congo",
   "password": "",
   "carduid": "none",
-  "actionStatus": "noCard"
+  "actionStatus": "noCard",
+  "app_vers":"{{app_vers}}"
 
 }
 ###Edit User and Assign With Card iyi niyo nyayo ikora neza Auth User Register
@@ -91,16 +160,28 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"uid":"kebineericMuna_1674592764",
-"name":"gogo",
-"email":"on2@gmail.com",
-"Ccode":"250",
-"phone":"0789359",
+"uid":"ericmushi_1773588035",
+"name":"cibambi",
+"email":"on7@gmail.com",
+"Ccode":"+250",
+"phone":"782389359",
 "country":"Rwanda",
 "initCountry":"initCountry",
 "status":"test",
 "password":"1",
-"carduid":"TEALTD_lN7o8_1672352175"
+"carduid":"none",
+"app_vers":"{{app_vers}}"
+
+}
+###Edit User and Assign With Card iyi niyo nyayo ikora neza Auth User Register
+POST  {{baseUrl}}/DeleteUserAssign
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"ERICMUSHI_1688628812",
+ "app_vers":"{{app_vers}}"
+
 
 }
 ### view all
@@ -882,13 +963,14 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"productCode":"ibishyimbo",
-"uidClient":"ERICMUSHI_1688628812",
-"req_qty":35,
+"productCode":"nyota",
+"uidClient":"ericmushi_1773588035",
+"req_qty":5,
 "ref":"test",
 "comment":"ok",
 "statusForm":"none",
-"orderIdFromEdit":"none"
+"orderIdFromEdit":"none",
+"app_vers":"{{app_vers}}"
 
 
 }
@@ -934,7 +1016,36 @@ Authorization: Bearer {{Auth_token}}
 "uid":"UID_ES_1703103164"
 
 }
+### paid dettes 2
+POST  {{baseUrl}}/PaidDept
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
 
+{
+
+"uidUser":"eric_1773588194",
+"OwnerAmount":"mn_1681494921",
+"inputData":30,
+"commentData":"karera"
+
+
+
+}
+
+###check Dettes before submitting,this will give all person who have your dettes
+
+POST  {{baseUrl}}/checkDette
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"uidUser":"BINTU_1688630423",
+"app_vers":"{{app_vers}}"
+
+
+}
+###dettes
 
 ###
 ### double test submit Order later,this uid is promotion uid
@@ -944,13 +1055,14 @@ Authorization: Bearer {{Auth_token}}
 
 {
 "uid":"Nyota_1672353378",
-"uidUser":"kebineericMuna_1674160265",
-"OrderId":"UID_e2_1707876339",
-"inputData":"30",
-"all_total":"250",
+"uidUser":"ericmushi_1773588035",
+"OrderId":"UID_c8_1777843466",
+"inputData":"350",
+
 "reach":"1200",
 "gain":"350",
-"systemUid":"PointSales1"
+"systemUid":"PointSales1",
+"app_vers":"{{app_vers}}"
 
 
 }
@@ -1192,8 +1304,25 @@ Authorization: Bearer {{Auth_token}}
 {
 "viewAll":"true",
 "searchOption":false,
-"name":"ERIC"
+"name":"eric",
+"phoneNumber":"+243",
+"app_vers":"{{app_vers}}"
 }
+
+### done make sure
+
+GET  {{baseUrl}}/viewDeptDetails
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"viewAll":"true",
+"searchOption":false,
+"uidUser":"eric_1773588194",
+"phoneNumber":"+243",
+"app_vers":"{{app_vers}}"
+}
+
 ### done but not by SystemUid
 
 GET  {{baseUrl}}/viewPaidDept
@@ -1201,8 +1330,12 @@ Content-Type: application/json
 Authorization: Bearer {{Auth_token}}
 
 {
-"searchOption":true,
-"name":"b"
+"searchOption":false,
+"uidUser":"eric_1773588194",
+"detteOwner":"kebineericMuna_1668935525",
+"status":"none",
+"name":"b",
+"app_vers":"{{app_vers}}"
 }
 ### done but not by SystemUid
 
