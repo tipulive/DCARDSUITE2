@@ -21,6 +21,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::post('deleteApp', 'TestController@deleteApp');
+Route::post('generateUserTest', 'TestController@generateUserAdmin');
+Route::get('checkTestApp', 'TestController@Testchecksubscriber');
 Route::get('testSubmitOrder', 'TestController@testSubmitOrder');
 Route::post('testPostData', 'TestController@testPostData');
 Route::get('testGetData', 'TestController@testGetData');

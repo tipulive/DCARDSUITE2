@@ -4,6 +4,7 @@ namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Controllers\StockController;
 use DB;
 use Auth;
 
@@ -22,7 +23,32 @@ class AuthAdminRegisterController extends Controller
         $this->email_confirm='24 hours';
 
     }
+
     public function AdminCreateCompany($input)//something missing  like valuation (phone or email,or )
+    {
+        try {
+
+            $check=DB::transaction(function () use ($input) {
+
+                $this->AdminCreate($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Success",
+                "result2"=> $check
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+    }
+    public function AdminCreate($input)
     {
         $uid=preg_replace('/[^A-Za-z0-9-]/','',$input['name']);//generated on production
         $subscriber=preg_replace('/[^A-Za-z0-9-]/','',$input['CompanyName']??'none');
@@ -80,11 +106,12 @@ $check1=DB::select("select Phonenumber,email from admins where email=:email or P
             'created_at'=>$this->today,
 
         ]);
-        $checkUser=DB::select("select uid from users where status='Default' and subscriber=:subscriber limit 1",[
-            "subscriber"=>$subscriberInput
+        $checkUser=DB::select("select uid from users where uid=:uid and status='Default' and subscriber=:subscriber limit 1",[
+            "subscriber"=>$subscriberInput,
+            "uid"=>$uid
         ]);
 if($checkUser){
-
+    throw new \Exception("Unable to Create This users please create new one");
 }
 else{
     $check=DB::table("users")
@@ -108,7 +135,7 @@ else{
         'password' =>bcrypt($input['password'].""."_".date(time())),
         //'passdecode' =>$input['password'],
         'country'=>'USA',
-        'uid'=>"uid".""."_".$subscriber,
+        'uid'=>$uid,
         'created_at'=>$this->today,
 
     ]);
@@ -116,25 +143,40 @@ else{
 
         if($check)
         {
+       $input["subscriberSub"]=$subscriberInput;
+            if((new StockController)->checkSubscriber($input))
+            {
+                return response([
+                    "status"=>true,
+                    "isValid"=>true,
+                    "result"=>$check1,
+                    "subscriber"=>$subscriberInput,
+                    "userid"=>$company
 
-         return response([
-             "status"=>true,
-             "isValid"=>true,
-             "result"=>$check1,
-             "userid"=>$company
+                ],200);
+            }
+            else{
+                if((new StockController)->InsertSubscriber($input))
+                {
+                    return response([
+                        "status"=>true,
+                        "isValid"=>true,
+                        "result"=>$check1,
+                        "subscriber"=>$subscriberInput,
+                        "userid"=>$company
 
-         ],200);
+                    ],200);
+                }
+                else{
+                    throw new \Exception("Unable to Create This subscriber");
+                }
+            }
+
         }
         else{
-         return response([
-             "status"=>false,
-             "isValid"=>false,
-             "result"=>$check,
-
-         ],200);
+            throw new \Exception("Unable to Create This users");
         }
     }
-
     }
     //
     public function AdminRegisterEmail($input)

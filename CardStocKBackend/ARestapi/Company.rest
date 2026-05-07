@@ -26,6 +26,15 @@ Content-Type: application/json
 "PhoneNumber": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+### check TestApp
+GET   {{baseUrl}}/checkTestApp/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+
 #### UseDefault
 POST  {{baseUrl}}/UseDefault
 content-type: application/json;charset=UTF-8
@@ -963,9 +972,9 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"productCode":"nyota",
+"productCode":"victoria",
 "uidClient":"ericmushi_1773588035",
-"req_qty":5,
+"req_qty":2,
 "ref":"test",
 "comment":"ok",
 "statusForm":"none",
@@ -1056,8 +1065,8 @@ Authorization: Bearer {{Auth_token}}
 {
 "uid":"Nyota_1672353378",
 "uidUser":"ericmushi_1773588035",
-"OrderId":"UID_c8_1777843466",
-"inputData":"350",
+"OrderId":"UID_fz_1777939667",
+"inputData":"80",
 
 "reach":"1200",
 "gain":"350",

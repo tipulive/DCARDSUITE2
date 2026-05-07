@@ -29,7 +29,17 @@ class StockController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
+public function sendStock($input){
+   /* $check=DB::table("stockSend")
+        ->([
+            "uid"=>,
+            "uidSender"=>Auth::user()->uid
+            "uidReceiver"=>
+            "productCode"=>$input("productCode")
+            "qty"=>$input("qty")
 
+        ]);*/
+}
 public function paidSuperAdmin($input){//paid Admin
     if($this->addSubscriber($input))
     {
@@ -458,6 +468,19 @@ public function CreateOrder($input){
         "uid" => $input["uid"],
         "updated_at" => $this->today
     ]);
+    }
+    public function checkSubscriber($input)
+    {
+        return DB::select("select uid from subscriber where uid=:uid",[
+            "uid"=>$input["subscriberSub"]
+        ]);
+    }
+    public function InsertSubscriber($input){
+        return DB::table("subscriber")
+        ->insert([
+            "uid"=>$input["subscriberSub"],
+            "created_at"=> $this->today
+        ]);
     }
     public function addSubscriber($input){
         return DB::update("update subscriber set amount=amount+:amount,stockpurchase=stockpurchase+:stockpurchase,received=received+:received,dettes=dettes+:dettes,spending=spending+:spending,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid limit 1",[

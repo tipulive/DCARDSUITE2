@@ -187,11 +187,15 @@ headers: {
 success:function(data){
 if(data.result){//return data as true
 
-var websiteName = window.location.hostname;;
+//var websiteName = window.location.hostname;
+var webLink = window.location;
+var protocol=webLink.protocol;
+var websiteName=(webLink.hostname==='localhost')?webLink.host:window.location.hostname;
+
     $('.MainForm').html(`
 
 <div class="input-group mb-3">
-<input type="text" class="form-control linkCopy" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="basic-addon2" value="https://${websiteName}/${data.response.link}">
+<input type="text" class="form-control linkCopy" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="basic-addon2" value="${protocol}//${websiteName}/${data.response.link}">
 <div class="input-group-append" >
 <button class="btn btn-outline-secondary" id="copy-link-btn" type="button" onclick="return onCopy()">Copy</button>
 </div>

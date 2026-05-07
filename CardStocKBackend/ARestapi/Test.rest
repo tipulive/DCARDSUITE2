@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:8000/api
+##@email=company@gmail.com
+##@PhoneNumber=+250782389359
+@app_vers=1.0.0
+@email=ceke@gmail.com
+##@PhoneNumber=+243464646
+##@password=1
+@PhoneNumber=+250782389359
+@password=1
+@Auth_token=962|a1i5jItgxzfVTt5nhyC8J4S6yHnhYmsBTjACmlql
+### Company Login with email
+POST  {{baseUrl}}/AdminLoginEmail/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+
+
+### Company Login with phone
+POST  {{baseUrl}}/AdminLoginPhone/
+Content-Type: application/json
+
+{
+"PhoneNumber": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+### check Generate User
+POST {{baseUrl}}/generateUserTest/
+Content-Type: application/json
+
+{
+"PhoneNumber":"+2507888888"
+
+}
+### check TestApp
+GET   {{baseUrl}}/checkTestApp/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+### Company Login with phone
+POST  {{baseUrl}}/deleteApp/
+Content-Type: application/json
+
+{
+"subscriber":"BMW_1778031480"
+}

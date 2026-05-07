@@ -11,6 +11,8 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Str;
 use App;
+use App\Http\Controllers\Auth\AuthAdminRegisterController;
+
 use Illuminate\Support\Facades\Cache;
 
 
@@ -18,6 +20,227 @@ use Illuminate\Support\Facades\Cache;
 class TestController extends Controller
 {
     //
+
+
+
+public function generateUserAdmin(Request $request)//with compaign{
+{
+
+    $input = $request->all();
+    $input["status"]="test";
+    $input["CompanyName"]="TEST";
+    $input["name"]="test";
+    $input["email"]="test@"."_".date(time());;
+    $input["password"]="1";
+    $input["uid"]="Test";
+
+
+    return (new AuthAdminRegisterController)->AdminCreateCompany($input);
+
+}
+
+public function deleteApp(Request $request)
+{
+    $input = $request->all();
+
+     return $this->deleteSubApp($input);
+
+    // Decode response safely
+
+}
+// Simple API response with readable output
+
+    //this will test my whole app
+public function deleteSubApp($input)//this will delete whole company Testing data i must check if it has testing on it
+{
+    try {
+        //code...
+        $check=DB::transaction(function () use ($input) {
+
+            //$this->mainDeleteApp($input);
+            $this->mainArrDeleteApp($input);
+        });
+
+        return response([
+            "status" => true,
+            "result" => "Success",
+            "message"=> $check
+        ]);
+
+
+   } catch (\Exception $e) {
+        return response()->json([
+            "status" => false,
+            "message" => $e->getMessage(),
+            'errorCode' => $e->getLine()
+        ], 500);
+    }
+
+}
+public function Testchecksubscriber(){
+    $check=DB::select("select  *from admins where  status='test'");
+    if($check)
+    {
+        return response([
+            "data"=>"new Data",
+            "status"=>$check,
+
+
+        ],200);
+    }else{
+        echo "none";
+    }
+}
+
+
+public function checkSubscriber($input){
+    return DB::select("select status from admins where subscriber=:subscriber and status='test'",[
+        "subscriber"=>$input["subscriber"]
+    ]);
+}
+
+public function mainArrDeleteApp($input)
+{
+    if (!$this->checkSubscriber($input)) {
+        throw new \Exception("No testing data found with this subscriber");
+    }
+
+    // Direct table array - NO extra method calls
+    $tables = [
+        'users','admnin_records','admins','subscriber','dettes','safaristocks', 'safariproducts',
+        'products', 'orders','orderhistories', 'promotions',
+        'promoaccount', 'repaid_users', 'paid_dettes'
+    ];
+
+    $results = [];
+    $totalDeleted = 0;
+
+    // Disable foreign key checks for speed (optional but recommended)
+    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+    foreach ($tables as $table) {
+        try {
+            if($table=='subscriber')
+            {
+                $deletedCount = DB::delete("DELETE FROM {$table} WHERE uid= :subscriber", [
+                    "subscriber"=> $input["subscriber"]
+                ]);
+
+                $totalDeleted += $deletedCount;
+                $results[$table] = $deletedCount;
+            }else{
+                $deletedCount = DB::delete("DELETE FROM {$table} WHERE subscriber = :subscriber", [
+                    "subscriber"=> $input["subscriber"]
+                ]);
+
+                $totalDeleted += $deletedCount;
+                $results[$table] = $deletedCount;
+            }
+
+
+        } catch (\Exception $e) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            throw new \Exception("Failed deleting from {$table}: " . $e->getMessage());
+        }
+    }
+
+    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+    return [
+        'total_deleted' => $totalDeleted,
+        'tables_with_data' => count(array_filter($results)),
+        'details' => $results
+    ];
+}
+
+// You can delete ALL the individual methods (deleteUser, deleteAdmin, etc.)
+// They're not needed anymore!
+public function mainDeleteApp($input)
+{
+    if($this->checkSubscriber($input))
+    {
+
+
+    }else{
+        throw new \Exception("there is no data with this subscriber");
+    }
+}
+public function deleteUser($input)
+{
+   return DB::delete("delete users where subscriber=:subscribe",[
+    "subscriber"=>$input["subscriber"]
+   ]);
+}
+public function deleteAdminRecord($input)
+{
+    return DB::delete("delete admnin_records where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteAdmin($input)
+{
+    return DB::delete("delete admnins where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteDette($input){
+    return DB::delete("delete dettes where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteSafaristocks($input){
+    return DB::delete("delete safaristocks where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteSafariProduct($input){
+    return DB::delete("delete safariproducts where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteProduct($input){
+    return DB::delete("delete products where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteOrder($input){
+    return DB::delete("delete orders where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteOrderHistory($input){
+    return DB::delete("delete orderhistories where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteSubscriber($input){
+    return DB::delete("delete subscriber where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deletePromotions($input){
+    return DB::delete("delete promotions where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deletePromoaccount($input){
+    return DB::delete("delete promoaccount where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+public function deleteRepaid_users($input){
+    return DB::delete("delete repaid_users where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+
+}
+public function deletePaid_dettes($input){
+    return DB::delete("delete paid_dettes where subscriber=:subscribe",[
+        "subscriber"=>$input["subscriber"]
+       ]);
+}
+
+    //this will test my whole app
 
 
 

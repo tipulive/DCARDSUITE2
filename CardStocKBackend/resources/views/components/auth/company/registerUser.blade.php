@@ -102,7 +102,10 @@ if(data.status){//return data as true
 
      alert("You have Successfully Registered");
 
-     window.location.href = "adminlogin";
+     var webLink = window.location;
+var protocol=webLink.protocol;
+var websiteName=(webLink.hostname==='localhost')?webLink.host:window.location.hostname;
+window.location.href = `${protocol}//${websiteName}/adminlogin`;
      console.log(data);
 
 
