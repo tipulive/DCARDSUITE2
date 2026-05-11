@@ -5,10 +5,10 @@ class PromotionService {
     "count": 215,
     "card": true,
     "items": [
-      {"productName": "simba", "price": 20, "qty": 100},
-      {"productName": "fanta", "price": 30, "qty": 100},
-      {"productName": "bread", "price": 100, "qty": 5},
-      {"productName": "coke", "price": 50, "qty": 10}
+      {"productName": "simba", "price": 20, "qty": 10},
+      {"productName": "fanta", "price": 30, "qty": 10},
+      {"productName": "bread", "price": 30, "qty": 20},
+      {"productName": "coke", "price": 10, "qty": 50}
     ]
   };
 

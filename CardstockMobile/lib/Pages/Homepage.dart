@@ -58,6 +58,7 @@ class _HomepageState extends State<Homepage> {
 
   List<dynamic> dataSearch = [];
   List<dynamic> cartData = [];
+
   List<dynamic> users=[];
   List<dynamic>qrSearch = [];
   bool buyBtn=false;
@@ -78,7 +79,7 @@ class _HomepageState extends State<Homepage> {
   TextEditingController clientName=TextEditingController();
   TextEditingController commentData=TextEditingController();
   TextEditingController  initCountry=TextEditingController();
-
+  final Map<String, FocusNode> focusNodes = {};
   String promoMsg="none";
   bool showProfile=false;
   bool showOver=false;
@@ -108,6 +109,8 @@ class _HomepageState extends State<Homepage> {
   int editQty=0;
   String pageName="Home";
   Language langV=Language();
+
+
 
   void showConfirmBottomSheet() async{
     String userProfile=(myStockQuery.userProfile)["uid"];
@@ -392,15 +395,19 @@ class _HomepageState extends State<Homepage> {
 
       /* hano ngiye gutuma variable nzi resetting mbere ya submission */
 
+      //print(myStockQuery.promo);
 
-
+     //var mypromo=JsonEncoder.withIndent('  ').convert(myStockQuery.promo);
+    //
+      var myPromo=myStockQuery.promo;
       var resultData=(await StockQuery().submitOrder(Participated(uid:"Nyota_1672353378"
           ,uidUser:userProfile,subscriber:orderId,inputData:inputDataText),Promotions(
-          token:"$orderSum",reach:"1200",gain:"350",uid:"PointSales1"
+          token:"$orderSum",reach:myPromo.toString(),gain:"350",uid:"PointSales1"
       ))).data;
+
       if(resultData["status"])
       {
-        //print(resultData);
+
         setState(() {
           showOver=false;
           inputDataDept.text="";
@@ -482,7 +489,8 @@ class _HomepageState extends State<Homepage> {
 
     //FocusScope.of(context).unfocus();//hide keyboard on screen loadin
     return Scaffold(
-     resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
+     //resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
+      resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
 
 
       body:Stack(
@@ -491,7 +499,7 @@ class _HomepageState extends State<Homepage> {
           Column(
             children: [
               //Qr Code
-              const SizedBox(height: 40,),
+          //    const SizedBox(height: 40,),
 
              /* ImageCardWidget(
                 mainImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
@@ -502,7 +510,30 @@ class _HomepageState extends State<Homepage> {
 
                 ], initialImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
               ),*/
-              const SizedBox(height: 40,),
+              const SizedBox(height: 30,),
+              InkWell(
+                onTap: (){},
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      Get.put(AdminQuery()).obj["result"][0]["name"],
+                      style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.red),
+                    ),
+                    
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width:30),
+                        Text(Get.put(AdminQuery()).obj["result"][0]["subscriber"], style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.black)),
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
               GetBuilder<StockQuery>(
                 builder: (hideShowcontroller) {
                   //return Text('Data: ${_controller.data}');
@@ -529,7 +560,6 @@ class _HomepageState extends State<Homepage> {
                         children: [
                           const Icon(Icons.star, color: Colors.yellow), // Replace with your desired icon
                           const SizedBox(width: 8.0), // Adjust the space between icon and text
-
                           Text("${langV.languageV[(Get.put(StockQuery()).lang)][pageName]["pickDft"]}", style: const TextStyle(fontSize: 16.0)),
                         ],
                       ),
@@ -571,16 +601,17 @@ class _HomepageState extends State<Homepage> {
                 },
                 searchController: searchContro,
               ),
-
-              if(productSearch)
+              if (Get.put(StockQuery()).dataSearch.isNotEmpty)
                 Expanded(
-                  child: ProductSearchList(addCartMethod:(dynamicData){
-                    addCartPlus(dynamicData);
-
-                  },viewPictureMethod:(productCode,imgUrl){
-                    viewPicture(productCode,imgUrl);
-
-                  },searchResult:(Get.put(StockQuery()).dataSearch)),
+                  child: ProductSearchList(
+                    addCartMethod: (dynamicData) {
+                      addCartPlus(dynamicData);
+                    },
+                    viewPictureMethod: (productCode, imgUrl) {
+                      viewPicture(productCode, imgUrl);
+                    },
+                    searchResult: Get.put(StockQuery()).dataSearch,
+                  ),
                 ),
 
               // Center(child: Text("${(Get.put(StockQuery()).userProfile)["name"]}")),
@@ -827,7 +858,10 @@ class _HomepageState extends State<Homepage> {
                               border: InputBorder.none,
                             ),
                             controller: inputDataDept,
+
+                            focusNode: getFocusNode("qty_1"),
                             onChanged: (value){
+
                               final myValue = int.tryParse(value);
                               if(myValue != null && myValue >= 0){
                                 num deptVal=(Get.put(StockQuery()).orderSum)-num.parse(value);
@@ -865,6 +899,7 @@ class _HomepageState extends State<Homepage> {
                            }
                           else{
                             //submit order code
+
                             await myOrderSubmit();
 
                           }
@@ -941,6 +976,11 @@ class _HomepageState extends State<Homepage> {
                           inputDataDept.text="";
                         }
                       });
+                      Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+                      var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
+                      (myStockQuery.updatePromo(promo1));
+
+
 
                     });
 
@@ -970,7 +1010,7 @@ class _HomepageState extends State<Homepage> {
 
               },addcomentCheckout:(productCode,commentData){
                 addComment(productCode,commentData);
-              })),
+              },focusNodes: focusNodes,getFocusCheckout:getFocusNode)),
 
               // CheckoutPage(),
 
@@ -1217,12 +1257,45 @@ class _HomepageState extends State<Homepage> {
   {
     super.initState();
     //getapi();
+    /*focusNode.addListener(() {
+      if (focusNode.hasFocus) {
+       // print("EVENT: Focus gained (user is inside TextField)");
+        setState(() {
+          (myStockQuery.updatedataSearch([]));
+
+        });
+
+      } else {
+        print("EVENT: Focus lost (user left TextField)");
+      }
+    });*/
     cartDisplay();
     setState(() {
       showOver=false;
     });
-  }
 
+  }
+  FocusNode getFocusNode(String key) {
+    return focusNodes.putIfAbsent(key, () {
+      final node = FocusNode();
+
+      node.addListener(() {
+        if (node.hasFocus) {
+          print("FOCUS ON: $key");
+
+          // clear search safely here
+          setState(() {
+            Get.put(StockQuery()).updatedataSearch([]);
+          });
+
+        } else {
+          print("FOCUS LOST: $key");
+        }
+      });
+
+      return node;
+    });
+  }
 //Method
 
   cartDisplay()async
@@ -1235,7 +1308,7 @@ class _HomepageState extends State<Homepage> {
 
 
     });*/
-
+    //print(cartData);
 
     try {
 
@@ -1287,14 +1360,25 @@ class _HomepageState extends State<Homepage> {
 
           cartData.addAll(resultData["result"]);
         });
+        print(cartData);
+        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
+        (myStockQuery.updatePromo(promo1));
       }
       else{
         setState(() {
+          List<dynamic> orderVal=[
+            {
+              "name":Get.put(AdminQuery()).obj["result"][0]["name"],
+              "uid":"none"
+            }
+          ];
+          ((Get.put(StockQuery()).updateDeptOrder(0)));
+          ((Get.put(StockQuery()).updateOrder(orderVal)));
+          inputDataDept.text="";
+          num totalVal=0;
 
-
-          cartData.clear();
-
-
+          ((Get.put(StockQuery()).updateSumOrder(totalVal)));
         });
       }
 
@@ -1671,6 +1755,11 @@ class _HomepageState extends State<Homepage> {
           cartData[indexData]["saveChangeBtn"]=true;
 
         //  num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
+          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+          /*var promo1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
+          (Get.put(StockQuery()).updatePromo(promo1));*/
+          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
+          (myStockQuery.updatePromo(promo1));
 
           num totalVal = 0;
 
@@ -2008,7 +2097,7 @@ class _HomepageState extends State<Homepage> {
               "uid":resultData["OrderId"]
             }
           ];
-
+ //print(cartData);
 
           //print(resultData);
           setState(() {
@@ -2034,9 +2123,10 @@ class _HomepageState extends State<Homepage> {
         // print(ConstantClassUtil().convertCart(cartData));
           Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
           //
-          print(cartD);
-          var result1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
-          print(result1);
+         // print(cartD);
+          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
+          (myStockQuery.updatePromo(promo1));
+
 
         }
         else{
@@ -2780,7 +2870,7 @@ class SearchBarField extends StatelessWidget {
 
     List<String> dropdownOptions = ['Name', 'Code'];
     return Container(
-      margin: const EdgeInsets.fromLTRB(5, 20, 5, 0),
+      margin: const EdgeInsets.fromLTRB(5, 7, 5, 0),
       child: TextField(
         controller: searchController,
         decoration: InputDecoration(
@@ -2866,8 +2956,7 @@ class ProductSearchList extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return ListView.builder(
-
-
+      padding: EdgeInsets.zero,
       itemCount: searchResult.length+1,
       itemBuilder: (context, index) {
 
@@ -2875,10 +2964,6 @@ class ProductSearchList extends StatelessWidget {
         {
           searchResult[index]['req_qty']="1";
           searchResult[index]['name']="none";
-
-
-
-
           return Container(
             margin: const EdgeInsets.fromLTRB(0, 5, 0, 0),
             child: Card(
@@ -3088,6 +3173,8 @@ class CheckoutPage extends StatelessWidget {
     required this.saveChangeQtyCheckout,
     required this.deleteCheckout,
     required this.addcomentCheckout, required this.viewPictureM,
+    required this.focusNodes,
+    required this.getFocusCheckout,
   });
 
   final dynamic chekoutResult;
@@ -3097,6 +3184,8 @@ class CheckoutPage extends StatelessWidget {
   final void Function(String,int,String) saveChangeQtyCheckout;
   final void Function(String) deleteCheckout;
   final void Function(String,String) addcomentCheckout;
+  final Map<String, FocusNode> focusNodes;
+  final Function(String) getFocusCheckout;
 
 
   @override
@@ -3104,8 +3193,7 @@ class CheckoutPage extends StatelessWidget {
 
 
     return ListView.builder(
-
-
+      padding: EdgeInsets.zero,
       itemCount: chekoutResult.length+1,
       itemBuilder: (context, index) {
 
@@ -3186,6 +3274,7 @@ class CheckoutPage extends StatelessWidget {
                                                     //controller: TextEditingController(text:"${_data[index]["textchange_var"]??_data[index]["qty"]}"),
 
                                                     keyboardType: TextInputType.number,
+                                                    focusNode: getFocusCheckout("hell"),
                                                     decoration: InputDecoration(
                                                       hintText: '-${chekoutResult[index]["totalQty"]}-',
                                                       hintStyle: const TextStyle(color: Colors.blue),

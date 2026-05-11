@@ -86,9 +86,29 @@ class _SettingCompState extends State<SettingComp> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(Get.put(AdminQuery()).obj["result"][0]["name"],
-                  style:GoogleFonts.bebasNeue(fontSize:20),
-                ),
+                child:Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      Get.put(AdminQuery()).obj["result"][0]["name"],
+                      style: GoogleFonts.bebasNeue(fontSize: 20),
+                    ),
+
+                    InkWell(
+                      onTap: () {},
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(width:25),
+                          Text(Get.put(AdminQuery()).obj["result"][0]["subscriber"]),
+                          SizedBox(width: 5),
+                          Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
               ),
             ),
 

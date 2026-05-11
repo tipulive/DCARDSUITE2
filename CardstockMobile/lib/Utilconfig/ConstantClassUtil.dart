@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../Query/AdminQuery.dart';
+import '../Query/StockQuery.dart';
+
 class ConstantClassUtil extends GetxController
 {
   static final DateTime now = DateTime.now();
@@ -18,7 +21,7 @@ class ConstantClassUtil extends GetxController
   /*static const String urlApp =
       "https://stockapi.appdev.live";*/
   static const String urlApp =
-  "https://suburban-assist-encryption-selected.trycloudflare.com";
+  "https://discs-earrings-managers-ranking.trycloudflare.com";
      // "https://stockapi.appdev.live";
 
   static const String urlLink = "$urlApp/api";
@@ -193,5 +196,6 @@ class ConstantClassUtil extends GetxController
       );
     }
   }
+
 }
 

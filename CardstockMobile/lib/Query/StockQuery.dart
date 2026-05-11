@@ -34,6 +34,17 @@ class StockQuery extends GetxController{
     update();
 
   }
+  var promo;
+  updatePromo(valData){
+    //usersPick.clear();
+
+    if (valData != null) {
+      promo=valData;
+    }
+
+    update();
+
+  }
   Map<String, dynamic> imgVersion = {};
   updateImgVersion(valData){
     //usersPick.clear();
@@ -649,7 +660,7 @@ class StockQuery extends GetxController{
         //"OrderId":"eric-05",
         "inputData":participatedData.inputData,
         "all_total":promotionData.token,
-        "reach":promotionData.reach,
+        "reach":promotionData.reach,//as promoData
         "gain":promotionData.gain,
         "systemUid":promotionData.uid,
         "app_vers":AppInfo.version

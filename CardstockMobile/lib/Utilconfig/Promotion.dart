@@ -30,7 +30,8 @@ class Promotion {
         /*double minValue = (cartTotals['amount'] / promotion['condition']["cartTotal"]) < (cartTotals['count'] /promotion['condition']["cartCount"]) ? cartTotals['amount'] / promotion['condition']["cartTotal"] : cartTotals['count'] / promotion['condition']["cartCount"];
         int bonus = (promotion['promotion']['amount'] * minValue).floor();*/
         // int bonus=((cartTotals['amount'] / promotion['condition']["cartTotal"]) * promotion['promotion']['amount']).floor();
-        int bonus =calculateBonus(promotion,cartTotals);
+        var result =calculateBonus(promotion,cartTotals);
+        int bonus=result["bonus"];
         promotionResults[promotionId] = {
           'applied': true,
 
@@ -39,6 +40,7 @@ class Promotion {
           'amount': promotion['promotion']['amount'],
 
           'bonusTot':bonus,
+          "dividend":result["dividend"],
           'cartTotal':cartTotals['amount'],
           'cartCount':cartTotals['count'],
           //"proAm":promotion['condition'],
@@ -102,30 +104,85 @@ class Promotion {
 
     return  formResult(cart, promotions,promotionResults);
   }
-  static int calculateBonus(Map<String, dynamic> promotion, Map<String, dynamic> cartTotals) {
-    if(promotion['promotype']=="quick")
-    {
-      if (promotion['condition']["TotalToCount"] == "both") {
-        double totalFactor = cartTotals['amount'] / promotion['condition']["cartTotal"];
-        double countFactor = cartTotals['count'] / promotion['condition']["cartCount"];
+  static Map<String, dynamic> calculateBonus(
+      Map<String, dynamic> promotion,
+      Map<String, dynamic> cartTotals,
+      ) {
 
-        // This only works if countFactor is always <= totalFactor
-        int bonus = (promotion['promotion']['amount'] * totalFactor.clamp(0, countFactor)).floor();
-        return bonus;
+    if (promotion['promotype'] == "quick") {
+
+      if (promotion['condition']["TotalToCount"] == "both") {
+
+        double totalFactor =
+            cartTotals['amount'] / promotion['condition']["cartTotal"];
+
+        double countFactor =
+            cartTotals['count'] / promotion['condition']["cartCount"];
+
+        double factor = totalFactor.clamp(0, countFactor);
+
+        int bonus =
+        (factor).floor();
+        //print(bonus);
+        // bonus=(promotion['condition']["cartTotal"]/cartTotals['amount'])
+
+
+
+        return {
+          "status": true,
+          "type": "both",
+          "bonus": bonus,
+          "factor": factor,
+          "dividend":bonus
+        };
       }
 
       if (promotion['condition']["TotalToCount"] == "CTotal") {
-        int bonus = ((cartTotals['amount'] / promotion['condition']["cartTotal"]) * promotion['promotion']['amount']).floor();
-        return bonus;
+
+        print(cartTotals);
+        int bonus = (
+            (promotion['promotion']['amount'] /
+                promotion['condition']["cartTotal"]) *
+                cartTotals['amount']
+        ).floor();
+        int divident = (
+            (cartTotals['amount'] /
+                promotion['condition']["cartTotal"])).floor();
+
+        return {
+          "status": true,
+          "type": "CTotal",
+          "bonus": bonus,
+          "dividend":divident
+        };
       }
 
       if (promotion['condition']["TotalToCount"] == "cCount") {
 
-        int bonus = ((cartTotals['count'] / promotion['condition']["cartCount"]) * promotion['promotion']['amount']).floor();
-        return bonus;
+        int bonus = (
+            (promotion['promotion']['amount'] /
+                promotion['condition']["cartCount"]) *
+                cartTotals['count']
+        ).floor();
+        int dividen=(
+            (cartTotals['count'] /
+                promotion['condition']["cartCount"])
+
+        ).floor();
+
+        return {
+          "status": true,
+          "type": "cCount",
+          "bonus": bonus,
+          "dividend":dividen
+        };
       }
     }
-    return 0;
+
+    return {
+      "status": false,
+      "bonus": 0,
+    };
   }
   /// Get detailed reason why promotion conditions were not met
   static String getPromotionFailureReason(
@@ -357,102 +414,7 @@ class Promotion {
    // return formResult(cart, promotionsData);
   }
 
-  /// Format the promotion result to the desired output structure
-  static Map<String, dynamic> formatPromotionResult(Map<String, dynamic> promotionResult) {
-    if (!promotionResult['success']) {
-      return {
-        "quick": {
-          "inStock": [],
-          "BonusTotal": 0
-        },
-        "long": []
-      };
-    }
 
-    Map<String, dynamic> formattedResult = {
-      "quick": {
-        "inStock": [],
-        "BonusTotal": 0
-      },
-      "long": []
-    };
-
-    String bestPromotionId = promotionResult['bestPromotionId'];
-    Map<String, dynamic> bestPromoStatus = promotionResult['allPromotionsStatus'][bestPromotionId];
-    String promoType = bestPromoStatus['promotype'];
-
-    // Find the applied promotion details
-    Map<String, dynamic>? appliedPromo;
-    for (var promo in promotionResult['applicablePromotions']) {
-      if (promo['id'].toString() == bestPromotionId) {
-        appliedPromo = promo;
-        break;
-      }
-    }
-
-    if (appliedPromo == null) {
-      return formattedResult;
-    }
-
-    if (promoType == 'quick') {
-      // Build quick promotion result
-      List<Map<String, dynamic>> inStockItems = [];
-      List<String> products = List<String>.from(appliedPromo['condition']['products'] ?? []);
-
-      // Get bonus quantities from the promotion items
-      Map<String, dynamic> promotion = appliedPromo['promotion'];
-      List<Map<String, dynamic>> promoItems = List<Map<String, dynamic>>.from(promotion['items']["inStock"]);
-
-      for (var promoItem in promoItems) {
-        inStockItems.add({
-          "productName": promoItem['productName'],
-          "qtyBonus": promoItem['qtyBonus']
-        });
-      }
-
-      formattedResult["quick"] = {
-        "inStock": inStockItems,
-        "BonusTotal": bestPromoStatus['bonusTot']
-      };
-
-    } else if (promoType == 'long') {
-      // Build long promotions list
-      List<Map<String, dynamic>> longPromotions = [];
-
-      // Get all applicable long promotions
-      for (var promo in promotionResult['applicablePromotions']) {
-        if (promo['promotype'] == 'long') {
-          String promoId = promo['id'].toString();
-          Map<String, dynamic> status = promotionResult['allPromotionsStatus'][promoId];
-
-          List<Map<String, dynamic>> inStockItems = [];
-          Map<String, dynamic> promotion = promo['promotion'];
-          List<Map<String, dynamic>> promoItems = List<Map<String, dynamic>>.from(promotion['items']["inStock"]);
-
-          for (var promoItem in promoItems) {
-            inStockItems.add({
-              "productName": promoItem['productName'],
-              "qtyBonus": promoItem['qtyBonus']
-            });
-          }
-
-          longPromotions.add({
-            "id": promoId,
-            "inStock": inStockItems,
-            "BonusTotal": status['bonusTot'],
-            "condition": {
-              "cartTotal": promo['condition']['cartTotal']
-            },
-            "inputSubmit": 0
-          });
-        }
-      }
-
-      formattedResult["long"] = longPromotions;
-    }
-
-    return formattedResult;
-  }
   /// Complete function that applies best promotion and returns formatted result
   static Map<String, dynamic> getBestPromotionFormatted(
       Map<String, dynamic> cart, List<Map<String, dynamic>> promotions) {
@@ -464,12 +426,14 @@ class Promotion {
   static Map<String, dynamic> formResult(
       Map<String, dynamic> cart, List<Map<String, dynamic>> promotions,Map<String, dynamic> promotionResults) {
     // Get actual cart total (you can modify this value)
-    int actualCartTotal = 1500; // Example: customer's cart total
+   // int actualCartTotal = 1500; // Example: customer's cart total
 
     // Separate quick and long promotions
     List<Map<String, dynamic>> quickPromos = [];
     List<Map<String, dynamic>> longPromos = [];
 //print(promotionResults["1bv"]["applied"]);
+    //print(promotionResults);
+
     for (var promo in promotions) {
 
       if(promotionResults[promo["id"]]["applied"])
@@ -477,6 +441,9 @@ class Promotion {
         if (promo["promotype"] == "quick") {
           quickPromos.add(promo);
         } else if (promo["promotype"] == "long") {
+          promo["inputCount"]=promotionResults[promo["id"]]["cartCount"];
+          promo["inputTotal"]=promotionResults[promo["id"]]["cartTotal"];
+          promo["inputPoint"]=(promo["condition"]["TotalToCount"]=="cCount")?promotionResults[promo["id"]]["cartCount"]:promotionResults[promo["id"]]["cartTotal"];
           longPromos.add(promo);
         }
       }
@@ -485,18 +452,21 @@ class Promotion {
 
     // Process QUICK promotions (apply multiplier based on cartTotal)
     Map<String, int> quickQtyMap = {};
-    int quickBonusTotal = 0;
+
+    num quickBonusTotal = 0;
 
     for (var promo in quickPromos) {
-      int conditionCartTotal = promo["condition"]["cartTotal"] as int;
+      //int conditionCartTotal = promo["condition"]["cartTotal"] as int;
+
 
       // Calculate how many times to apply this promotion
-      int multiplier = (actualCartTotal / conditionCartTotal).floor();
+      int multiplier = promotionResults[promo["id"]]["dividend"].floor();
 
       if (multiplier > 0) {
         // Add bonus amount multiplied
-        quickBonusTotal += (promo["promotion"]["amount"] as int) * multiplier;
-
+       // quickBonusTotal += (promo["promotion"]["amount"] as int) * multiplier;
+       // quickBonusTotal +=promotionResults[promo["id"]]["bonusTot"];
+        quickBonusTotal +=(promotionResults[promo["id"]]["dividend"]*promo["promotion"]['amount']).floor();
         // Add items with multiplier
         var inStockList = promo["promotion"]["items"]["inStock"] as List;
         for (var item in inStockList) {
@@ -546,7 +516,9 @@ class Promotion {
         "inStock": longInStock,
         "BonusTotal": promo["promotion"]["amount"] as int,
         "condition": promo["condition"],
-        "inputSubmit": 0,
+        "inputCount": promo["inputCount"]??0,
+        "inputTotal":promo["inputTotal"]??0,
+        "inputPoint":promo["inputPoint"]??0,//to be submitted in database
       });
     }
 
