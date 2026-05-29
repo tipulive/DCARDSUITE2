@@ -36,6 +36,189 @@ class AdminController extends Controller
         $this->platform1=env('PLATFORM1');
     }
 
+    public function addExistUserMini($input)
+    {
+
+        $input["addedStatus"]="1";//added as new one;
+        if($this->checkUidExist($input))
+        {
+            throw new \Exception("Account already exist");
+        }
+        else{
+            if($this->addMiniAccount($input))
+            {
+                $input["status"]="active2";
+                $input["CompanyName"]=$input["minicompanyName"];
+
+                $input["email"]="test@"."_".date(time());;
+                $input["password"]="1";
+                $input["uid"]=$input["ownerSub"];
+                (new AuthAdminRegisterController)->AdminCreateCompany($input);
+            }else{
+                throw new \Exception("Soething Wrong unable to create Account");
+            }
+        }
+    }
+    public function AddnewUserMini($input)//add new User
+    {
+        try {
+            //code...
+            $check=DB::transaction(function () use ($input) {
+
+                //$this->mainDeleteApp($input);
+                $this->processNewMiniAccount($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Success",
+                "message"=> $check
+            ]);
+
+
+       } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+    }
+    public function processNewMiniAccount($input){
+        $uid=preg_replace('/[^A-Za-z0-9-]/','',$input['name']);###this is  a name of existing user
+        $input['UidAdminCreated']="Mn_".$uid.""."_".date(time());
+        $input["subscriber"]=$input["miniOwnerSubscriber"];
+        if($this->checkSubscriberExist($input))
+        {
+            throw new \Exception("Account already exist");
+        }
+        else{
+            if($this->addMiniAccount($input))
+            {
+                $input["status"]="active2";
+                $input["CompanyName"]=$input["minicompanyName"];
+
+                $input["email"]="test@"."_".date(time());;
+                $input["password"]="1";
+                $input["uid"]=$input["uidOwner"];
+                (new AuthAdminRegisterController)->AdminCreateCompany($input);
+            }else{
+                throw new \Exception("Soething Wrong unable to create Account");
+            }
+        }
+
+    }
+    public function checkUidExist($input)
+{
+    return DB::select(
+        "SELECT uidOwner, miniOwner
+         FROM mini_accounts
+         WHERE uidOwner = :uidOwner
+         AND miniOwner = :miniOwner
+         LIMIT 1",
+        [
+            "miniOwner" => $input['UidAdminCreated'],
+            "uidOwner" => $input["uidOwner"]
+        ]
+    );
+}
+    public function checkSubscriberExist($input)
+    {
+        return DB::select(
+            "SELECT uidOwner, miniOwnerSubscriber
+             FROM mini_accounts
+             WHERE uidOwner = :uidOwner
+             AND miniOwnerSubscriber = :miniOwnerSubscriber
+             LIMIT 1",
+            [
+                "miniOwnerSubscriber"=>$input["subscriber"],
+                "uidOwner" => $input["uidOwner"]
+            ]
+        );
+    }
+    public function addMiniAccount($input)
+    {
+        return DB::table("mini_accounts")
+               ->insert([
+                   "uidOwner"=>$input["uidOwner"],
+                   "ownerSubscriber"=>$input["ownerSub"],
+                   "miniOwner"=>$input['UidAdminCreated'],
+                   "miniOwnerSubscriber"=>$input["subscriber"],
+                   "uidCreator"=>Auth::user()->uid,
+                   "addedStatus"=>$input["addedStatus"]??'0',
+                   "created_at"=>$this->today
+
+               ]);
+    }
+
+
+    public function MiniAccount($input){
+
+ if($input["optionCase"]='view')
+ {
+
+     return response([
+        "status" => true,
+        "result" =>$this->viewMinAcc($input)
+    ]);
+
+ }
+ else if($input["optionCase"]='search'){
+
+     return response([
+        "status" => true,
+        "result" =>searchByUidowner($input)
+    ]);
+ }
+    }
+    public function viewMinAcc($input)
+    {
+        return DB::select("
+    SELECT
+        u.uid,
+        u.PhoneNumber,
+        u.password,
+        u.subscriber,
+        u.name,
+        u.companyName,
+        m.addedStatus,
+        m.uidOwner
+    FROM mini_accounts m
+    INNER JOIN admins u
+        ON m.miniOwner = u.uid
+    WHERE m.uidOwner = :uidOwner
+", [
+    "uidOwner"=>$input["uidOwner"]
+]);
+    }
+    public function searchByUidowner($input)
+    {
+        $item = strtolower($input["name"]);
+        $itemSearch='%'.$item.'%';
+        return DB::select("
+        SELECT
+            u.uid,
+            u.password,
+            u.PhoneNumber,
+            u.subscriber,
+            u.name,
+            u.companyName,
+            m.addedStatus,
+            m.uidOwner
+        FROM mini_accounts m
+        INNER JOIN admins u
+            ON m.miniOwner = u.uid
+        WHERE m.uidOwner = :uidOwner and u.name Like :Name
+    ", [
+        "uidOwner"=>$input["uidOwner"],
+        "Name"=>$itemSearch
+    ]);
+    }
+    public function SwitchAccount(Request $request)
+    {
+
+    }
 
     public function AdminCreateCompany(Request $request){
 

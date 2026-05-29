@@ -552,11 +552,11 @@ table th {
 
 <!--form -->
 
-<div class="modal fade bd-example-modal-lg viewOrder" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+<div class="modal fade bd-example-modal-lg viewOrder "   tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg ">
     <div class="modal-content ">
 
-<div class="modal-header MyTitleModal"></div>
+<div class="modal-header MyTitleModal" ></div>
       <!--Order Request table-->
 <div class="ModalPassword">
     <table class="viewReqTable">
@@ -760,7 +760,7 @@ error:function(data){
 
 }
 
-
+var actionAccount="view";
 function CreatePromotionEventMenu(){
     $('.MainbigTitle').html("");
 $('.MyRequest_table').html("");
@@ -2540,12 +2540,12 @@ $('.ModalPassword').html(`
 </div>
 <div class="form-group ">
 <label>Factory Price</label>
-<input type="number" class="form-control" name="fact_price" />
+<input type="text" class="form-control" name="fact_price" />
 </div>
 
 <div class="form-group isProductNotExist">
 <label>Price</label>
-<input type="number" class="form-control" name="price" />
+<input type="text" class="form-control" name="price" />
 </div>
 
 
@@ -6627,8 +6627,8 @@ var checkHide=myuid===data[i].uid?'d-none':'';
 var myStatusCut2=((data[i].status).slice(-1))==='1'?'Creator':'Admin';
  getData+=` <tr class="${checkHide}">
   <td data-label="#">${i+1}</td>
-  <td data-label="Name">${data[i].name}</td>
-  <td data-label="Company">${data[i].CompanyName}</td>
+  <td data-label="Name" onclick="return addExistingUser('${data[i].name}','${data[i].uid}','${data[i].status}','${data[i].subscriber}','${data[i].CompanyName}')">${data[i].name}</td>
+  <td data-label="Company" onclick="return addNewSubscriber('${data[i].name}','${data[i].uid}','${data[i].status}','${data[i].subscriber}','${data[i].CompanyName}')">${data[i].CompanyName}</td>
   <td data-label="Status"class="${checkMystatus}">${myStatusCut2}</td>
   <td data-label="Created_at">${data[i].created_at}</td>
   <td data-label="Actions" class="${checkMystatus}">${platformcheck}</td>
@@ -6657,6 +6657,245 @@ return false;
 
 }
 
+function miniAccount(uidOwner){
+
+
+var Usertoken=localStorage.getItem("Usertoken");
+
+$.ajax({
+
+url:`./api/miniAccount`,
+type:'post',
+beforeSend: function (xhr) {
+xhr.setRequestHeader('Authorization', `Bearer ${Usertoken}`);
+},
+data: {
+     app_vers: '{{env('APP_VERS')}}',
+     uidOwner:uidOwner,
+     optionCase:actionAccount
+ },
+success:function(data){
+
+
+if(data.status){//return data as true
+
+
+var resultData=data.result;
+
+
+
+getData=`
+
+
+<table class="viewReqTable">
+<thead>
+<tr>
+<th scope="col">#</th>
+<th scope="col">Name</th>
+<th scope="col">Company</th>
+<th scope="col">Actions</th>
+
+</tr>
+</thead>
+<tbody>
+`;
+
+for(var i=0;i<resultData.length;i++){
+
+getData+=`
+
+<tr>
+<td data-label="#">${i+1}</td>
+<td data-label="Name">${resultData[i].name}</td>
+<td data-label="Company">${resultData[i].CompanyName}</td>
+<td data-label="Actions"><button type="button" class="btn btn-dark" onclick="return addExisting('${encodeURIComponent(JSON.stringify(resultData[i]))}')" >View</button>|<button type="button" class="btn btn-dark" onclick="return EditPromotion('${encodeURIComponent(JSON.stringify(resultData[i]))}')">Edit</button></td>
+
+
+</tr>`;
+
+}
+getData+=`
+</tbody>
+</table>`;
+
+$('.miniAccount').html(getData);
+
+
+
+//console.log(hashfunction);
+//TableDisplayOrderTemplate(data)
+
+
+
+
+}
+else{
+
+//$('.MyRequest_table').html("");
+}
+
+
+
+},
+error:function(data){
+//alert("errors occured please retry this process again or contact system Admin");
+//window.location.href = "./login";
+}
+});
+return false;
+
+}
+
+function userSubscriber(){
+
+
+    var Usertoken=localStorage.getItem("Usertoken");
+
+$.ajax({
+
+url:`./api/AdminViewUsers`,
+type:'get',
+headers: {
+    "Content-Type": "application/json;charset=UTF-8",
+    "Authorization": `Bearer ${Usertoken}`
+},
+data: { app_vers: '{{env('APP_VERS')}}' },
+success:function(data){
+
+
+if(data.status){//return data as true
+
+
+var resultData=data.result;
+
+viewAdminViews(resultData);
+
+
+
+
+//console.log(hashfunction);
+//TableDisplayOrderTemplate(data)
+
+
+
+
+}
+else{
+
+//$('.MyRequest_table').html("");
+}
+
+
+
+},
+error:function(data){
+//alert("errors occured please retry this process again or contact system Admin");
+//window.location.href = "./login";
+}
+});
+return false;
+
+}
+function showUser(){
+    console.log("hello");
+    $('.ModaldumpT').modal('show');
+    userSubscriber();
+}
+function viewAdminViews(resultData)
+{
+    $('.dumpTitle').html(`
+<h5 class="text-center"> Choose Users</h5>
+`);
+
+getData=`
+
+
+<table class="viewReqTable">
+<thead>
+<tr>
+  <th scope="col">#</th>
+  <th scope="col">Name</th>
+  <th scope="col">Company</th>
+  <th scope="col">Actions</th>
+
+</tr>
+</thead>
+<tbody>
+`;
+
+for(var i=0;i<resultData.length;i++){
+
+ getData+=`
+
+ <tr>
+ <td data-label="#">${i+1}</td>
+  <td data-label="Name">${resultData[i].name}</td>
+  <td data-label="Company">${resultData[i].CompanyName}</td>
+  <td data-label="Actions"><button type="button" class="btn btn-dark" onclick="return addExisting('${encodeURIComponent(JSON.stringify(resultData[i]))}')" >Take Over</button></td>
+
+
+</tr>`;
+
+}
+getData+=`
+</tbody>
+</table>`;
+
+$('.dumpRest').html(getData);
+}
+function searchUserAdmin(thisData)
+{
+
+}
+function searchThisAdmin(thisData) //switch
+{
+
+}
+function addExistingUser(name,ThisUserid,userStatus,subscriber,CompanyName){
+    $('.viewOrder').modal('show');
+    $('.MyTitleModal').html(`<h5 class="text-center">  <strong>Add Existing User</strong></h5>`)
+    $('.ModalPassword ').html(`
+    <div class="card-body">
+    <div class="form-group right-inner-addon ">
+    <input type="submit" class="btn btn-danger" onclick="return showUser()" value="submit" />
+<label>Search Product<span class="text-danger">*</span></label>
+<input type="text" class="form-control productCodeClass"  autocomplete="off" onkeyup="searchThisAdmin(this)" name="productCode" placeholder="Enter Product Code" required/>
+<span class="autocompleteIcon" onclick="hidePopup()"><i class="fas fa-exclamation-triangle text-danger" ></i></span>
+</div>
+
+
+<div class="autoCompleteTopItemData miniAccount"></div>
+
+
+
+<div class="modal fade ModaldumpT" id="largeModal" tabindex="-1" aria-labelledby="largeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title dumpTitle" id="largeModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+      <div >
+      <div class="form-group right-inner-addon ">
+      <label>Search Product<span class="text-danger">*</span></label>
+<input type="text" class="form-control productCodeClass"  autocomplete="off" onkeyup="searchUserAdmin(this)" name="productCode" placeholder="Enter Product Code" required/>
+<span class="autocompleteIcon" onclick="hidePopup()"><i class="fas fa-exclamation-triangle text-danger" ></i></span>
+</div>
+<div class="dumpRest"></div>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+    `);
+    miniAccount(ThisUserid);
+}
+function addNewSubscriber(name,ThisUserid,userStatus,subscriber,CompanyName){
+
+}
 function changePlatform(name,ThisUserid,userStatus,subscriber) {
     var indUserStatus=userStatus.slice(-1);
     userStatus=userStatus.slice(0,-1);

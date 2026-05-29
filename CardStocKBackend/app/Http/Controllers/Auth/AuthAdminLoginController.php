@@ -4,6 +4,7 @@ namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Admin;
 use Auth;
 use DB;
 
@@ -160,44 +161,41 @@ class AuthAdminLoginController extends Controller
 
 
     }
+    public function switchAccount($input)
+    {
+
+      $user = Admin::where([
+            'uid'=>$input["uid"],
+            'password'=>$input["encryptData"]
+        ])->first();
+
+        if (!$user) {
+            return response(["status" => false]);
+        }
+
+        return $this->loginReusable($input,$user);
+
+
+    }
     public function AdminLoginPhone($input){
 
         if(Auth::guard('Admin')->attempt([
 
-			'PhoneNumber'=>$input['PhoneNumber'], //means if it check username table =to input name them add input name;
-			'password'=>$input['password'],
+            'PhoneNumber'=>$input['PhoneNumber'], //means if it check username table =to input name them add input name;
+            'password'=>$input['password'],
 
 
-		]))
+        ]))
 
-		{
+        {
             $user=auth::guard('Admin')->user();
-            $success['token']=$user->createToken('MyApp')->plainTextToken;
-            $success['name']=$user->email;
-            $this->createAdmin_record();
-            return response([
-                "status"=>true,
-               // "result"=>Auth::guard('Admin')->user(),
-                "token"=>$success['token'],
-                "User"=>[
-                    "uid"=>Auth::guard('Admin')->user()->uid,
-                    "first_name"=>Auth::guard('Admin')->user()->fname,
-                    "last_name"=>Auth::guard('Admin')->user()->name,
-                    "name"=>Auth::guard('Admin')->user()->name,
-                    "email"=>Auth::guard('Admin')->user()->email,
-                    "tel"=>Auth::guard('Admin')->user()->phone,
-                    "status"=>Auth::guard('Admin')->user()->status,
-                    "Ccode"=>Auth::guard('Admin')->user()->Ccode,
-                    "platform"=>Auth::guard('Admin')->user()->platform,
-                    "CompanyName"=>Auth::guard('Admin')->user()->CompanyName,
-                    "subscriber"=>Auth::guard('Admin')->user()->subscriber,
-                ]
 
-            ],200);
+            return $this->loginReusable($input,$user);
 
-		}
 
-	else{
+        }
+
+    else{
         return response([
             "status"=>false,
 
@@ -206,6 +204,35 @@ class AuthAdminLoginController extends Controller
 
     }
 
+
+
+    }
+    public function loginReusable($input,$user)
+    {
+        $success['token']=$user->createToken('MyApp')->plainTextToken;
+        $success['name']=$user->email;
+        $this->createAdmin_record();
+        return response([
+            "status"=>true,
+           // "result"=>Auth::guard('Admin')->user(),
+            "token"=>$success['token'],
+            "User"=>[
+                "uid"=>$user->uid,
+                /*"first_name"=>$user->fname,
+                "last_name"=>$user->name,*/
+                "name"=>$user->name,
+                "email"=>$user->email,
+                "tel"=>$user->phone,
+                "PhoneNumber"=>$user->PhoneNumber,
+                "password"=>$user->password,
+                "status"=>$user->status,
+                "Ccode"=>$user->Ccode,
+                "platform"=>$user->platform,
+                "CompanyName"=>$user->CompanyName,
+                "subscriber"=>$user->subscriber,
+            ]
+
+        ],200);
     }
     public function Reset_with_email($input){
 

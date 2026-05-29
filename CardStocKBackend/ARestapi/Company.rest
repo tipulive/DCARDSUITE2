@@ -26,6 +26,17 @@ Content-Type: application/json
 "PhoneNumber": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+### Switch Account
+POST  {{baseUrl}}/switchAccount/
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid": "kebineericMuna_1668935525",
+"encryptData":"$2y$10$y9WZKX03qNwqFFkRIRtUseAVp0l3Y1p5tz7cd8jPvIJH8lQ2/0moC",
+ "app_vers":"{{app_vers}}"
+
+}
 ### check TestApp
 GET   {{baseUrl}}/checkTestApp/
 Content-Type: application/json
@@ -35,6 +46,64 @@ Content-Type: application/json
 "password": "{{password}}"
 }
 
+#### Mini Account
+POST  {{baseUrl}}/reqStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCodeSub":"nyota",
+"subscriberSub":"TEALTD",
+"req_qtySub":300,
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### Mini Account
+POST  {{baseUrl}}/miniAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"optionCase":"view",
+"uidOwner":"kebineericMuna_1668935525",
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### addNewUserMini
+POST  {{baseUrl}}/addNewUserMini
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidOwner":"kebineericMuna_1668935525",
+ "ownerSub":"TEALTD",
+"name":"cici",
+"minicompanyName":"MAPOZI",
+"miniOwnerSubscriber":"TEST_1778542880",
+"PhoneNumber":"+25478396",
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### addNewUserMini
+POST  {{baseUrl}}/addExistUserMini
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"permKey":"default",
+ "permV":false,
+ "app_vers":"{{app_vers}}"
+
+
+
+}
 #### UseDefault
 POST  {{baseUrl}}/UseDefault
 content-type: application/json;charset=UTF-8
@@ -1064,8 +1133,8 @@ Authorization: Bearer {{Auth_token}}
 
 {
 "uid":"Nyota_1672353378",
-"uidUser":"ericmushi_1773588035",
-"OrderId":"UID_fz_1777939667",
+"uidUser":"kebineericMuna_1668935525",
+"OrderId":"UID_T2_1778417420",
 "inputData":"80",
 
 "reach":"1200",

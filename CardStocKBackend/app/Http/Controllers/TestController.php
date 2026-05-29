@@ -28,8 +28,8 @@ public function generateUserAdmin(Request $request)//with compaign{
 
     $input = $request->all();
     $input["status"]="test";
-    $input["CompanyName"]="TEST";
-    $input["name"]="test";
+    $input["CompanyName"]="MAPOZI";
+    $input["name"]="mapoziName";
     $input["email"]="test@"."_".date(time());;
     $input["password"]="1";
     $input["uid"]="Test";
@@ -112,6 +112,13 @@ public function mainArrDeleteApp($input)
         'promoaccount', 'repaid_users', 'paid_dettes'
     ];
 
+    /*$tables = [
+'dettes','safariproducts',
+        'products', 'orders','orderhistories', 'promotions',
+        'promoaccount', 'repaid_users', 'paid_dettes'
+    ];*/
+
+
     $results = [];
     $totalDeleted = 0;
 
@@ -128,7 +135,17 @@ public function mainArrDeleteApp($input)
 
                 $totalDeleted += $deletedCount;
                 $results[$table] = $deletedCount;
-            }else{
+            }
+            else if($table=='mini_accounts')
+            {
+                $deletedCount = DB::delete("DELETE FROM {$table} WHERE miniOwnerSubscriber= :subscriber", [
+                    "subscriber"=> $input["subscriber"]
+                ]);
+
+                $totalDeleted += $deletedCount;
+                $results[$table] = $deletedCount;
+            }
+            else{
                 $deletedCount = DB::delete("DELETE FROM {$table} WHERE subscriber = :subscriber", [
                     "subscriber"=> $input["subscriber"]
                 ]);

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\StockController;
 use DB;
 use Auth;
+use Illuminate\Support\Str;
 
 
 class PromotionController extends Controller
@@ -64,6 +65,32 @@ class PromotionController extends Controller
           )
         )";
     }
+    public function GetPromoData($input)
+    {
+        $check=DB::select("select uid,promoschema from promotions where subscriber=:subscriber",[
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+        if($check)
+        {
+            return response([
+                // "allinput"=>$input,
+                // "data2"=>$input["item"],
+                "status"=>true,
+
+                "result"=>$check//safari UId
+
+             ]);
+        }
+        else{
+            return response([
+                // "allinput"=>$input,
+                // "data2"=>$input["item"],
+                "status"=>false,
+
+
+             ]);
+        }
+    }
     public function Promoget($input)
     {
        // $json=json_decode($check[0]->promoschema,true);
@@ -103,48 +130,157 @@ return $inStockJsonString = implode(",", $json_items);
 
     public function CreatePromo($input)
     {
-        $input["promoIdN"]=1;
-$input["promoArrId"]=0;
-        $data = json_decode($this->Promotion($input)[0]->promoschema, true);
+        try {
 
-        if(count($data)==count($this->searchInPromotion($input)))
+
+            DB::transaction(function () use ($input) {
+
+               $this->CreatePromoProcessing($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    public function CreatePromoProcessing($input)
+    {
+
+        $mainPromo=$input["mainPromoId"]??"none";
+       /// $stringData=$this->reusePromo($input);
+    if($mainPromo!="none")
+    {
+
+        if($this->checkPromo($input))
         {
-              //Uid not exist you can create
+          return false;//existed promoId
+        }else{
 
-              $stringData=$this->reusePromo($input);
+             $input["promoMainUid"]=$input["mainPromoId"];
+             $input["promo"]["id"]="promo"."_".Str::random(2).""."_".date(time());
+            if($this->promoCreate($input))
+            {
+                $this->updatePromo($input);
+            }
+            else{
+                throw new \Exception("unable to Create Promo");
+
+            }
+        }
+    }else{
+
+        $input["promoMainUid"]="promo"."_".Str::random(2).""."_".date(time());
+        $input["promo"]["id"]=$input["promoMainUid"];
+        //CreatePromoData
+        //$stringData=$this->CreatePromoData($input);
+        $check=DB::table("promotions")
+                ->insert([
+                    "uid"=>$input["promoMainUid"],
+                    "uidCreator"=>Auth::user()->uid,
+                    "subscriber"=>Auth::user()->subscriber,
+                   // "promoName"=>$input["promoName"]??"none",
+                   // "promo_msg"=>$input["promoMsg"]??"none",
+                    "promoschema"=>json_encode($input["promo"]),
+                    "reach"=>$input["reach"]??"0",//number
+                    "gain"=>$input["gain"]??"0",//number
+                    "token"=>$input["token"]??'0',//token that is equal after promotion finished
+
+                    //"ended_date"=>(STR_TO_DATE($endto, '%Y-%m-%d %H:%i:%s')),
+                    "status"=>"On",
+                    "created_at"=>$this->today,
+                ]);
+
+                if($check)
+                {
+                    if($this->promoCreate($input))
+                    {
+                       //echo "create successful";
+                       return true;
+                    }
+                    else{
+                        throw new \Exception("unable to create");
+
+                    }
+                    //return true;
+                }
+                else{
+                    throw new \Exception("unable to create process");
+                }
+    }
+
+
+    }
+
+    public function updatePromo($input){
+        $stringData=$this->reusePromo($input);
               $query = "UPDATE promotions
               SET promoschema = JSON_ARRAY_APPEND(
                 COALESCE(promoschema, JSON_ARRAY()),
                 '$',
                 $stringData
-              WHERE id = :promoIdN and subscriber=:subscriber";
+              WHERE uid = :promoIdN and subscriber=:subscriber";
 
               if(DB::update($query,$this->reusableParams($input)))
               {
-                return response([
-                    "status" => true,
-                    "result" =>"Promo Created Successfuly"
-                ]);
+                return true;
               }else{
-                return response([
-                    "status" => false,
-                    "result" =>"Promo Not Created please contact system Admin"
-                ]);
+                throw new \Exception("unable to Create This Promo");
               }
-        }
-        else{
-
-            return response([
-                "status" => false,
-                "result" =>"you can not create promo"
-            ]);
-
-
-        }
-
 
     }
-    public function EditPromotion($input)
+    public function promoCreate($input){
+                   return DB::table("promoCreate")
+                    ->insert([
+                        "uid"=>$input["promo"]["id"],
+                        "refId"=>$input["promoMainUid"],
+                        "uidCreator"=>Auth::user()->uid,
+                        "promoschema"=>json_encode($input["promo"]),
+                        "subscriber"=>Auth::user()->subscriber,
+                        "created_at"=>$this->today
+
+                    ]);
+    }
+
+    public function UpdatePromoCreate($input)
+    {
+        return DB::update("update promoCreate set promoschema=:promoschema where uid=:uid and subscriber=:subscriber",[
+            "promoschema"=>json_encode($input["promo"]),
+            "uid"=>$input["promo"]["id"],
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+    }
+    public function DeletePromoCreate($input)
+    {
+        return DB::delete(
+            "DELETE FROM promoCreate
+             WHERE uid = :uid
+             AND subscriber = :subscriber
+             LIMIT 1",
+            [
+                "uid" => $input["promo"]["id"],
+                "subscriber" => Auth::user()->subscriber
+            ]
+        );
+    }
+
+
+    public function checkPromo($input){
+       return DB::select("select *from promoCreate where uid=:uid and refId=:refId and subscriber=:subscriber",[
+            "uid"=>$input["promo"]["id"],
+            "refId"=>$input["mainPromoId"]??"none",
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+    }
+   /* public function EditPromotion($input)
     {
         $input["promoIdN"]=1;
 $input["promoArrId"]=0;
@@ -188,47 +324,148 @@ return response([
 
 
 
+    }*/
+
+    public function EditPromotion($input){
+        try {
+
+            $input["promoMainUid"]=$input["mainPromoId"];
+            DB::transaction(function () use ($input) {
+
+                //return $this->searchInPromotion($input);
+
+
+               $this->promoEditProcessing($input);
+            });
+            $data = json_decode($this->Promotion($input)[0]->promoschema, true);
+            return response([
+                "status" => true,
+                "result" => "Sucess",
+                "promo"=>count($data)
+            ]);
+
+        } catch (\Exception $e) {
+            $filtered = array_values($this->searchInPromotion($input));
+
+            $input["newpromoschema"] =json_encode($filtered);
+            return response()->json([
+                "status" => false,
+                "test"=>$input["newpromoschema"],
+                "input"=>$input["promoMainUid"],
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+    public function promoEditProcessing($input)
+    {
+
+       if($this->checkPromo($input))
+       {
+               if($this->UpdatePromoCreate($input))
+               {
+                $filtered = array_values($this->searchInPromotion($input));
+
+                $input["newpromoschema"] = json_encode($filtered);
+
+                if($this->UpdatePromoSchema($input))
+                {
+                        return true;
+                }else{
+                    throw new \Exception("we can not delete something wrong");
+                }
+               }else{
+                throw new \Exception("we can not delete something wrong");
+               }
+       }else{
+        throw new \Exception("Unable to delete because Promo ID is not available");
+       }
+    }
+
+    public function UpdatePromoSchema($input)
+    {
+        $stringData=$this->reusePromo($input);
+            $myNewreusableParams=array_merge($this->reusableParams($input),array(
+                "promoArrId"=>$input["promoArrId"]
+    ));
+            $query = "UPDATE promotions
+            SET promoschema = JSON_SET(
+              COALESCE(promoschema, JSON_ARRAY()),
+              CONCAT('$[', :promoArrId, ']'),
+              $stringData
+            WHERE uid=:promoIdN and subscriber=:subscriber";
+
+            return DB::update($query,$myNewreusableParams);
+
+
     }
     public function DeletePromotion($input)
     {
-        $input["promoIdN"]=1;
-        $input["promoArrId"]=0;
-    $data = json_decode($this->Promotion($input)[0]->promoschema, true);
+        try {
 
-    if(count($data)==count($this->searchInPromotion($input)))
+            $input["promoMainUid"]=$input["mainPromoId"];
+            DB::transaction(function () use ($input) {
+
+                //return $this->searchInPromotion($input);
+               $this->promodelProcessing($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess"
+            ]);
+
+        } catch (\Exception $e) {
+            $filtered = array_values($this->searchInPromotion($input));
+
+            $input["newpromoschema"] =json_encode($filtered);
+            return response()->json([
+                "status" => false,
+                "test"=>$input["newpromoschema"],
+                "input"=>$input["promoMainUid"],
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+    }
+    public function promodelProcessing($input)
     {
-          //Uid not exist you can not delete anything
+       if($this->checkPromo($input))
+       {
 
-          return response([
-            "status" => false,
-            "result" =>"this Promo does not exist"
-        ]);
+               if($this->DeletePromoCreate($input))
+               {
+
+                $filtered = array_values($this->searchInPromotion($input));
+
+                $input["newpromoschema"] =json_encode($filtered);
+                if($this->UpdatePromotion($input))
+                {
+                        return true;
+                }else{
+                    throw new \Exception("we can not delete");
+                }
+               }else{
+                throw new \Exception("we can not delete something wrong");
+               }
+       }else{
+        throw new \Exception("Unable to delete because Promo ID is not available");
+       }
     }
-    else{
-        //you may be able to delete
-$filtered = array_values($this->searchInPromotion($input));
+    public function searchExistPromotion($input)
+    {
+        $data = json_decode($this->Promotion($input)[0]->promoschema, true);
 
-$input["newpromoschema"] = json_encode($filtered);
+$filtered = array_filter($data, function ($item) use ($input){
+    return $item['id']==$input["promo"]["id"];
+});
 
-if($this->UpdatePromotion($input))
-{
-    return response([
-        "status" => true,
-        "result" =>"Promo deleted Successful"
-    ]);
+/*$filtered = array_values($filtered); // reindex
+
+$newpromoschema = json_encode($filtered);*/
+     return $filtered;
 }
-else{
-    return response([
-        "status" => true,
-        "result" =>"Promo Not deleted Something wrong please contact system Admin"
-    ]);
-}
-
-
-
-
-    }
-    }
     public function searchInPromotion($input)
     {
         $data = json_decode($this->Promotion($input)[0]->promoschema, true);
@@ -259,23 +496,23 @@ $newpromoschema = json_encode($filtered);*/
             "cardData"=>$input["promo"]["condition"]["card"],
 
             "subscriber"=>Auth::user()->subscriber,
-            "promoIdN"=>$input["promoIdN"]
+            "promoIdN"=>$input["promoMainUid"]
         ];
     }
 
 
     public function Promotion($input){
-        return DB::select("select promoschema from promotions where id=:id and subscriber=:subscriber",[
-            "id"=>$input["promoIdN"],
+        return DB::select("select promoschema from promotions where uid=:uid and subscriber=:subscriber",[
+            "uid"=>$input["promoMainUid"],
             "subscriber"=>Auth::user()->subscriber
         ]);
 
     }
     public function UpdatePromotion($input)
     {
-        return DB::update('update promotions set promoschema=:promoschema,updated_at=:updated_at where id=:promoIdN and subscriber=:subscriber',[
+        return DB::update('update promotions set promoschema=:promoschema,updated_at=:updated_at where uid=:promoIdN and subscriber=:subscriber',[
             'promoschema'=>$input["newpromoschema"],
-            "promoIdN"=>$input["promoIdN"],
+            "promoIdN"=>$input["promoMainUid"],
             "subscriber"=>Auth::user()->subscriber,
             'updated_at'=>$this->today,
 
@@ -340,6 +577,13 @@ $newpromoschema = json_encode($filtered);*/
           echo $status;
         }*/
     }
+    public function GetLongDetail($input){
+
+    }
+    public function longWithdraw($input)
+    {
+
+    }
     public function checkLongPromo($input,$data):bool{
         for ($i = 0; $i < count($data["long"]); $i++) {
 
@@ -348,6 +592,7 @@ $newpromoschema = json_encode($filtered);*/
           return true;
     }
     public function LongPromo($input,$data){
+
         if (isset($data["long"]) && count($data["long"])>0) {
 
             if($this->checkLongPromo($input,$data))
@@ -395,8 +640,8 @@ $newpromoschema = json_encode($filtered);*/
         $input["productCodeSub"] = $data["productName"];
         $input["req_qtySub"] = (int)$data['qtyBonus'];
         $input["uidClient"] = "eric_177358819";
-        $input["myOrderId"] = $input["OrderId"] ?? (new StockController)->CreateUid();
-
+        $input["myOrderId"] = $input["OrderId"] ?? (new StockController)->CreateUid($input);
+        $input["subscriberSub"]=Auth::user()->subscriber;
         $stockController = new StockController();
         $result = $stockController->UpdateSafariOrderHistory($input);
 
@@ -563,17 +808,18 @@ $newpromoschema = json_encode($filtered);*/
 {
     try {
 
+
         DB::transaction(function () use ($input) {
             $mamaUid="MSolange_1709926940";
         $input["UserId"]=($input["uidUser"]===$mamaUid)?$mamaUid:Auth::user()->uid;
         $input["uidCreator"]=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
         $input["subscriber"]=Auth::user()->subscriber;
-            $this->addData($input);
+           $this->addData($input);
         });
 
         return response([
             "status" => true,
-            "result" => "Success"
+            "result" => "Sucess"
         ]);
 
     } catch (\Exception $e) {
@@ -589,7 +835,22 @@ $newpromoschema = json_encode($filtered);*/
 
         //code...
 
-        $data = json_decode($this->getPromo(), true);
+        //$data = json_decode($this->getPromo(), true);
+        $promo=$input["promoData"];
+        //$promo=$this->getPromo();
+
+       if($promo=="none")
+       {
+        if((new StockController)->NewSubmitOrder($input))
+        {
+            return true;
+        }
+        else{
+            return false;
+        }
+       }
+       else{
+        $data = json_decode($promo, true);
         if($this->LongPromo($input,$data))//succesfully
         {
 
@@ -599,6 +860,8 @@ $newpromoschema = json_encode($filtered);*/
         else{
             return false;
         }
+       }
+
 
 
 
@@ -606,21 +869,6 @@ $newpromoschema = json_encode($filtered);*/
     }
     public function getPromo(){
         return '{
-            "quick": {
-              "inStock": [
-                {
-                  "productName": "imigati",
-                  "qtyBonus": 5
-                },
-                {
-                  "productName": "ibijumba",
-                  "qtyBonus": 4
-                }
-              ],
-              "BonusAmountTotal": 1200,
-              "BonusItemValue": 110,
-              "BonusQty": 9
-            },
             "long": [
               {
                 "id": "fbx",

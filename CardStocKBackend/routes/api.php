@@ -50,9 +50,25 @@ Route::post('/AdminLoginPhone','AdminController@AdminLoginPhone')->name(' AdminL
 Route::middleware('auth:sanctum')->group( function () {//here is to protect multiple route
     Route::get('/logout','AccountController@logout')->name('logout');
 
+    /*ReqStock */
+    Route::post('/reqStock','CompanyController@reqStock')->name('reqStock');
+    /*ReqStock */
+    /*Payment Request and Received*/
+    Route::post('/reqPaymentStock','CompanyController@reqPaymentStock')->name('reqPaymentStock');
+    Route::get('/viewReqStockPay','CompanyController@ViewReqStockPayment')->name('ViewReqStockPayment');
+    Route::get('/viewReqStockPayHist','CompanyController@ViewReqStockPaymentHistory')->name('ViewReqStockPaymentHistory');
+    Route::post('/StockPayAdmin','CompanyController@StockPayAdmin')->name('StockPayAdmin');
+    /*Payment Request and Received*/
+    /*add Mini Account*/
+    Route::post('/switchAccount','CompanyController@switchAccount')->name('switchAccount');
+    Route::post('/miniAccount','CompanyController@MiniAccount')->name('MiniAccount');
+    Route::post('/addNewUserMini','CompanyController@AddnewUserMini')->name('AddnewUserMini');
+    Route::post('/addExistUserMini','CompanyController@addExistUserMini')->name('addExistUserMini');
+    /*add Mini Account*/
 /*AdminData*/
 Route::post('upload','StockController@upload');
 /*Company*/
+
 Route::post('/utilitySubmitOrder','CompanyController@utilitySubmitOrder')->name('utilitySubmitOrder');
 Route::get('/utilityViewSales','CompanyController@utilityViewSales')->name('utilityViewSales');
 Route::get('/PrintCard','CompanyController@CompanyPrintCard')->name('CompanyPrintCard');
@@ -67,6 +83,7 @@ Route::post('/CreateMultipleCard','CompanyController@CompanyCreateMultipleCard')
 Route::post('/AssignCard','CompanyController@CompanyAssignCard')->name('CompanyAssignCard');
 Route::get('/CompanySyncCardDownload','CompanyController@CompanySyncCardDownload')->name('CompanySyncCardDownload');
 Route::post('/CompanySyncUpload','CompanyController@CompanySyncUpload')->name('CompanySyncUpload');
+Route::get('/getPromoData','CompanyController@CompanyGetPromoData')->name('CompanyGetPromoData');
 Route::post('/getPromo','CompanyController@CompanyPromoget')->name('CompanyPromoget');
 Route::post('/CreatePromo','CompanyController@CompanyCreatePromo')->name('CompanyCreatePromo');
 Route::post('/EditPromo','CompanyController@CompanyEditPromo')->name('CompanyEditPromo');

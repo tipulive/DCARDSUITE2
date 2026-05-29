@@ -29,28 +29,518 @@ class StockController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
-public function sendStock($input){
-   /* $check=DB::table("stockSend")
-        ->([
-            "uid"=>,
-            "uidSender"=>Auth::user()->uid
-            "uidReceiver"=>
-            "productCode"=>$input("productCode")
-            "qty"=>$input("qty")
+    public function receiveStock($input){
+        try {
 
-        ]);*/
-}
-public function paidSuperAdmin($input){//paid Admin
-    if($this->addSubscriber($input))
+
+            DB::transaction(function () use ($input) {
+
+            $input["uidCreator"]=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
+            $input["subscriber"]=Auth::user()->subscriber;
+               $this->processConfirmInStock($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+    public function processConfirmInStock($input)
     {
-        if($this->paidAdminHistory($input))
-        {
-            if($this->UpdateAdminRecord($input))
+      if($this->checkreqStock($input))
+      {
+          $input["productCodeSub"]=$this->checkreqStock($input)[0]["productCode"];
+          $input["subscriberSub"]=$this->checkreqStock($input)[0]["subscriber"];
+          $input["qty"]=$this->checkreqStock($input)[0]["qty"];
+          if($this->checkSafariProduct($input))//on User Who sent Stock
+          {
+            $input["productCode"]=$input["productCodeSub"];
+            $input["subscriberSub"]=$this->checkreqStock($input)[0]["recSubscriber"];
+            if($this->checkProduct($input)) //check Product on User Who Received STock
             {
-                return true;
+            //if Product Exist,Then update Products,createSafari and update SafariProduct on sender and CreateSafari product on receiver as Well
+            if($this->checkSafariProductReceived($input))
+            {
 
             }else{
-                throw new \Exception("Unable to update Admin Records");
+                throw new \Exception("Something Wrong");
+            }
+
+        }else{
+
+            }
+          }else{
+            throw new \Exception("insufficient Quantity of  or Product Not Found");
+          }
+
+      }else{
+        throw new \Exception("Something Wrong Please Contact System Admin");
+      }
+
+    }
+    public function checkSafariProductReceived($input){
+        $products = $this->ChooseProductInSafari($input);
+        if($products) {
+            $allocated = [];
+            $data = [];
+            $dataQty = [];
+            $totalAmount = 0;
+            $totalQty = 0;
+            $remaining = $input["req_qtySub"];
+
+            foreach ($products as $product) {
+                if ($remaining <= 0) break;
+
+                $take = min($product->qty, $remaining);
+
+                $input["SoldOut"] = $take;
+                $input["qtyData"] = $product->qty - $take;
+                $input["totAm"] = $take * $product->price;
+                $totalAmount += $take * $product->price;
+                $totalQty += $take;
+                $input["safariId"] = $product->safariId;
+
+
+
+                $allocated[] = [
+                    'id' => $product->id,
+                    'safariId' => $product->safariId,
+                    'qty' => $take,
+                    'price' => $product->price,
+                    'remaining' => $product->qty - $take
+                ];
+
+                $remaining -= $take;
+            }
+
+            $totalAllocated = $input["req_qtySub"] - $remaining;
+
+            if ($remaining === 0 && $input["req_qtySub"] > 0) {
+
+             return response([
+                "status" => true,
+                "result" => $allocated
+            ]);
+
+            } else {
+                throw new \Exception("insufficient Quantity of " . $input["productCodeSub"]);
+            }
+        } else {
+            throw new \Exception("Product " . $input["productCodeSub"] . " Is not exist");
+        }
+    }
+
+
+
+
+
+    public function checkSafariProduct($input){
+        $products = $this->ChooseProductInSafariRef($input);
+        if($products) {
+            $allocated = [];
+            $data = [];
+            $dataQty = [];
+            $totalAmount = 0;
+            $totalQty = 0;
+            $remaining = $input["req_qtySub"];
+
+            foreach ($products as $product) {
+                if ($remaining <= 0) break;
+
+                 //$this->checkOperationTest($input);
+                $take = min($product->qty, $remaining);
+                 $input["qty"]=$take;
+                $input["SoldOut"] = $take;
+                $input["qtyData"] = $product->qty - $take;
+                $input["totAm"] = $take * $product->price;
+                $totalAmount += $take * $product->price;
+                $totalQty += $take;
+                $input["safariId"] = $product->safariId;
+                $input["fact_price"] = $product->fact_price;
+                $input["productName"] = $product->productName;
+                $input["cat"] = $product->cat;
+                $input["isQr"] = $product->isQr;
+                $input["catName"] = $product->catName;
+                $input["tags"]=$product->tags;
+                $input["description"] = $product->description;
+                $input["refSaf"] = $product->safariId;
+                $input["uidCreatorSub"]=Auth::user()->uid;
+                $input["subscriberSub"]=Auth::user()->subscriber;
+
+                $this->checkOperationSafaris($input);
+
+
+                /*$allocated[] = [
+                    'id' => $product->id,
+                    'safariId' => $product->safariId,
+                    'qty' => $take,
+                    'price' => $product->price,
+                    'remaining' => $product->qty - $take
+                ];*/
+
+                $allocated[] = [
+                    'id' => $product->id,
+                    'safariId' => $product->safariId,
+                    'qty' => $take,
+                    'price' => $product->price,
+                    'remaining' => $product->qty - $take,
+
+                    'productName' => $product->productName,
+                    'cat' => $product->cat,
+                    'isQr' => $product->isQr,
+                    'pcs' => $product->pcs,
+                    'catName' => $product->catName,
+                    'tags' => $product->tags,
+                    'description' => $product->description,
+                    'refSaf' => $product->safariId,
+                    'uidCreatorSub' => Auth::user()->uid,
+                    'subscriberSub' => Auth::user()->subscriber,
+                ];
+
+                $remaining -= $take;
+
+
+            }
+
+            $totalAllocated = $input["req_qtySub"] - $remaining;
+
+            if ($remaining === 0 && $input["req_qtySub"] > 0) {
+$input["id"] = $allocated[0]["id"];
+$input["safariId"] = $allocated[0]["safariId"];
+$input["qty"] = $input["req_qtySub"];
+$input["price"] = $allocated[0]["price"];
+$input["pcs"] = $allocated[0]["pcs"];
+$input["remaining"] = $allocated[0]["remaining"];
+
+$input["productName"] = $allocated[0]["productName"];
+$input["cat"] = $allocated[0]["cat"];
+$input["isQr"] = $allocated[0]["isQr"];
+$input["catName"] = $allocated[0]["catName"];
+$input["tags"] = $allocated[0]["tags"];
+$input["description"] = $allocated[0]["description"];
+$input["refSaf"] = $allocated[0]["refSaf"];
+$input["uidCreatorSub"] = $allocated[0]["uidCreatorSub"];
+$input["subscriberSub"] = $allocated[0]["subscriberSub"];
+                //$input["qty"]=$allocated[0]["qty"];
+
+                if($this->UpdateProductRef($input))//on sender Side
+                {
+                   return true;
+                 }else{
+                    if($this->CreateProductRef($input))//receiver
+                    {
+                        return true;
+
+                    }else{
+           throw new \Exception("unable to add This product " . $input["productCodeSub"]);
+                    }
+                 }
+
+
+
+            } else {
+                throw new \Exception("insufficient Quantity of " . $input["productCodeSub"]);
+            }
+        } else {
+            throw new \Exception("Product " . $input["productCodeSub"] . " Is not exist");
+        }
+    }
+    public function reqStock($input)
+    {
+       // return $this->checkSafariProduct($input);
+
+        try {
+
+
+            DB::transaction(function () use ($input) {
+
+            $input["uidCreator"]=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
+            $input["subscriber"]=Auth::user()->subscriber;
+            $this->checkSafariProduct($input);
+
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess",
+               // "result2"=> $this->checkSafariProduct($input)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+
+    }
+
+    public function createSafariRef($input){
+        return DB::table("safaristocks")
+         ->insert([
+             "uid"=>$input["uid"],
+             "name"=>$input["name"]??"safariTheo",
+             "refSaf"=>$input["refSaf"],
+             "comment"=>$input["comment"]??'none',
+             "uidCreator"=>$input["uidCreatorSub"],
+             "subscriber"=>$input["subscriberSub"],
+
+             "created_at"=>$this->today
+         ]);
+    }
+    public function UpdateProductRef($input){
+       return  DB::update("update products set qty=qty+:qty where subscriber=:subscriber and productCode=:productCode  limit 1",array(
+            "productCode"=>$input["productCodeSub"],
+            "qty"=>$input["req_qtySub"],
+
+            "subscriber"=>Auth::user()->subscriber
+         ));
+        }
+    public function CreateProductRef($input){
+
+        return DB::table("products")
+        ->insert([
+    "cat"=>$input['cat']?:'none',//comeFrom
+    "catName"=>$input['catName']?:'none',//comeFrom
+    'productCode'=>$input["productCodeSub"],//product id
+    'productName'=>$input["productName"],//product id
+
+    "subscriber"=>$input["subscriberSub"],
+//owner of the products
+    "price"=>$input['price'],//who give item
+
+    "qty"=>$input['qty'],
+    "pcs"=>$input['pcs']??'none',
+   "total"=>$input['qty']*$input['price'],
+
+// "img_url"=>$mult_imgurl->att_url,
+   "img_url"=>"none"?:'none',
+
+  "tags"=>($input["tags"])?:NULL,
+  'active'=>$input['active']??'none',
+  "description"=>$input["description"]??'none',
+    "created_at"=>$this->today,
+        ]);
+    }
+    public function createSafariProductRef($input){
+        return DB::table("safariproducts")
+        ->insert([
+            "safariId"=>$input["uid"],
+            "productCode"=>$input["productCodeSub"],//(it may be productCode or uid of spending)
+            "refSaf"=>$input["refSaf"]??'none',
+            "price"=>$input["fact_price"],
+            "qty"=>$input["qty"],
+            "totQty"=>$input["qty"],
+            "TotSoldAmount"=>$input["TotSoldAmount"]??"0",
+            "TotBuyAmount"=>$input["qty"]*$input["fact_price"],
+            "status"=>$input["status"]??"spendProduct",
+            "CommentStatus"=>$input["CommentStatus"]??"transfered product",
+
+            "uidCreator"=>$input["uidCreatorSub"],
+            "subscriber"=>$input["subscriberSub"],
+            "created_at"=>$this->today,
+            "updated_at"=>$this->today
+        ]);
+            }
+    public function checkOperationSafaris($input)
+    {
+        $input["uid"]=$this->CreateUid($input);
+          if($this->checkSafariRef($input))//check if safariProduct Existed
+          {
+            /*if($this->UpdateSafariStock($input))
+            {
+               return true;
+            }else{
+                throw new \Exception("Unable to update Safari");
+            }*/
+            $this->UpdateSafariStockRef($input);
+          }else{
+
+            if($this->createSafariRef($input))
+            {
+               $this->createSafariProductRef($input);
+            }
+
+          }
+
+
+    }
+
+    public function checkSafariRef($input){
+        return DB::select(
+            "SELECT * FROM safaristocks
+             WHERE refSaf = :refSaf
+             AND subscriber = :subscriber
+             LIMIT 1",
+            [
+                "refSaf" => $input["refSaf"],
+                "subscriber" => $input["subscriberSub"]
+            ]
+        );
+    }
+    public function UpdateSafariStockRef($input){
+        return DB::update(
+            "UPDATE safariproducts
+             SET qty = qty + :qty,
+                 totQty = totQty + :totAm,
+                 updated_at = :updated_at
+             WHERE refSaf = :refSaf
+             AND productCode = :productCode
+             AND subscriber = :subscriber",
+            [
+                "qty" => $input["qty"],
+                "totAm" => $input["qty"],
+                "refSaf" => $input["refSaf"] ?? 'none',
+                "subscriber" => $input["subscriberSub"] ?? Auth::user()->subscriber,
+                "productCode" => $input["productCodeSub"],
+                "updated_at" => $this->today
+            ]
+        );
+    }
+
+    public function checkOperationTest($input)
+    {
+          if($this->checkTest($input))
+          {
+              $this->testUpdate($input);
+          }else{
+            $this->createTest($input);
+          }
+         // $this->createTest($input);
+    }
+
+    public function testUpdate($input)
+    {
+
+        return DB::update(
+            "UPDATE exchanges SET currencyV =currencyV+:qty WHERE subscriber = :subscriber",
+            [
+                "qty" =>$input["qty"],
+                "subscriber"=>$input["safariId"]
+            ]
+        );
+    }
+
+    public function checkTest($input)
+    {
+        return DB::select("select subscriber from exchanges where subscriber=:subscriber",[
+            "subscriber"=>$input["safariId"]
+        ]);
+    }
+    public function createTest($input)
+    {
+        return DB::table("exchanges")
+        ->insert([
+            "currency"=>$input["productCodeSub"],
+            "currencyV"=>$input["qty"],
+            "subscriber"=>$input["safariId"]
+        ]);
+    }
+    public function AddreqStock($input){
+        return DB::table("req_stocks")
+            ->insert([
+            "uid"=>$this->CreateUid($input),//this is Safari Uid
+            "uidSender"=>Auth::user()->id,
+            "productCode"=>$input["productCode"],
+            "qty"=>$input["req_qty"],
+            "status"=>"0",//request
+            "subscriber"=>Auth::user()->subscriber,//sender subscriber
+            "commentData"=>$input["commentData"]??'none',
+            //"uidReceiver"=>$input["uidReceiver"],
+            "recSubscriber"=>$input["recSubscriber"],
+            "created_at"=>$this->today
+            ]);
+     }
+public function checkreqStock($input)
+{
+    return DB::select("select *from req_stocks where uid=:uid limit 1",[
+    "uid"=>$input["uid"],
+    "subscriber"=>$input["subscriber"]
+    ]);
+}
+public function ConfirmSendStock($input)//This is SuperAdmin
+{
+
+return DB::update("update req_stocks set status=:status,updated_at=:updated_at where uid=:uid and recSubscriber=:recSubscriber and status=:statusCheck limit 1",
+   [
+ "status"=>$input["status"],
+ "uid"=>$input["uid"],//uid
+ "status"=>"1",//$input["status"],approval
+ "statusCheck"=>"0",//request
+ "recSubscriber"=>Auth::user()->subscriber,
+ "uidReceiver"=>Auth::user()->uid,
+ "updated_at"=>$this->today
+    ]);
+
+}
+
+public function checkProduct($input){
+    return DB::select("select *from products where productCode=:productCode and subscriber=:subscriber limit 1",[
+        "productCode"=>$input["productCode"],
+        "subscriber"=>$input["subscriberSub"]
+    ]);
+}
+
+public function StockPayAdmin($input){//this is when Admin Received Payment from Stock(Stock seller pay admin)
+    try {
+
+
+        DB::transaction(function () use ($input) {
+
+
+           $this->stockSellerPayAdmin($input);
+        });
+
+        return response([
+            "status" => true,
+            "result" => "Sucess"
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            "status" => false,
+            "message" => $e->getMessage(),
+            'errorCode' => $e->getLine()
+        ], 500);
+    }
+}
+public function stockSellerPayAdmin($input){//paid Admin
+    //SomeInputFieldMissing
+    //$input["receivedSub"]= amount to be received
+    //$input["uid"]= who paid
+    //$input["uidReceiver"]= who get paid
+    if($this->addSubscriber($input))
+    {
+        if($this->updatePaymentRequest($input))
+        {
+            $input["uidUserSub"]=$input["uid"];
+            $input["balanceSent"]=$input["receivedSub"];//received amount
+            if($this->UpdateAdminRecord($input))//update Payment of Stock sellers
+            {
+
+                $input["uidUserSub"]=Auth::user()->uid;
+                $input["safeBalanceSub"]=$input["receivedSub"];//received amount
+                $input["balanceSent"]='0';
+                if($this->UpdateAdminRecord($input))//update Payment of receiver Admins
+                {
+                    return true;
+
+                }else{
+                    throw new \Exception("Unable to update Admin Receiver Records");
+                }
+
+            }else{
+                throw new \Exception("Unable to update sender Amount");
             }
         }
         else{
@@ -62,26 +552,114 @@ public function paidSuperAdmin($input){//paid Admin
     }
 
 }
+public function reqPaymentStock($input){
+    $check=DB::select("select status,uid from repaid_admins where uid=:uid and status='0' limit 1",[
+        "uid"=>Auth::user()->uid
+       // "status"=>$input["status"]
+    ]);
+    if($check)
+    {
+        return response([
+            "status" =>false,
+            "result"=>'unable to create request Payment'
 
-public function paidAdminHistory($input){
-    return DB::table("repaidAdmins")
+        ]);
+    }else{
+        if($this->paymentRequest($input))
+        {
+            return response([
+                "status" => true,
+                "result"=>'request Payment successfuly'
+
+            ]);
+        }
+        else{
+            return response([
+                "status" => false,
+                "result"=>'unable to create request Payment'
+
+            ]);
+        }
+    }
+
+}
+public function updatePaymentRequest($input)
+{
+    //status 1 approval and 0 request
+    return DB::update("update repaid_admins set status=:status,uidReceiver=:uidReceiver where uid=:uid and subscriber=:subscriber and status='0' limit 1",[
+        "status"=>$input["status"],
+        "uid"=>$input["uid"],
+        "uidReceiver"=>Auth::user()->uid,
+        "subscriber"=>Auth::user()->subscriber,
+        "updated_at"=>$this->today
+    ]);
+}
+
+public function paymentRequest($input){
+    return DB::table("repaid_admins")
             ->insert([
                 "uid"=>$uid,//uid of paid
                 "uidPaid"=>Auth::user()->uid,//who paid borrower(ni Admin uri kwishyura ideni)
-                "uidReceiver"=>$input['uidReceiver'],//Owner of Debt
+                //"uidReceiver"=>$input['uidReceiver'],//Receiver Debt
                 "subscriber"=>Auth::user()->subscriber,
                 "amount"=>$input['amount'],
                 "systemUid"=>$input['systemUid']??'PointSales1',
-                "status"=>'Paid',
+                "status"=>'0',//request,1 Approval 2 Cancel
                 "purpose"=>$input['purpose']??'none',
                 "commentData"=>$input['commentData']??'none',
                 "created_at"=>$this->today
 
             ]);
 }
-public function CreateUid(){
+
+
+public function ViewReqStockPayment($input)
+{
+    return DB::select("
+        SELECT
+            r.amount,
+            r.uidReceiver,
+            r.status,
+            r.purpose,
+            r.created_at,
+            a.name
+        FROM repaid_admins r
+        INNER JOIN admins a ON r.uid = a.uid
+        WHERE r.uidPaid = :uidPaid
+        AND r.status = :status
+        ORDER BY r.id DESC
+        LIMIT 10
+    ", [
+        "uidPaid" => Auth::user()->uid,
+        "status" => $input["status"],
+    ]);
+}
+
+public function ViewReqStockPaymentHistory($input)
+{
+    return DB::select("
+        SELECT
+            r.amount,
+            r.uidReceiver,
+            r.status,
+            r.purpose,
+            r.created_at,
+            a.name AS payer,
+            b.name AS deptOwner
+        FROM repaid_admins r
+        INNER JOIN admins a ON r.uid = a.uid
+        INNER JOIN admins b ON r.uidReceiver = b.uid
+        WHERE r.uidPaid = :uidPaid
+        AND r.status != '0'
+        ORDER BY r.id DESC
+        LIMIT 10
+    ", [
+        "uidPaid" => Auth::user()->uid
+    ]);
+}
+public function CreateUid($input){
     $orderId=$input['orderIdFromEdit']??'none';
-    $uid =($orderId=='none')?"UID"."_".Str::random(2).""."_".date(time()):$orderId;
+    $uid=($orderId=='none')?"UID"."_".Str::random(2).""."_".date(time()):$orderId;
    return $uid;
 
 
@@ -126,6 +704,35 @@ public function AddPromo($input)
 
     }*/
     //this will give me product based on orders
+    public function ChooseProductInSafariRef($input){//this is a good one choose Product In Safari
+        return DB::select("
+        SELECT
+            s.id,
+            s.safariId,
+            s.qty,
+            s.price as fact_price,
+            p.price,
+            p.productCode,
+            p.productName,
+            p.cat,
+            p.isQr,
+            p.catName,
+            p.pcs,
+            p.img_url,
+            p.mult_imgurl,
+            p.tags,
+            p.description
+        FROM safariproducts s
+        INNER JOIN products p ON s.productCode = p.productCode
+            AND s.subscriber = p.subscriber
+        WHERE s.subscriber = ?
+            AND s.productCode = ?
+            AND s.qty > 0
+        ORDER BY s.id ASC
+        FOR UPDATE
+    ", [$input["subscriberSub"], $input['productCodeSub']]);
+
+    }
     public function ChooseProductInSafari($input){//this is a good one choose Product In Safari
         return DB::select("
         SELECT
@@ -258,11 +865,12 @@ public function AddPromo($input)
     }
     public function UpdateSafariStock($input){
 
-     return DB::update("update safariproducts set qty=:qty,SoldOut=SoldOut+:SoldOut,TotSoldAmount=TotSoldAmount+:totAm,updated_at=:updated_at where safariId=:safariId and productCode=:productCode and subscriber=:subscriber",array(
+     return DB::update("update safariproducts set qty=:qty,refSaf=:refSaf,SoldOut=SoldOut+:SoldOut,TotSoldAmount=TotSoldAmount+:totAm,updated_at=:updated_at where safariId=:safariId and productCode=:productCode and subscriber=:subscriber",array(
         "qty"=>$input["qtyData"],
         "SoldOut"=>$input["SoldOut"],
+        "refSaf"=>$input["refSaf"]??'none',
         "totAm"=>$input["totAm"],
-        "subscriber"=>Auth::user()->subscriber,
+        "subscriber"=>$input["subscriberSub"]??Auth::user()->subscriber,
         "safariId"=>$input["safariId"],
         "productCode"=>$input["productCodeSub"],
         "updated_at"=>$this->today
@@ -298,20 +906,21 @@ public function AddPromo($input)
     }
 
     public function UpdateAdminRecord($input){
-        return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and status=:status  limit 1",array(
+        return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,balanceSent=balanceSent+:balanceSent,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and status=:status  limit 1",array(
             // "uid"=>$uidCreator,
               "bonus"=>$input["bonusSub"]??'0',
               "safeBalance"=>$input["safeBalanceSub"]??'0',
              "uid"=>$input["uidUserSub"]??Auth::user()->uid,
              "status"=>$input["statusSub"]??'Sales',
              "balance"=>$input['balanceSub']??'0',
+             "balanceSent"=>$input['balanceSent']??'0',
              "dettes"=>$input["detteSub"]??'0',
-             "promoAmount"=>$input["promoAmountSub"]??"0",
-             "promoAsset"=>$input["promoAssetSub"]??"0",
-             "proAssetQty"=>$input["proAssetQtySub"]??"0",
-             "outPromoAmount"=>$input["outPromoAmountSub"]??"0",
-             "outPromoAsset"=>$input["outPromoAssetSub"]??"0",
-             "outProAssetQty"=>$input["outProAssetQtySub"]??"0",
+             "promoAmount"=>$input["promoAmountSub"]??'0',
+             "promoAsset"=>$input["promoAssetSub"]??'0',
+             "proAssetQty"=>$input["proAssetQtySub"]??'0',
+             "outPromoAmount"=>$input["outPromoAmountSub"]??'0',
+             "outPromoAsset"=>$input["outPromoAssetSub"]??'0',
+             "outProAssetQty"=>$input["outProAssetQtySub"]??'0',
 
              "updated_at"=>$this->today
          ));
@@ -395,7 +1004,7 @@ public function AddPromo($input)
             throw new \Exception("Something Wrong I can not Update OrderHistory With Total");
          }
         }else{
-            throw new \Exception("Order Can not be submitted");
+            throw new \Exception("Order Can not be submitted".$sum);
         }
     }
 }
@@ -422,7 +1031,7 @@ public function CreateOrder($input){
     return DB::table("orders")
     ->insert([
         "uid"=>$input["OrderId"],//orderId
-        "total"=>$input['all_total'],
+        "total"=>$input["amountSub"],
         "paid"=>$input['inputData'],
         "debt"=>$input['all_total']-$input['inputData'],
         "paidStatus"=>$input["paidStatus"],
@@ -2892,17 +3501,73 @@ else{
     public function productPlaceOrder($input){//to place order
 
 
-        $productCode =$input['productCode'];
+       /* $productCode =$input['productCode'];
 
-             return $this->placeOrder($input);
+             return $this->placeOrder($input);*/
 
-            /*return response([
-                        "status"=>true,
-                        "safariuid"=>$input["req_qty"],
-                        "reqType"=>gettype($input["req_qty"]),
-                       // "name"=>$input["SafariName"]
+             return $this->newPlaceOrder($input);
 
-                    ],200);*/
+
+
+
+    }
+
+    public function newPlaceOrder($input)
+    {
+        try {
+
+            $input['productCodeSub']=$input['productCode'];
+            $input["req_qtySub"]=$input["req_qty"];
+            $input["myOrderId"]=$this->CreateUid($input);
+            $check=DB::transaction(function () use ($input) {
+               // $orderId=$input['orderIdFromEdit']??'none';
+
+
+                $this->newPlaceOrderProcessing($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess",
+                "OrderId"=>$input["myOrderId"]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    public function newPlaceOrderProcessing($input)
+    {
+
+        $input["OrderId"]=$input["myOrderId"];
+        if($this->checkDuplicateOrder($input))
+        {
+            throw new \Exception("This Order exist please submit New One");
+        }else{
+
+            if($this->checkDuplicateOrderHist($input))
+            {
+                throw new \Exception("This Order exist please submit New One");
+            }
+            else{
+                $input["subscriberSub"]=Auth::user()->subscriber;
+                $this->UpdateSafariOrderHistory($input);
+            }
+
+        }
+    }
+
+
+    public function checkDuplicateOrderHist($input){
+        return DB::select("select uid from orderhistories where uid=:uid and paidStatus=:paidStatus limit 1",[
+            "uid"=>$input["OrderId"],
+            "paidStatus"=>'checked'
+            ]);
 
     }
 
@@ -3009,7 +3674,7 @@ if($checkAvoid)
          ],200);
 }
 else{
-    $checkDup=DB::select("select  uid from orderhistories where uid=:uid and paidStatus=:paidStatus limit 1",[
+    $checkDup=DB::select("select uid from orderhistories where uid=:uid and paidStatus=:paidStatus limit 1",[
         "uid"=>$uid,
         "paidStatus"=>'checked'
         ]);
@@ -3797,6 +4462,8 @@ public function ViewUserTempOrder($input){//make sure order must not be more tha
                 MAX(users.name) AS name,
                 MAX(orderhistories.uid) AS uid,
                 MAX(orderhistories.userid) AS userid,
+
+
                 MAX(orderhistories.orderDebt) AS orderDebt,
                 MAX(orderhistories.permission) AS permission,
                 MAX(orderhistories.description) AS commentData,

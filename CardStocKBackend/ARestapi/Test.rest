@@ -5,10 +5,10 @@
 @email=ceke@gmail.com
 ##@PhoneNumber=+243464646
 ##@password=1
-@PhoneNumber=+250782389359
+@PhoneNumber=+2507888889
 @password=1
-@Auth_token=962|a1i5jItgxzfVTt5nhyC8J4S6yHnhYmsBTjACmlql
-### Company Login with email
+@Auth_token=1227|ITjLKw47tyfl2iYyrooYzsc5vMHnlVYZlBMvGKxI
+## Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
 
@@ -26,12 +26,59 @@ Content-Type: application/json
 "PhoneNumber": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+### req_qty must be number
+POST  {{baseUrl}}/placeOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"goldb",
+"uidClient":"test_1778542880",
+"req_qty":3,
+"ref":"test",
+"comment":"ok",
+"statusForm":"none",
+"orderIdFromEdit":"none",
+"app_vers":"{{app_vers}}"
+
+
+}
+###
+### double test submit Order later,this uid is promotion uid
+POST  {{baseUrl}}/SubmitOrder
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"uidUser":"test_1778542880",
+"OrderId":"UID_Sy_1778882082",
+"promoData":"none",
+"inputData":30,
+
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1",
+"app_vers":"{{app_vers}}"
+
+
+}
+
 ### check Generate User
+
+GET  {{baseUrl}}/OrderViewCount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+}
+### generate new User
 POST {{baseUrl}}/generateUserTest/
 Content-Type: application/json
 
 {
-"PhoneNumber":"+2507888888"
+"PhoneNumber":"+2507888889"
 
 }
 ### check TestApp
@@ -47,5 +94,40 @@ POST  {{baseUrl}}/deleteApp/
 Content-Type: application/json
 
 {
-"subscriber":"BMW_1778031480"
+"subscriber":"TREVORIALTD"
+}
+### Place Order
+POST  {{baseUrl}}/placeOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"ibijumba",
+"uidClient":"test_1778192201",
+"req_qty":10,
+"ref":"test",
+"comment":"ok",
+"statusForm":"none",
+"orderIdFromEdit":"none",
+"app_vers":"{{app_vers}}"
+
+
+}
+### double test submit Order later,this uid is promotion uid
+POST  {{baseUrl}}/SubmitOrder
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"uidUser":"test_1778192201",
+"OrderId":"UID_Ov_1778193033",
+"inputData":"80",
+
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1",
+"app_vers":"{{app_vers}}"
+
+
 }

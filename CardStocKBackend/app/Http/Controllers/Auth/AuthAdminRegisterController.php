@@ -78,7 +78,7 @@ $check1=DB::select("select Phonenumber,email from admins where email=:email or P
         $company=$input['CompanyName']??'none';
         $subscriberQuery=$input['subscriber']??'none';
 
-        $uid=$uid.""."_".date(time());
+        $uid=$input['UidAdminCreated']??$uid.""."_".date(time());
         $subscriberInput=($subscriberQuery=='none')?$subscriber.""."_".date(time()):$subscriberQuery;
         $companyQuery=($company=='none')?Auth::user()->CompanyName:$input['CompanyName'];
         $check=DB::table("admins")
