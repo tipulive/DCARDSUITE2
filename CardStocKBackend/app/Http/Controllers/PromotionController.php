@@ -34,9 +34,12 @@ class PromotionController extends Controller
         $json_items = [];
 
         for($i = 0; $i < count($inStock); $i++) {
-            $json_items[] = "JSON_OBJECT('productName','" . addslashes($inStock[$i]['productName']) . "', 'qty','" . addslashes($inStock[$i]['qty']) . "', 'price', '" . addslashes($inStock[$i]['price']) . "')";
+           // $json_items[] = "JSON_OBJECT('productName','" . addslashes($inStock[$i]['productName']) . "', 'qty','" . addslashes($inStock[$i]['qty']) . "', 'price', '" . addslashes($inStock[$i]['price']) . "')";
+           $json_items[] = "JSON_OBJECT('productName','" . addslashes($inStock[$i]['productName']) . "', 'qty','" . addslashes($inStock[$i]['qty']) . "')";
         }
 
+        $result = $this->conditionParts($input);
+        $conditionString = $result['conditionString'];
         $inStockJsonString = implode(",", $json_items);
        return $stringData="JSON_OBJECT(
             'id', :promoId,
@@ -54,16 +57,65 @@ class PromotionController extends Controller
               )
             ),
             'condition', JSON_OBJECT(
-              'allowProduct', 'Only',
-              'products',JSON_ARRAY(:allowproducts),
-              'exProducts', JSON_ARRAY(:exproducts),
-              'TotalToCount', :TotalToCount,
-              'cartTotal', :cartTotal,
-              'cartCount', :cartCount,
-              'card', :cardData
+                $conditionString
             )
           )
         )";
+    }
+
+    public function conditionParts($input): array
+    {
+        // Default bind parameters for the fixed conditions
+        $bindParams = [];
+
+        // Start with the fixed conditions
+        $conditionParts = [
+            "'productRule', :productRule",
+            "'TotalToCount', :TotalToCount",
+            "'cartTotal', :cartTotal",
+            "'cartCount', :cartCount",
+            "'card', :cardData"
+        ];
+
+        $productRule =$input["promo"]["condition"]["productRule"];
+
+
+        // Conditionally add product/exProduct fields
+        if ($productRule === 'all') {
+            // add neither
+        } elseif ($productRule === 'only') {
+            $conditionParts[] = "'products', JSON_EXTRACT(:products, '$')";
+            $productJson = json_encode(
+                array_map('trim', explode(',', $input["products"]))
+            );
+            $bindParams['products'] =$productJson ?? null;
+        } elseif ($productRule === 'allExcept') {
+            $conditionParts[] = "'exProducts', JSON_EXTRACT(:exproducts, '$')";
+
+            $exproductJson = json_encode(
+                array_map('trim', explode(',', $input["exproducts"]))
+            );
+            $bindParams['exproducts'] = $exproductJson ?? null;
+        } else {
+            // fallback: include both (for any other value)
+            $conditionParts[] = "'products', JSON_EXTRACT(:products, '$')";
+            $conditionParts[] = "'exProducts', JSON_EXTRACT(:exproducts, '$')";
+            $productJson = json_encode(
+                array_map('trim', explode(',', $input["products"]))
+            );
+            $exproductJson = json_encode(
+                array_map('trim', explode(',', $input["exproducts"]))
+            );
+            $bindParams['products'] =$productJson ?? null;
+            $bindParams['exproducts'] = $exproductJson ?? null;
+        }
+
+        $conditionString = implode(",\n      ", $conditionParts);
+
+        return [
+            'conditionString' => $conditionString,
+            'bindParams'      => $bindParams,
+        ];
     }
     public function GetPromoData($input)
     {
@@ -72,12 +124,18 @@ class PromotionController extends Controller
         ]);
         if($check)
         {
+            $platform=$input["platform"]??'none';
+
+            $objects = json_decode($check[0]->promoschema);
+            $platformData=($platform!='mobile')?$check:$objects;
             return response([
                 // "allinput"=>$input,
                 // "data2"=>$input["item"],
                 "status"=>true,
 
-                "result"=>$check//safari UId
+                //"result"=>$objects,//safari UId
+                "result"=>$platformData
+
 
              ]);
         }
@@ -86,6 +144,7 @@ class PromotionController extends Controller
                 // "allinput"=>$input,
                 // "data2"=>$input["item"],
                 "status"=>false,
+
 
 
              ]);
@@ -470,8 +529,11 @@ $newpromoschema = json_encode($filtered);*/
     {
         $data = json_decode($this->Promotion($input)[0]->promoschema, true);
 
-$filtered = array_filter($data, function ($item) use ($input){
+/*$filtered = array_filter($data, function ($item) use ($input){
     return $item['id'] !==$input["promo"]["id"];
+});*/
+$filtered = array_filter($data, function ($item) use ($input) {
+    return $item !== $input['promo']['id'];
 });
 
 /*$filtered = array_values($filtered); // reindex
@@ -481,15 +543,21 @@ $newpromoschema = json_encode($filtered);*/
 }
     public function reusableParams($input)
     {
-        return [
+       // $array = array_map('trim', explode(',', $yourString));
+
+    $params=[
             "promoId"=>$input["promo"]["id"],
             "promoType" =>$input["promo"]["promotype"],
             "name"=>$input["promo"]["name"],
             "startDate"=>$input["promo"]["startDate"],
             "endDate"=>$input["promo"]["endDate"],
             "amount"=>$input["promo"]["promotion"]["amount"],
-            "allowproducts"=>$input["allowproducts"],
-            "exproducts"=>$input["exproducts"],
+           //"amount"=>123,
+           "productRule"=>$input["promo"]["condition"]["productRule"],
+           // "allowproducts"=>$input["products"],//products
+
+           //"products"=>$productJson,
+            //"exproducts"=>$exproductJson,
             "TotalToCount"=>$input["promo"]["condition"]["TotalToCount"],
             "cartTotal"=>$input["promo"]["condition"]["cartTotal"],
             "cartCount"=>$input["promo"]["condition"]["cartCount"],
@@ -498,6 +566,11 @@ $newpromoschema = json_encode($filtered);*/
             "subscriber"=>Auth::user()->subscriber,
             "promoIdN"=>$input["promoMainUid"]
         ];
+        $result = $this->conditionParts($input);
+        $bindParams = $result['bindParams'];
+        $newArr=array_merge($bindParams,$params);
+        return $newArr;
+
     }
 
 
@@ -526,16 +599,21 @@ $newpromoschema = json_encode($filtered);*/
     $totalPromo = 0;
     $totalQty = 0;
 
-    for ($i = 0; $i < count($data["quick"]["inStock"]); $i++) {
-        $result = $this->saveQuickPromo($data["quick"]["inStock"][$i], $input);
 
-        if ($result) {
-            $results[] = $result;
-            $totalPromo += $result["totalPromo"] ?? 0;
-            $totalQty += $result["totalQty"] ?? 0;
-        } else {
-            return false; // Or handle failure as needed
+    for ($i = 0; $i < count($data["quick"]); $i++) {
+        $input["saveQuickUid"]=$data["quick"][$i]["id"];
+        for($iv=0;$iv<count($data["quick"][$i]["inStock"]);$iv++)
+        {
+            $result = $this->saveQuickPromo($data["quick"][$i]["inStock"][$iv], $input);
+            if ($result) {
+                $results[] = $result;
+                $totalPromo += $result["totalPromo"] ?? 0;
+                $totalQty += $result["totalQty"] ?? 0;
+            } else {
+                return false; // Or handle failure as needed
+            }
         }
+
     }
 
     // Return combined result
@@ -587,9 +665,116 @@ $newpromoschema = json_encode($filtered);*/
     public function checkLongPromo($input,$data):bool{
         for ($i = 0; $i < count($data["long"]); $i++) {
 
+            $mydata=$data["long"][$i];
+            $input["myUid"]=$data["long"][$i]["id"];
+           if($this->conditionLongPromo($input,$mydata))
+           {
             $this->saveLongPromo($input,$data["long"][$i]);
+           }else{
+            //$condParts= $mydata["condition"]["TotalToCount"];
+               var_dump($mydata["condition"]);
+            throw new \Exception("unable to Create History Long Promo");
+
+           }
+
+
           }
           return true;
+    }
+    public function ConditionLParts($input,$data):array
+    {
+        $condParts=$data["condition"]["TotalToCount"];
+
+
+        if($condParts==='cCount')
+        {
+            return [
+                'cCount' => $data["inputCount"],
+                'cTotal'=>'0',
+            ];
+        }
+        elseif($condParts==='CTotal')
+        {
+
+            return [
+                'cCount' => "0",
+                'cTotal'=> $data["inputTotal"],
+            ];
+
+        }elseif($condParts==='both')
+        {
+
+            return [
+                'cCount' => $data["inputCount"],
+                'cTotal'=> $data["inputTotal"],
+            ];
+        }else{
+            throw new \Exception("unable Ccount");
+        }
+
+
+
+    }
+    public function conditionLongPromo($input,$data){
+
+
+        $condParts=$data["condition"]["TotalToCount"];
+
+
+        if($condParts==='cCount')
+        {
+            $input["tType"]="cCount";
+            $input["cCount"]=$data["inputCount"];
+            $input["cTotal"]="0";
+
+            if($this->LongpromoHist($input))
+            {
+                return true;
+            }else{
+                throw new \Exception("unable Ccount");
+            }
+        }elseif($condParts==='CTotal')
+        {
+            $input["tType"]="CTotal";
+            $input["cCount"]="0";
+            $input["cTotal"]=$data["inputTotal"];
+            if($this->LongpromoHist($input))
+            {
+                return true;
+            }else{
+                throw new \Exception("unable CTotal");
+            }
+        }elseif($condParts==='both')
+        {
+            $input["tType"]="both";
+            $input["cCount"]=$data["inputCount"];
+            $input["cTotal"]=$data["inputTotal"];
+            if($this->LongpromoHist($input))
+            {
+                return true;
+            }else{
+                throw new \Exception("unable both");
+            }
+        }else{
+          return false;
+        }
+
+
+    }
+    public function LongpromoHist($input){
+
+        return DB::table("longpromohist")
+            ->insert([
+                "uid"=>$input["myUid"],//promoUid
+                "orderId"=>$input["OrderId"],
+                "uidUser"=>$input["uidUser"],
+                "tType"=>$input["tType"],
+                "cCount"=>$input["cCount"]??'0',
+                "cTotal"=>$input["cTotal"]??'0',
+                "subscriber"=>Auth::user()->subscriber,
+                "uidCreator"=>Auth::user()->uid,
+                "created_at"=>$this->today
+            ]);
     }
     public function LongPromo($input,$data){
 
@@ -597,7 +782,7 @@ $newpromoschema = json_encode($filtered);*/
 
             if($this->checkLongPromo($input,$data))
             {
-
+                //throw new \Exception("Unable to Process Long Promotion");
 
                 $this->ProcessQuickPromo($data,$input);
             }
@@ -606,15 +791,16 @@ $newpromoschema = json_encode($filtered);*/
             }
         }
         else{
+            //throw new \Exception("Unable to Process Pom".$input);
            $this->ProcessQuickPromo($data,$input);
         }
     }
     public function ProcessQuickPromo($data, $input)
     {
-        if (isset($data["quick"]["inStock"]) && count($data["quick"]["inStock"]) > 0) {
-            $input["outPromoAmountSub"] = $data["quick"]["BonusAmountTotal"];
-           // $input["outPromoAssetSub"] = $data["quick"]["BonusItemValue"];
-            //$input["outProAssetQtySub"] = $data["quick"]["BonusQty"];
+        if (isset($data["quick"]) && count($data["quick"]) > 0) {
+           // $input["outPromoAmountSub"] = $data["quick"]["BonusAmountTotal"];
+            $input["outPromoAmountSub"] =array_sum(array_column($data["quick"], 'BonusTotal'));
+
 
             $result = $this->QuickPromo($input, $data);
 
@@ -642,6 +828,7 @@ $newpromoschema = json_encode($filtered);*/
         $input["uidClient"] = "eric_177358819";
         $input["myOrderId"] = $input["OrderId"] ?? (new StockController)->CreateUid($input);
         $input["subscriberSub"]=Auth::user()->subscriber;
+
         $stockController = new StockController();
         $result = $stockController->UpdateSafariOrderHistory($input);
 
@@ -755,6 +942,10 @@ $newpromoschema = json_encode($filtered);*/
     {
       if($this->GetThisLongPromo($input,$data))
       {
+        $result = $this->ConditionLParts($input,$data);
+           $input["cCount"]=$result["cCount"];
+           $input["cTotal"]=$result["cTotal"];
+
           if($this->UpdateLongPromoAccount($input,$data))
           {
             return true;
@@ -786,8 +977,11 @@ $newpromoschema = json_encode($filtered);*/
         return DB::table("promoaccount")
         ->insert([
             "uid"=>$data["id"],//promoUid
+            "orderId"=>$input["OrderId"],
             "uidUser"=>$input["uidUser"],
             "pointIN"=>$data["inputPoint"],
+            "cCount"=>$data["inputCount"]??'0',
+            "cTotal"=>$data["inputTotal"]??'0',
             "subscriber"=>Auth::user()->subscriber,
             "uidCreator"=>Auth::user()->uid,
             "created_at"=>$this->today
@@ -795,8 +989,10 @@ $newpromoschema = json_encode($filtered);*/
     }
 
     public function UpdateLongPromoAccount($input,$data){
-        return DB::update("update promoaccount set pointIN=pointIN+:pointIN,updated_at=:updated_at,uidCreator=:uidCreator where uidUser=:uidUser and uid=:uid limit 1",array(
+        return DB::update("update promoaccount set cCount=cCount+:cCount,cTotal=cTotal+:cTotal,pointIN=pointIN+:pointIN,updated_at=:updated_at,uidCreator=:uidCreator where uidUser=:uidUser and uid=:uid limit 1",array(
             "pointIN"=>$data["inputPoint"],
+            "cCount"=>$input["cCount"]??'0',
+            "cTotal"=>$input["cTotal"]??'0',
             "uidUser"=>$input["uidUser"],
             "uid"=>$data["id"],
             "uidCreator"=>Auth::user()->uid,
@@ -835,32 +1031,35 @@ $newpromoschema = json_encode($filtered);*/
 
         //code...
 
-        //$data = json_decode($this->getPromo(), true);
-        $promo=$input["promoData"];
+                  //$data = json_decode($this->getPromo(), true);
+       // $promo=$input["promoData"];
         //$promo=$this->getPromo();
 
-       if($promo=="none")
-       {
-        if((new StockController)->NewSubmitOrder($input))
+        $promo=$input["promoData"];
+        if($promo!='none')
+        {
+            $data = json_decode($promo, true);
+            // var_dump($data);
+             if($this->LongPromo($input,$data))//succesfully
+             {
+
+                 return true;
+
+             }
+             else{
+                 return false;
+             }
+
+        }else{
+          /*  if((new StockController)->NewSubmitOrder($input))
         {
             return true;
         }
         else{
             return false;
+        }*/
         }
-       }
-       else{
-        $data = json_decode($promo, true);
-        if($this->LongPromo($input,$data))//succesfully
-        {
 
-            return true;
-
-        }
-        else{
-            return false;
-        }
-       }
 
 
 
@@ -868,63 +1067,77 @@ $newpromoschema = json_encode($filtered);*/
 
     }
     public function getPromo(){
-        return '{
+        return '
+        {
+            "quick": [],
             "long": [
               {
-                "id": "fbx",
-                "startDate": "2030-06-27 10:00",
-                "endDate": "2030-06-27 10:00",
+                "id": "promo_long",
                 "inStock": [
                   {
-                    "productName": "castel",
-                    "qtyBonus": 3
-                  },
-                  {
-                    "productName": "primus",
-                    "qtyBonus": 2
+                    "productName": "laptop",
+                    "qtyBonus": 1
                   }
                 ],
-                "BonusTotal": 500,
+                "BonusTotal": 300,
                 "condition": {
-                  "allowProduct": "Only",
-                  "products": ["simba", "fanta"],
-                  "exProducts": ["simba", "fanta"],
-                  "TotalToCount": "cCount",
-                  "cartTotal": 100,
-                  "cartCount": 50,
+                  "productRule": "all",
+                  "TotalToCount": "CTotal",
+                  "cartTotal": 500.0,
+                  "cartCount": 10,
                   "card": "yes",
-                  "TargetPoint": 7000
+                  "allowProduct": "all",
+                  "products": [],
+                  "exProducts": []
                 },
-                "inputCount": 200,
-                "inputTotal": 5000.0,
-                "inputPoint": 200
+                "inputCount": 40,
+                "inputTotal": 2000.0,
+                "inputPoint": 2000.0
+              },{
+                "id": "promo_vigo",
+                "inStock": [
+                  {
+                    "productName": "laptop",
+                    "qtyBonus": 1
+                  }
+                ],
+                "BonusTotal": 300,
+                "condition": {
+                  "productRule": "all",
+                  "TotalToCount": "cCount",
+                  "cartTotal": 500.0,
+                  "cartCount": 10,
+                  "card": "yes",
+                  "allowProduct": "all",
+                  "products": [],
+                  "exProducts": []
+                },
+                "inputCount": 60,
+                "inputTotal": 6000.0,
+                "inputPoint": 2000.0
               },
               {
-                "id": "fbv",
+                "id": "promo_zinga",
                 "inStock": [
                   {
-                    "productName": "castel",
-                    "qtyBonus": 7
-                  },
-                  {
-                    "productName": "serengeti",
-                    "qtyBonus": 3
+                    "productName": "laptop",
+                    "qtyBonus": 1
                   }
                 ],
-                "BonusTotal": 400,
+                "BonusTotal": 300,
                 "condition": {
-                  "allowProduct": "Only",
-                  "products": ["coke"],
-                  "exProducts": ["simba", "fanta"],
-                  "TotalToCount": "CTotal",
-                  "cartTotal": 100,
-                  "cartCount": 5,
+                  "productRule": "all",
+                  "TotalToCount": "both",
+                  "cartTotal": 500.0,
+                  "cartCount": 10,
                   "card": "yes",
-                  "TargetPoint": 7000
+                  "allowProduct": "all",
+                  "products": [],
+                  "exProducts": []
                 },
-                "inputCount": 10,
-                "inputTotal": 500.0,
-                "inputPoint": 500.0
+                "inputCount": 90,
+                "inputTotal": 6000.0,
+                "inputPoint": 2000.0
               }
             ]
           }';

@@ -16,8 +16,137 @@ Content-Type: application/json
 "email": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+### reqPayment
+#### Mini AccountViewRecReqStock
+POST  {{baseUrl}}/reqPaymentStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"amount":"200",
+"purpose":"kwishyura Stock",
+"commentData":"Nishyuye Theo",
+ "app_vers":"{{app_vers}}"
 
 
+
+}
+### reqPayment
+### ViewRecReqStock
+GET  {{baseUrl}}/ViewRecReqStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"status":"1",
+ "app_vers":"{{app_vers}}"
+
+
+
+
+
+}
+#### Mini AccountViewRecReqStock
+POST  {{baseUrl}}/reqStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"nyota",
+"recSubscriber":"TEALTD",
+"commentData":"Aime yohereje",
+"req_qty":50,
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+
+###received Stock, subscriberSub here is The sender done
+POST  {{baseUrl}}/receiveStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_mn_1780690844",
+"productCodeSub":"nyota",
+"subscriberSub":"TEALTD",
+"req_qtySub":33,
+ "app_vers":"{{app_vers}}"
+
+}
+
+###Account SubscriberAccount Or Company Account
+
+GET  {{baseUrl}}/SubscriberAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"subscriber":"none",
+"app_vers":"{{app_vers}}"
+
+
+
+}
+
+### myAccount
+GET  {{baseUrl}}/myAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"app_vers":"{{app_vers}}"
+
+
+
+}
+###Account
+### currency
+
+## Currency
+
+GET  {{baseUrl}}/Currency
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"currency":"USD1",
+"searchOption":"none",
+"app_vers":"{{app_vers}}"
+
+
+
+}
+
+###Add Currency
+GET  {{baseUrl}}/AddCurrency
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"currency":"USD",
+"currencyV":"1",
+"app_vers":"{{app_vers}}"
+
+}
+###Add Currency
+GET  {{baseUrl}}/UpdateCurrency
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"myCurrency":"FRW",
+"newCurrency":"none",
+"currencyV":"1450",
+ "app_vers":"{{app_vers}}",
+"app_vers":"{{app_vers}}"
+
+
+}
+### currency
 ### Company Login with phone
 POST  {{baseUrl}}/AdminLoginPhone/
 Content-Type: application/json

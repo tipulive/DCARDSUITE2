@@ -1,7 +1,7 @@
 
 
 
-import 'package:dstock/Query/StockQuery.dart';
+import '../../Query/StockQuery.dart';
 
 import '../../Pages/components/ProductComp.dart';
 import '../../Pages/components/SetAdminPaymentComp.dart';

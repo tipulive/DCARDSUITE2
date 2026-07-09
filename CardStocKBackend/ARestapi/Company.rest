@@ -26,6 +26,17 @@ Content-Type: application/json
 "PhoneNumber": "{{PhoneNumber}}",
 "password": "{{password}}"
 }
+
+### print Qr code on product
+GET  {{baseUrl}}/getProducts
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+
+
+}
 ### Switch Account
 POST  {{baseUrl}}/switchAccount/
 Content-Type: application/json
@@ -73,7 +84,7 @@ Authorization: Bearer {{Auth_token}}
 
 
 }
-#### addNewUserMini
+#### addNewUserMini ,this will create a new account only or if it exist then added there and it will check uidOwner and miniSubscriber
 POST  {{baseUrl}}/addNewUserMini
 content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
@@ -81,24 +92,30 @@ Authorization: Bearer {{Auth_token}}
 {
 "uidOwner":"kebineericMuna_1668935525",
  "ownerSub":"TEALTD",
-"name":"cici",
-"minicompanyName":"MAPOZI",
-"miniOwnerSubscriber":"TEST_1778542880",
-"PhoneNumber":"+25478396",
+ "miniOwner":"Kayiranga_1668876519",
+"name":"kayiranga",
+"minicompanyName":"DMSMLTD",
+"miniOwnerSubscriber":"DMSMLTD777",
+"PhoneNumber":"+23782389359",
  "app_vers":"{{app_vers}}"
 
 
 
 }
-#### addNewUserMini
+#### addNewUserMini,this will check condition of uidOwner and miniOwner only
 POST  {{baseUrl}}/addExistUserMini
 content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
 
-"permKey":"default",
- "permV":false,
+"uidOwner":"kebineericMuna_1668935525",
+ "ownerSub":"TEALTD",
+ "miniOwner":"Kayiranga_1668876519",
+"name":"kayiranga",
+"minicompanyName":"DMSMLTD",
+"miniOwnerSubscriber":"DMSMLTD777",
+"PhoneNumber":"+23782389359",
  "app_vers":"{{app_vers}}"
 
 
@@ -1041,9 +1058,9 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"productCode":"victoria",
+"productCode":"ubugari",
 "uidClient":"ericmushi_1773588035",
-"req_qty":2,
+"req_qty":5,
 "ref":"test",
 "comment":"ok",
 "statusForm":"none",
@@ -1124,18 +1141,84 @@ Authorization: Bearer {{Auth_token}}
 
 }
 ###dettes
+###Account SubscriberAccount Or Company Account
 
+GET  {{baseUrl}}/SubscriberAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"subscriber":"none",
+"app_vers":"{{app_vers}}"
+
+
+
+}
+
+### myAccount
+GET  {{baseUrl}}/myAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"app_vers":"{{app_vers}}"
+
+
+
+}
 ###
+### reqPayment
+#### Mini AccountViewRecReqStock
+POST  {{baseUrl}}/reqPaymentStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"amount":"300",
+"purpose":"kwishyura Stock",
+"commentData":"Nishyuye Theo",
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+#### Mini Account
+POST  {{baseUrl}}/reqStock
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"nyota",
+"recSubscriber":"TEST_1778542880",
+"commentData":"Aime yohereje",
+"req_qty":33,
+ "app_vers":"{{app_vers}}"
+
+
+
+}
 ### double test submit Order later,this uid is promotion uid
+
+GET  {{baseUrl}}/getPromoData
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"app_vers":"{{app_vers}}"
+
+}
+####
 POST  {{baseUrl}}/SubmitOrder
 Content-Type: application/json
 Authorization: Bearer {{Auth_token}}
 
 {
 "uid":"Nyota_1672353378",
-"uidUser":"kebineericMuna_1668935525",
-"OrderId":"UID_T2_1778417420",
-"inputData":"80",
+"uidUser":"ericmushi_1773588035",
+"OrderId":"UID_Ef_1781902614",
+"inputData":"225",
 
 "reach":"1200",
 "gain":"350",

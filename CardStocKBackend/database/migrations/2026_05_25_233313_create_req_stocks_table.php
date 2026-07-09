@@ -17,7 +17,7 @@ class CreateReqStocksTable extends Migration
             $table->id();
             $table->string('uid')->index('uid');// Uid
             $table->string('productCode')->index('productCode');//
-            $table->string('qty')->dafault('0');//
+            $table->string('qty')->dafault('0')->index('qty');//
             $table->string('uidSender')->index('uidSender');//
 
             $table->string('status')->index('status');//

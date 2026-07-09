@@ -50,10 +50,22 @@ Route::post('/AdminLoginPhone','AdminController@AdminLoginPhone')->name(' AdminL
 Route::middleware('auth:sanctum')->group( function () {//here is to protect multiple route
     Route::get('/logout','AccountController@logout')->name('logout');
 
+    /*Currency Against USD  done and Testing*/
+    Route::get('/getProducts','StockController@getProducts')->name('getProducts');
+    Route::get('/Currency','CompanyController@Currency')->name('Currency');
+    Route::get('/AddCurrency','CompanyController@AddCurrency')->name('AddCurrency');
+    Route::get('/UpdateCurrency','CompanyController@UpdateCurrency')->name('UpdateCurrency');
+    /*Currency */
+    /*Account done Testing*/
+    Route::get('/SubscriberAccount','CompanyController@SubscriberAccount')->name('SubscriberAccount');
+    Route::get('/myAccount','CompanyController@myAccount')->name('myAccount');
+    /*Account */
     /*ReqStock */
-    Route::post('/reqStock','CompanyController@reqStock')->name('reqStock');
+    Route::get('/ViewRecReqStock','CompanyController@ViewRecReqStock')->name('ViewRecReqStock');
+    Route::post('/reqStock','CompanyController@reqStock')->name('reqStock');//done testing already
+    Route::post('/receiveStock','CompanyController@receiveStock')->name('receiveStock');//done testing already
     /*ReqStock */
-    /*Payment Request and Received*/
+    /*Payment RequreqPaymentStockest and Received*/
     Route::post('/reqPaymentStock','CompanyController@reqPaymentStock')->name('reqPaymentStock');
     Route::get('/viewReqStockPay','CompanyController@ViewReqStockPayment')->name('ViewReqStockPayment');
     Route::get('/viewReqStockPayHist','CompanyController@ViewReqStockPaymentHistory')->name('ViewReqStockPaymentHistory');

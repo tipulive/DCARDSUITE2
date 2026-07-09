@@ -36,10 +36,41 @@ class AdminController extends Controller
         $this->platform1=env('PLATFORM1');
     }
 
-    public function addExistUserMini($input)
+    public function addExistUserMini($input)//add new User based on UId
+    {
+        try {
+            //code...
+            $check=DB::transaction(function () use ($input) {
+
+                //$this->mainDeleteApp($input);
+                $this->processaddExistUserMini($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Success",
+                "message"=> $check
+            ]);
+
+
+       } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+
+    }
+    public function processaddExistUserMini($input)
     {
 
         $input["addedStatus"]="1";//added as new one;
+
+        $input['UidAdminCreated']=$input["miniOwner"]??"Mn_".$uid.""."_".date(time());
+        $input["subscriber"]=$input["miniOwnerSubscriber"];
+
+
         if($this->checkUidExist($input))
         {
             throw new \Exception("Account already exist");
@@ -59,7 +90,7 @@ class AdminController extends Controller
             }
         }
     }
-    public function AddnewUserMini($input)//add new User
+    public function AddnewUserMini($input)//add new User based on Subscriber
     {
         try {
             //code...
@@ -85,9 +116,10 @@ class AdminController extends Controller
         }
 
     }
-    public function processNewMiniAccount($input){
+    public function processNewMiniAccount($input){//uidOWN condition and miniOwnerSUbscriber
         $uid=preg_replace('/[^A-Za-z0-9-]/','',$input['name']);###this is  a name of existing user
-        $input['UidAdminCreated']="Mn_".$uid.""."_".date(time());
+
+        $input['UidAdminCreated']=$input["miniOwner"]??"Mn_".$uid.""."_".date(time());
         $input["subscriber"]=$input["miniOwnerSubscriber"];
         if($this->checkSubscriberExist($input))
         {
@@ -109,7 +141,7 @@ class AdminController extends Controller
         }
 
     }
-    public function checkUidExist($input)
+    public function checkUidExist($input)//UidOwner and miniOwnerId
 {
     return DB::select(
         "SELECT uidOwner, miniOwner
@@ -123,7 +155,7 @@ class AdminController extends Controller
         ]
     );
 }
-    public function checkSubscriberExist($input)
+    public function checkSubscriberExist($input)//uidOWN condition and miniOwnerSUbscriber
     {
         return DB::select(
             "SELECT uidOwner, miniOwnerSubscriber
@@ -171,6 +203,7 @@ class AdminController extends Controller
         "result" =>searchByUidowner($input)
     ]);
  }
+
     }
     public function viewMinAcc($input)
     {
@@ -212,6 +245,48 @@ class AdminController extends Controller
         WHERE m.uidOwner = :uidOwner and u.name Like :Name
     ", [
         "uidOwner"=>$input["uidOwner"],
+        "Name"=>$itemSearch
+    ]);
+    }
+    public function viewMiniOwner($input){//this i will be able to get OwnerSubscriber
+        return DB::select("
+        SELECT
+            u.uid,
+            u.PhoneNumber,
+            u.password,
+            u.subscriber,
+            u.name,
+            u.companyName,
+            m.addedStatus,
+            m.uidOwner
+        FROM mini_accounts m
+        INNER JOIN admins u
+            ON m.uidOwner = u.uid
+        WHERE m.miniOwner = :miniOwner
+    ", [
+        "miniOwner"=>$input["uidOwner"]
+    ]);
+    }
+    public function searchByMiniOwner($input)
+    {
+        $item = strtolower($input["name"]);
+        $itemSearch='%'.$item.'%';
+        return DB::select("
+        SELECT
+            u.uid,
+            u.password,
+            u.PhoneNumber,
+            u.subscriber,
+            u.name,
+            u.companyName,
+            m.addedStatus,
+            m.uidOwner
+        FROM mini_accounts m
+        INNER JOIN admins u
+            ON m.uidOwner = u.uid
+        WHERE m.miniOwner = :miniOwner and u.name Like :Name
+    ", [
+        "miniOwner"=>$input["uidOwner"],
         "Name"=>$itemSearch
     ]);
     }
@@ -1024,7 +1099,7 @@ else{
                 ],200);*/
                 //return (new User_ACC_Controller)->ViewUsers($input);
 
-                $check=DB::select("select name,created_at,uid,status,CompanyName,subscriber from admins");
+                $check=DB::select("select name,PhoneNumber,created_at,uid,status,CompanyName,subscriber from admins");
                 if($check)
              {
               return response([
@@ -1047,8 +1122,11 @@ else{
             }
             else if(Auth::user()->platform==(env('PLATFORM3'))){
 
-                $check=DB::select("select name,created_at,uid,status,CompanyName,subscriber from admins where subscriber=:subscriber limit 10",array(
+                /*$check=DB::select("select name,created_at,uid,status,CompanyName,subscriber from admins where subscriber=:subscriber limit 10",array(
                     "subscriber"=>Auth::user()->subscriber
+                ));*/
+                $check=DB::select("select name,PhoneNumber,created_at,uid,status,CompanyName,subscriber from admins  ",array(
+
                 ));
                 if($check)
              {

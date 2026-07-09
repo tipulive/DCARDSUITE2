@@ -637,7 +637,9 @@ table th {
 
     //copy Link //
 
-
+    var existName="";
+    var existUserid="";
+    var existSubscriber="";
 
 
 // Add click event listener to the button
@@ -6624,6 +6626,7 @@ var checkIcon=`<i class="fas fa-check text-success btn" onclick="changePlatform(
 var myStatusCut=(data[i].status).slice(0,-1);
 var platformcheck=myStatusCut==='active'?checkIcon:banIcon;
 var checkHide=myuid===data[i].uid?'d-none':'';
+//var checkHide=myuid===data[i].uid?data[i].uid:data[i].uid;//iyi siyo iyo hejuru niyo yo
 var myStatusCut2=((data[i].status).slice(-1))==='1'?'Creator':'Admin';
  getData+=` <tr class="${checkHide}">
   <td data-label="#">${i+1}</td>
@@ -6707,7 +6710,7 @@ getData+=`
 <tr>
 <td data-label="#">${i+1}</td>
 <td data-label="Name">${resultData[i].name}</td>
-<td data-label="Company">${resultData[i].CompanyName}</td>
+<td data-label="Company">${resultData[i].companyName}</td>
 <td data-label="Actions"><button type="button" class="btn btn-dark" onclick="return addExisting('${encodeURIComponent(JSON.stringify(resultData[i]))}')" >View</button>|<button type="button" class="btn btn-dark" onclick="return EditPromotion('${encodeURIComponent(JSON.stringify(resultData[i]))}')">Edit</button></td>
 
 
@@ -6851,7 +6854,66 @@ function searchThisAdmin(thisData) //switch
 {
 
 }
+function addExisting(data){
+    data=JSON.parse(decodeURIComponent(data));
+    console.log(data);
+    console.log(existSubscriber);
+    if(confirm(`Do you want to take Over This ${data["CompanyName"]} from ${data["name"]} `))
+    {
+
+    $('.cover-spin').show();
+
+var Usertoken=localStorage.getItem("Usertoken");
+$.ajax({
+
+url:`./api/addNewUserMini`,
+type:'post',
+beforeSend: function (xhr) {
+xhr.setRequestHeader('Authorization', `Bearer ${Usertoken}`);
+},
+//dataType: "json",
+data:{
+uidOwner:existUserid,
+ownerSub:existSubscriber,
+name:existName,
+minicompanyName:data["CompanyName"],
+miniOwnerSubscriber:data["subscriber"],
+PhoneNumber:data["PhoneNumber"],
+app_vers: '{{env('APP_VERS')}}',
+
+
+
+},
+success:function(data){
+if(data.status){//return data as true
+$('.cover-spin').hide();
+
+//var safariId=btoa(dataV["safariId"]);
+
+//ViewItemSafariStock(safariId,safari);
+
+
+}
+else{
+    $('.cover-spin').hide();
+alert("This Product has been used Please Contact System Admin if you want to edit this Quantity");
+
+}
+
+
+
+},
+error:function(data){
+    $('.cover-spin').hide();
+}
+});
+}
+}
 function addExistingUser(name,ThisUserid,userStatus,subscriber,CompanyName){
+    existName=name;
+    existUserid=ThisUserid;
+    existSubscriber=subscriber
+
     $('.viewOrder').modal('show');
     $('.MyTitleModal').html(`<h5 class="text-center">  <strong>Add Existing User</strong></h5>`)
     $('.ModalPassword ').html(`
@@ -6894,7 +6956,7 @@ function addExistingUser(name,ThisUserid,userStatus,subscriber,CompanyName){
     miniAccount(ThisUserid);
 }
 function addNewSubscriber(name,ThisUserid,userStatus,subscriber,CompanyName){
-
+console.log("done")
 }
 function changePlatform(name,ThisUserid,userStatus,subscriber) {
     var indUserStatus=userStatus.slice(-1);

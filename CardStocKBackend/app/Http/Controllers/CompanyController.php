@@ -36,7 +36,294 @@ class CompanyController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
-/*Request Stock */
+/*Currency */
+
+//View Currency
+public function Currency(Request $request){
+    if(env('APP_VERS')===$request->input('app_vers'))
+    {
+    if(Auth::check())
+    {
+
+
+
+
+
+        if(Auth::user()->platform==$this->platform1)
+        {
+            $input=$request->all();
+
+            return (new StockController)->Currency($input);
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>$this->Admin_Auth_result_error,
+            "error"=>$this->Admin_Auth_error,
+
+        ],200);
+    }
+}
+else{
+    return response([
+        "status"=>false,
+        "result"=>1,
+        "downNew"=>env('APP_DOWN'),
+        "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+    ],200);
+}
+
+}
+
+/*Add Currency */
+public function AddCurrency(Request $request){
+    if(env('APP_VERS')===$request->input('app_vers'))
+    {
+    if(Auth::check())
+    {
+
+
+
+
+
+        if(Auth::user()->platform==$this->platform1)
+        {
+            $input=$request->all();
+
+            return (new StockController)->AddCurrency($input);
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>$this->Admin_Auth_result_error,
+            "error"=>$this->Admin_Auth_error,
+
+        ],200);
+    }
+}
+else{
+    return response([
+        "status"=>false,
+        "result"=>1,
+        "downNew"=>env('APP_DOWN'),
+        "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+    ],200);
+}
+
+}
+
+/*Update Currency */
+public function UpdateCurrency(Request $request){
+    if(env('APP_VERS')===$request->input('app_vers'))
+    {
+    if(Auth::check())
+    {
+
+
+
+
+
+        if(Auth::user()->platform==$this->platform1)
+        {
+            $input=$request->all();
+
+            return (new StockController)->UpdateCurrency($input);
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>$this->Admin_Auth_result_error,
+            "error"=>$this->Admin_Auth_error,
+
+        ],200);
+    }
+}
+else{
+    return response([
+        "status"=>false,
+        "result"=>1,
+        "downNew"=>env('APP_DOWN'),
+        "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+    ],200);
+}
+
+}
+
+
+/*Currency */
+
+    //Company or subscriber Account Details
+    public function SubscriberAccount(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->SubscriberAccount($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+
+//my Acount
+    public function myAccount(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->myAccount($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+
+    /*Request Stock */
+
+    public function ViewRecReqStock(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->ViewRecReqStock($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+
 public function reqStock(Request $request){
     if(env('APP_VERS')===$request->input('app_vers'))
     {
@@ -52,6 +339,51 @@ public function reqStock(Request $request){
             $input=$request->all();
 
             return (new StockController)->reqStock($input);
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>$this->Admin_Auth_result_error,
+            "error"=>$this->Admin_Auth_error,
+
+        ],200);
+    }
+}
+else{
+    return response([
+        "status"=>false,
+        "result"=>1,
+        "downNew"=>env('APP_DOWN'),
+        "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+    ],200);
+}
+
+}
+public function receiveStock(Request $request){
+    if(env('APP_VERS')===$request->input('app_vers'))
+    {
+    if(Auth::check())
+    {
+
+
+
+
+
+        if(Auth::user()->platform==$this->platform1)
+        {
+            $input=$request->all();
+
+            return (new StockController)->receiveStock($input);
         }
         else{
             return response([

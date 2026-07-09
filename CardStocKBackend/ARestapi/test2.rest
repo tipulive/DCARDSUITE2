@@ -1,0 +1,82 @@
+@baseUrl = http://localhost:8000/api
+##@email=company@gmail.com
+##@PhoneNumber=+250782389359
+@app_vers=1.0.0
+@email=ange@gmail.com
+##@PhoneNumber=+243464646
+##@password=1
+@PhoneNumber=+243842470216
+@password=1
+@Auth_token=1270|tzKOSrPowoepZf4MQkyDgt2HAFAjFelqAz0FafjO
+## Company Login with email
+POST  {{baseUrl}}/AdminLoginEmail/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+#### addNewUserMini
+POST  {{baseUrl}}/addNewUserMini
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidOwner":"kebineericMuna_1668935525",
+ "ownerSub":"TEALTD",
+"name":"VIVE",
+"minicompanyName":"KEMPO",
+"miniOwnerSubscriber":"TEST_1778542885",
+"PhoneNumber":"+254783969",
+ "app_vers":"{{app_vers}}"
+
+
+
+}
+### myAccount
+GET  {{baseUrl}}/myAccount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"app_vers":"{{app_vers}}"
+
+
+
+}
+
+###received Stock, subscriberSub here is The receiver done
+### payment Admin Approval
+GET  {{baseUrl}}/viewReqStockPayHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidReqPay":"kebineericMuna_1668935525",
+ "app_vers":"{{app_vers}}"
+
+}
+
+### payment Admin View no Approval
+GET  {{baseUrl}}/viewReqStockPay
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidReqPay":"kebineericMuna_1668935525",
+ "app_vers":"{{app_vers}}"
+}
+###received Stock, subscriberSub here is The receiver done
+POST  {{baseUrl}}/StockPayAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_rc_1780820047",
+"uidUserSub":"kebineericMuna_1668935525",
+"receivedSub":"200",
+ "app_vers":"{{app_vers}}"
+
+}
+
