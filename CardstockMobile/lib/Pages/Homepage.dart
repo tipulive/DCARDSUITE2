@@ -35,10 +35,12 @@ import '../Utilconfig/image_card_widget.dart';
 
 import '../../../Query/PromotionQuery.dart';
 
+import '../models/Admin.dart';
 import '../models/Promotions.dart';
 import '../models/User.dart';
 import '../Utilconfig/Promotion.dart';
-import '../Utilconfig/CardTest.dart';
+import '../Utilconfig/PromotionQData.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 
 
@@ -62,11 +64,14 @@ class _HomepageState extends State<Homepage> {
   List<dynamic> users=[];
   List<dynamic>qrSearch = [];
   bool buyBtn=false;
+  bool expenseBtn=true;
 
   PromotionQuery promotionState=Get.put(PromotionQuery());
   AdminQuery adminStatedata=Get.put(AdminQuery());
   //StockQuery stockQueryData=Get.put(StockQuery());
   final StockQuery myStockQuery = Get.find<StockQuery>();
+  final PromotionQData promoData = Get.find<PromotionQData>();
+  //final resultAdmin = Get.put(AdminQuery()).obj["result"];
   String searchText = '';
   TextEditingController inputDataDept=TextEditingController();
   TextEditingController searchContro=TextEditingController();
@@ -109,7 +114,8 @@ class _HomepageState extends State<Homepage> {
   int editQty=0;
   String pageName="Home";
   Language langV=Language();
-
+  var box=Hive.box("myBox");
+  String selectedCurrency = "FRC";
 
 
   void showConfirmBottomSheet() async{
@@ -397,12 +403,14 @@ class _HomepageState extends State<Homepage> {
 
       //print(myStockQuery.promo);
 
-     //var mypromo=JsonEncoder.withIndent('  ').convert(myStockQuery.promo);
-    //
+      //var mypromo=JsonEncoder.withIndent('  ').convert(myStockQuery.promo);
+      //
       var myPromo=myStockQuery.promo;
+      Map<String, dynamic> data = jsonDecode(myPromo);
+      var promo=(data["success"])?myPromo:'none';
       var resultData=(await StockQuery().submitOrder(Participated(uid:"Nyota_1672353378"
           ,uidUser:userProfile,subscriber:orderId,inputData:inputDataText),Promotions(
-          token:"$orderSum",reach:myPromo.toString(),gain:"350",uid:"PointSales1"
+          token:"$orderSum",promoData:promo,gain:"350",uid:"PointSales1"
       ))).data;
 
       if(resultData["status"])
@@ -490,7 +498,7 @@ class _HomepageState extends State<Homepage> {
     //FocusScope.of(context).unfocus();//hide keyboard on screen loadin
     return Scaffold(
      //resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
-      resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
+      resizeToAvoidBottomInset:myStockQuery.resizable,
 
 
       body:Stack(
@@ -511,21 +519,38 @@ class _HomepageState extends State<Homepage> {
                 ], initialImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
               ),*/
               const SizedBox(height: 30,),
+
               InkWell(
-                onTap: (){},
+                onTap: (){
+                  getCompData("view","");
+                  searchCompany(context);
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+
                     Text(
-                      Get.put(AdminQuery()).obj["result"][0]["name"],
-                      style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.red),
+                      Get.put(AdminQuery()).obj["result"] != null &&
+                          Get.put(AdminQuery()).obj["result"] is List &&
+                          Get.put(AdminQuery()).obj["result"].isNotEmpty
+                          ? Get.put(AdminQuery()).obj["result"][0]["name"].toString()
+                          : "",
+                      style: GoogleFonts.bebasNeue(
+                        fontSize: 20,
+                        color: Colors.red,
+                      ),
                     ),
                     
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(width:30),
-                        Text(Get.put(AdminQuery()).obj["result"][0]["subscriber"], style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.black)),
+                        Text(
+                            Get.put(AdminQuery()).obj["result"] != null &&
+                                Get.put(AdminQuery()).obj["result"] is List &&
+                                Get.put(AdminQuery()).obj["result"].isNotEmpty
+                                ? Get.put(AdminQuery()).obj["result"][0]["CompanyName"].toString()
+                                : "", style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.black)),
                         const SizedBox(width: 5),
                         const Icon(Icons.arrow_drop_down),
                       ],
@@ -686,6 +711,13 @@ class _HomepageState extends State<Homepage> {
                   mainAxisSize: MainAxisSize.min,
                   children:  [
                     // Adjust the space between icon and text
+                    InkWell(
+                      onTap: (){
+                        print(myStockQuery.promo);
+                      },
+                        child: Text("promo")
+
+                    ),
                     Text("OrderId:${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}", style: const TextStyle(fontSize: 16.0)),
                     const SizedBox(width: 8.0),
                     IconButton(
@@ -718,6 +750,7 @@ class _HomepageState extends State<Homepage> {
                                     if(resultData["status"])
                                     {
                                       (Get.put(StockQuery()).updateHideLoader(true));
+
 
                                       /*List<dynamic> orderVal=[
                                         {
@@ -811,8 +844,223 @@ class _HomepageState extends State<Homepage> {
 
                 ],
               ),
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10.0),
+                        border: Border.all(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Debt
+                          InkWell(
+                            onTap: () {},
+                            child: Visibility(
+                              visible: true,
+                              child: Container(
+                                padding: const EdgeInsets.all(10.0),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                ),
+                                child: Text(
+                                  'dettes ${(Get.put(StockQuery()).dept)}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
 
-              Padding(
+                          // Ayo Yishyuye (Original functionality preserved)
+                          Expanded(
+                            child: Padding(
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+
+                                decoration: const InputDecoration(
+                                  hintText: 'Ayo Yishyuye...',
+                                  border: InputBorder.none,
+                                  //isDense: true,
+
+                                ),
+
+                                controller: inputDataDept,
+                                focusNode: getFocusNode("qty_1"),
+                                onChanged: (value) {
+                                  final myValue = double.tryParse(value);
+                                  if (myValue != null && myValue >= 0) {
+                                    num deptVal =
+                                        (Get.put(StockQuery()).orderSum) -
+                                            num.parse(value);
+
+                                    double valueData =
+                                    (deptVal).toDouble();
+
+                                    double deptValAmount =
+                                    ConstantClassUtil()
+                                        .truncateToDecimalPlaces(
+                                      valueData,
+                                      2,
+                                    );
+
+                                    if (deptValAmount < 0) {
+                                      num deptVal = 0;
+
+                                      setState(() {
+                                        buyBtn = true;
+                                        expenseBtn= buyBtn;
+                                        Get.put(StockQuery())
+                                            .updateDeptOrder(deptVal);
+                                      });
+                                    } else {
+
+                                      setState(() {
+                                        buyBtn = false;
+                                        expenseBtn= buyBtn;
+                                        Get.put(StockQuery())
+                                            .updateDeptOrder(
+                                          deptValAmount,
+                                        );
+                                      });
+                                    }
+                                  } else {
+                                    num deptVal = 0;
+
+                                    setState(() {
+                                      buyBtn = true;
+                                      expenseBtn= buyBtn;
+                                      Get.put(StockQuery())
+                                          .updateDeptOrder(deptVal);
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+
+                          // Buy Button (Original functionality preserved)
+                          buyBtn
+                              ? const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Icon(
+                              Icons.warning,
+                              color: Colors.orange,
+                              size: 28,
+                            ),
+                          )
+                              : InkWell(
+                            onTap: () async {
+                              double dept =
+                                  double.tryParse(
+                                    (Get.put(
+                                      StockQuery(),
+                                    ).dept)
+                                        .toString(),
+                                  ) ??
+                                      0;
+
+                              if (dept > 0) {
+                                showConfirmBottomSheet();
+                              } else {
+                                await myOrderSubmit();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(10.0),
+                              decoration: const BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.only(
+                                  topRight:
+                                  Radius.circular(10.0),
+                                  bottomRight:
+                                  Radius.circular(10.0),
+                                ),
+                              ),
+                              child: const Text(
+                                'Buy',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Expense Field aligned under Ayo Yishyuye
+                  (expenseBtn)?const SizedBox.shrink():Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      110,
+                      1,
+                      80,
+                      0,
+                    ),
+                    child: Container(
+
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.start,
+                        decoration: InputDecoration(
+                          hintText: 'Expense...',
+                          border: InputBorder.none,
+                         /* prefixIcon: const Icon(
+                            Icons.receipt_long_outlined,
+                          ),*/
+
+                          // Currency dropdown on right
+                          suffixIcon: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedCurrency,
+                              items: const [
+                                DropdownMenuItem(
+                                  value: "FRC",
+                                  child: Text("FRC"),
+                                ),
+                                DropdownMenuItem(
+                                  value: "USD",
+                                  child: Text("USD"),
+                                ),
+                                DropdownMenuItem(
+                                  value: "GBP",
+                                  child: Text("GBP"),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    selectedCurrency = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              /*Padding(
                 padding: const EdgeInsets.fromLTRB(40,0,40,0),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(5,0,5,0),
@@ -862,13 +1110,26 @@ class _HomepageState extends State<Homepage> {
                             focusNode: getFocusNode("qty_1"),
                             onChanged: (value){
 
-                              final myValue = int.tryParse(value);
+                              final myValue = double.tryParse(value);
                               if(myValue != null && myValue >= 0){
                                 num deptVal=(Get.put(StockQuery()).orderSum)-num.parse(value);
-                                setState(() {
-                                  buyBtn=false;
-                                  (Get.put(StockQuery()).updateDeptOrder(deptVal));
-                                });
+                                double valueData = (deptVal as num).toDouble();
+                                 double deptValAmount=ConstantClassUtil().truncateToDecimalPlaces(valueData, 2);
+
+                                 if(deptValAmount<0)
+                                   {
+                                     num deptVal=0;
+                                     setState(() {
+                                       buyBtn=true;
+                                       (Get.put(StockQuery()).updateDeptOrder(deptVal));
+                                     });
+                                   }else{
+                                   setState(() {
+                                     buyBtn=false;
+                                     (Get.put(StockQuery()).updateDeptOrder(deptValAmount));
+                                   });
+                                 }
+
 
                               }else{
 
@@ -893,8 +1154,10 @@ class _HomepageState extends State<Homepage> {
                       ):InkWell(
                         onTap: () async{
                           // print("${inputDataDept.text} ${(Get.put(StockQuery())).orderSum } ${Get.put(StockQuery().order["resultData"][0]["uid"])}");
-                       int dept=int.tryParse((Get.put(StockQuery()).dept).toString())??0;
+                       double dept=double.tryParse((Get.put(StockQuery()).dept).toString())??0;
+
                           if(dept>0) {
+                            print(dept);
                          showConfirmBottomSheet();
                            }
                           else{
@@ -924,7 +1187,7 @@ class _HomepageState extends State<Homepage> {
                     ],
                   ),
                 ),
-              ),
+              ),*/
 
               Expanded(child: CheckoutPage(chekoutResult:cartData,changeQtyCheckout:(index,price,valueData,checkHide,thisQty){
                 /*setState(() {
@@ -940,64 +1203,67 @@ class _HomepageState extends State<Homepage> {
                 saveChangeQtyMethod(productCode,indexData,currentEditQty);
               },deleteCheckout:(productCode) async{
 
+  if(await getPromotion())
+  {
+    try {
 
-                try {
-
-                  setState(() {
-                    showOver=true;
-                  });
+      setState(() {
+        showOver=true;
+      });
 
 
-                  var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
-                  if(resultData["status"])
-                  {
-                    //print(resultData);
-                   /* List<dynamic> orderVal=[
+      var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
+      if(resultData["status"])
+      {
+        //print(resultData);
+        /* List<dynamic> orderVal=[
                       {
                         "name":"Unknown",
                         "uid":""
                       }
                     ];*/
-                    setState(() {
-                      showOver=false;
-                      setState(() {
-                        cartData.removeWhere((item) => item['productCode'] == productCode);
-                        num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
-                        (Get.put(StockQuery()).updateSumOrder(totalVal));
+        setState(() {
+          showOver=false;
+          setState(() {
+            cartData.removeWhere((item) => item['productCode'] == productCode);
+            num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
+            (Get.put(StockQuery()).updateSumOrder(totalVal));
 
-                        //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
+            //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
 
-                        if(cartData.isEmpty)
-                        {
-                          (Get.put(StockQuery()).updateHidePickClick(true));
-                         // (Get.put(StockQuery()).updateOrder(orderVal));
-                          pickDefaultUser(true,true);
-                          (Get.put(StockQuery()).updateDeptOrder(0));
-                          inputDataDept.text="";
-                        }
-                      });
-                      Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-                      var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
-                      (myStockQuery.updatePromo(promo1));
-
-
-
-                    });
+            if(cartData.isEmpty)
+            {
+              (Get.put(StockQuery()).updateHidePickClick(true));
+              // (Get.put(StockQuery()).updateOrder(orderVal));
+              pickDefaultUser(true,true);
+              (Get.put(StockQuery()).updateDeptOrder(0));
+              inputDataDept.text="";
+            }
+          });
+          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
+          print(promo1);
+          (myStockQuery.updatePromo(promo1));
 
 
-                  }
-                  else{
 
-                    setState(() {
+        });
+        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+        applyPromotion(cartD);
 
-                      showOver=false;
-                      dataSearch.clear();
+      }
+      else{
+
+        setState(() {
+
+          showOver=false;
+          dataSearch.clear();
 
 
-                    });
-                  }
-                } catch (e) {
-                  /* showDialog(
+        });
+      }
+    } catch (e) {
+      /* showDialog(
                    context: context,
                    builder: (context) => AlertDialog(
                      title: const Text("Error"),
@@ -1005,7 +1271,9 @@ class _HomepageState extends State<Homepage> {
                    ),
                  );*/
 
-                }
+    }
+  }
+
 
 
               },addcomentCheckout:(productCode,commentData){
@@ -1281,15 +1549,17 @@ class _HomepageState extends State<Homepage> {
 
       node.addListener(() {
         if (node.hasFocus) {
-          print("FOCUS ON: $key");
 
           // clear search safely here
           setState(() {
-            Get.put(StockQuery()).updatedataSearch([]);
+
+
+           myStockQuery.updatedataSearch([]);
+            myStockQuery.updateResizable(true);
+            //Get.put(StockQuery()).updateResizable(true);
           });
 
         } else {
-          print("FOCUS LOST: $key");
         }
       });
 
@@ -1360,9 +1630,11 @@ class _HomepageState extends State<Homepage> {
 
           cartData.addAll(resultData["result"]);
         });
-        print(cartData);
+        //print(cartData);
         Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
+        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, promoData.promotions));
+      // print(promoData.promotions);
+        print(promo1);
         (myStockQuery.updatePromo(promo1));
       }
       else{
@@ -1379,6 +1651,7 @@ class _HomepageState extends State<Homepage> {
           num totalVal=0;
 
           ((Get.put(StockQuery()).updateSumOrder(totalVal)));
+          cartData.clear();
         });
       }
 
@@ -1733,100 +2006,107 @@ class _HomepageState extends State<Homepage> {
 
     //print("inputqty:${(cartData[indexData]["totalQty"]).runtimeType} ,currentQty:${currentEditQty.runtimeType}  normalQty:${editQty.runtimeType}");
 
-    try {
-      setState(() {
-
-        showOver=true;
-      });
-
-      String qtyData=(cartData[indexData]["totalQty"]).toString().replaceAll(' ', '');
-
-      var resultData=(await StockQuery().editTOrder(QuickBonus(productName:"$productCode",reqQty:int.parse(qtyData),currentQtyEdit:cartData[indexData]["old_qty"],uid:(Get.put(StockQuery()).order)["resultData"][0]["uid"]), User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}")));
-
-     // print(resultData);
-      if(resultData["status"])
-      {
-
+    if(await getPromotion())
+    {
+      try {
         setState(() {
 
-          showOver=false;
-      cartData[indexData]["old_qty"]=int.parse(qtyData);
+          showOver=true;
+        });
 
-          cartData[indexData]["saveChangeBtn"]=true;
+        String qtyData=(cartData[indexData]["totalQty"]).toString().replaceAll(' ', '');
 
-        //  num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
-          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-          /*var promo1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
+        var resultData=(await StockQuery().editTOrder(QuickBonus(productName:"$productCode",reqQty:int.parse(qtyData),currentQtyEdit:cartData[indexData]["old_qty"],uid:(Get.put(StockQuery()).order)["resultData"][0]["uid"]), User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}")));
+
+        // print(resultData);
+        if(resultData["status"])
+        {
+
+          setState(() {
+
+            showOver=false;
+            cartData[indexData]["old_qty"]=int.parse(qtyData);
+
+            cartData[indexData]["saveChangeBtn"]=true;
+
+            //  num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
+            Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+            /*var promo1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
           (Get.put(StockQuery()).updatePromo(promo1));*/
-          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
-          (myStockQuery.updatePromo(promo1));
+            var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
+            (myStockQuery.updatePromo(promo1));
 
-          num totalVal = 0;
+            num totalVal = 0;
 
-          // Sum the totalAmount from each item
-          for (var item in cartData) {
-            var amount = item['totalAmount'];
-            if (amount is String) {
-              amount = num.tryParse(amount) ?? 0;
+            // Sum the totalAmount from each item
+            for (var item in cartData) {
+              var amount = item['totalAmount'];
+              if (amount is String) {
+                amount = num.tryParse(amount) ?? 0;
+              }
+              totalVal += amount;
             }
-            totalVal += amount;
-          }
 
 
-          (Get.put(StockQuery()).updateSumOrder(totalVal));
+            (Get.put(StockQuery()).updateSumOrder(totalVal));
 
 
 
 
-        });
+          });
+          Map<String, dynamic> cartDV =ConstantClassUtil().convertCart(cartData);
+          applyPromotion(cartDV);
+
+        }
+        else{
+
+          Get.dialog(
+            AlertDialog(
+              title: const Text('Something Wrong'),
+              content: const Text('Please put less Qty or Contact System Admin'),
+              actions: [
+
+                ElevatedButton(
+                  onPressed: () {
+                    Get.back(); // close the alert dialog
+                  },
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+          setState(() {
+
+            showOver=false;
+            dataSearch.clear();
+            (Get.put(StockQuery()).updatedataSearch(dataSearch));
 
 
-      }
-      else{
 
-        Get.dialog(
-          AlertDialog(
-            title: const Text('Something Wrong'),
-            content: const Text('Please put less Qty or Contact System Admin'),
-            actions: [
-
-              ElevatedButton(
-                onPressed: () {
-                  Get.back(); // close the alert dialog
-                },
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
+          });
+        }
+      } catch (e) {
         setState(() {
-
           showOver=false;
-          dataSearch.clear();
-          (Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-
-
         });
-      }
-    } catch (e) {
-      setState(() {
-        showOver=false;
-      });
-      /*showDialog(
+        /*showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('error'),
           content: Text(e.toString()),
         ),
       );*/
-    }
+      }
 
+
+
+    }
 
 
 
   }
   void viewPicture(productCode,imgUrl){
+    imgUrl=(imgUrl=='none')?'{}':imgUrl;
     Map<String, dynamic> imgVersion = jsonDecode(imgUrl);
     String urLink='${ConstantClassUtil.urlApp}/images/product/';
 
@@ -2044,129 +2324,421 @@ class _HomepageState extends State<Homepage> {
     }
 
   }
+
   placeOrder(dynamicData) async{
-    setState(() {
-      productSearch=false;
-    });
-    (Get.put(StockQuery()).updateResizable(true));
-    (Get.put(StockQuery()).updateHideLoader(false));
-    bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
+    if(await getPromotion())
+      {
+        setState(() {
+          productSearch=false;
+        });
+        (Get.put(StockQuery()).updateResizable(true));
+        (Get.put(StockQuery()).updateHideLoader(false));
+        bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
 
-    if(containsProductCode)
-    {
-      (Get.put(StockQuery()).updateHideLoader(true));
-      (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
-      (Get.put(StockQuery()).updateHideProductList(true));
-
-
-
-    }
-    else{
-      // print(containsProductCode);
-
-
-      setState(() {
-
-        showOver=true;
-
-        // productSearchPopup=false;
-        // dataSearch.clear();
-
-
-      });
-
-      try {
-        dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
-        dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
-        dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
-        num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
-
-
-        //print("${dynamicData["req_qty"]}");
-        var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
-        if(resultData["status"])
+        if(containsProductCode)
         {
+          (Get.put(StockQuery()).updateHideLoader(true));
+          (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
+          (Get.put(StockQuery()).updateHideProductList(true));
 
+          Get.snackbar("error", " Product already Added Please increase Qty",backgroundColor: const Color(0xff9a1c55),
+              colorText: const Color(0xffffffff),
+              titleText:Text("${dynamicData['ProductName']}",style:const TextStyle(color:Color(
+                  0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
 
-          // print(cartData.length);
-
-//here i must Add no assign Card Then Unknown else Card ClientName
-          List<dynamic> orderVal=[
-            {
-              "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
-              "uid":resultData["OrderId"]
-            }
-          ];
- //print(cartData);
-
-          //print(resultData);
-          setState(() {
-            showOver=false;
-
-            (Get.put(StockQuery()).updateOrder(orderVal));
-            (Get.put(StockQuery()).updateSumOrder(totalVal));
-
-
-            cartData.insertAll(0,[dynamicData]);
-
-            dataSearch.clear();
-            //(Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-            (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
-            (Get.put(StockQuery()).updateHideProductList(true));
-            (Get.put(StockQuery()).updateHideLoader(true));
-
-          });
-
-         // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
-        // print(cartData);
-        // print(ConstantClassUtil().convertCart(cartData));
-          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-          //
-         // print(cartD);
-          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, CardTest().promotions));
-          (myStockQuery.updatePromo(promo1));
+              icon: const Icon(Icons.access_alarm),
+              duration: const Duration(seconds: 4));
 
 
         }
         else{
+          // print(containsProductCode);
+
 
           setState(() {
 
-            showOver=false;
-            dataSearch.clear();
-            (Get.put(StockQuery()).updatedataSearch(dataSearch));
+            showOver=true;
 
-            (Get.put(StockQuery()).updateHideLoader(true));
+            // productSearchPopup=false;
+            // dataSearch.clear();
 
 
           });
-          if(resultData["result"]==1){
-            checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
-          }
-        }
-      } catch (e) {
-        /* showDialog(
+
+          try {
+            dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
+            dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
+            dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
+            num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
+
+
+            //print("${dynamicData["req_qty"]}");
+            var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
+            if(resultData["status"])
+            {
+
+
+              // print(cartData.length);
+
+//here i must Add no assign Card Then Unknown else Card ClientName
+              List<dynamic> orderVal=[
+                {
+                  "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
+                  "uid":resultData["OrderId"]
+                }
+              ];
+              //print(cartData);
+
+              //print(resultData);
+              setState(() {
+                showOver=false;
+
+                (Get.put(StockQuery()).updateOrder(orderVal));
+                (Get.put(StockQuery()).updateSumOrder(totalVal));
+
+
+                cartData.insertAll(0,[dynamicData]);
+
+                dataSearch.clear();
+                //(Get.put(StockQuery()).updatedataSearch(dataSearch));
+
+                (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
+                (Get.put(StockQuery()).updateHideProductList(true));
+                (Get.put(StockQuery()).updateHideLoader(true));
+
+
+                searchContro.text="";
+
+              });
+
+              // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
+              // print(cartData);
+              // print(ConstantClassUtil().convertCart(cartData));
+              Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+              //
+               //print("hello");
+
+              applyPromotion(cartD);
+
+
+            }
+            else{
+
+              setState(() {
+
+                showOver=false;
+                dataSearch.clear();
+                (Get.put(StockQuery()).updatedataSearch(dataSearch));
+
+                (Get.put(StockQuery()).updateHideLoader(true));
+
+
+              });
+              if(resultData["result"]==1){
+                checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
+              }
+            }
+          } catch (e) {
+            /* showDialog(
          context: context,
          builder: (context) => AlertDialog(
            title: const Text("Error"),
            content: Text(e.toString()),
          ),
        );*/
-      }
+          }
 
 
 
+        }
+
+      }else{
+      print("false");
     }
 
 
+         /*if(await getPromotion())
+            {
 
+            }else{
 
+          }*/
+  }
+  getPromotion() async{
+    final response = await promoData.getPromoData();
+    if (response != null) {
+      final result = response.data;
+      if (result["status"]) {
+        //data
+        //print(result);
+        //List<Map<String, dynamic>> promot =result['result'];
+        promoData.updatePromotions(result['result']);
+
+        return true;
+      }else{
+        print(' promote ${result}');
+        //List<Map<String, dynamic>> promo =[];
+        Map<String, dynamic> promo = {};
+        promoData.updatePromotions(promo);
+        return true;
+      }
+    }else{
+      Get.snackbar("error", "Please check your Internet or Contact System Admin",backgroundColor: const Color(0xff9a1c55),
+          colorText: const Color(0xffffffff),
+          titleText:Text("Something Wrong ",style:const TextStyle(color:Color(
+              0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
+
+          icon: const Icon(Icons.access_alarm),
+          duration: const Duration(seconds: 15));
+    }
+  }
+  applyPromotion(cartD){
+    Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+    //
+    // print(cartD);
+    var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD,promoData.promotions));
+    (myStockQuery.updatePromo(promo1));
   }
   searchUserMethod() async{
 
   }
+  //switch Company
 
+  switchAccount(String userId,String pass) async{
+    //FocusManager.instance.primaryFocus?.unfocus();
+    //print(box.get('auth')[0]);
+    //print(box.get('auth'));
+    //print(box.get('owner'));
+    setState(() {
+
+     // (Get.put(StockQuery()).updateHideLoader(false));
+      showOver=true;
+    });
+
+    var resultData=(await myStockQuery.switchAccount(User(uid:userId,password: pass)));
+
+    if(resultData["status"])
+    {
+
+
+      await Get.put(AdminQuery()).logout(false);//this will delete everything except oowner
+      setState(() {
+        //(Get.put(StockQuery()).updateHideLoader(true));
+        showOver=false;
+      });
+      if((await AdminQuery().switchAcc(Admin(uid:resultData["User"]["uid"],name:resultData["User"]["name"],subscriber:resultData["User"]["subscriber"],AuthToken: resultData["token"],email: resultData["User"]["email"],phone: resultData["User"]["tel"],CompanyName:resultData["User"]["CompanyName"] )))>0)
+      {
+        //Get.to(Homepage());
+        //Get.to(() => Homepage());
+
+        await adminStatedata.auth();
+        myStockQuery.updatedataSearch([]);
+        myStockQuery.updateResizable(true);
+        searchContro.text="";
+        await cartDisplay();
+
+
+        //Get.toNamed('/sale');
+
+      }
+      else{
+        // print((await AdminQuery().addData(Admin(uid:uidInput.text,subscriber: uidInput2.text)))),
+      }
+
+
+
+
+    }
+    else{
+      (Get.put(StockQuery()).updateHideLoader(true));
+
+      setState(() {
+
+        // users.clear();
+
+
+      });
+    }
+  }
+  getCompData(String optionCase,String name) async{
+    //FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() {
+      showOver=true;
+    });
+
+    var resultData=(await myStockQuery.miniAccount(Topups(optionCase:optionCase,name: name,uid:box.get('owner')[0]["uid"])));
+     //print("amaData:${resultData}");
+
+    if(resultData["status"])
+    {
+
+      (Get.put(StockQuery()).updateHideLoader(true));
+
+      if(resultData["result"]!=0)
+      {
+
+        setState(() {
+          showOver=false;
+          //users.clear();
+          //users.addAll(resultData["result"]);
+          (Get.put(StockQuery()).updatecompPick(resultData["result"]));
+
+        });
+        // print(users);
+      }
+      else{
+        setState(() {
+
+          //users.clear();
+
+
+        });
+      }
+
+
+
+
+    }
+    else{
+      (Get.put(StockQuery()).updateHideLoader(true));
+
+      setState(() {
+
+       // users.clear();
+
+
+      });
+    }
+  }
+  void searchCompany(BuildContext context) {
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(5.0),
+              height: 600,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  //const Center(child: Text("Client:Name")),
+                  Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    child: InkWell(
+                      onTap: () async{
+                        await switchAccount(box.get('owner')[0]["uid"],box.get('owner')[0]["password"]);
+                      },
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: getRandomColor(),
+                          child: Icon(_getRandomIcon()),
+                        ),
+                        title: Text(box.get('owner')[0]["companyName"]??box.get('owner')[0]["name"]),
+                        subtitle: Text(box.get('owner')[0]["name"]),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.add),
+                          iconSize: 23.0,
+                          color: Colors.blue,
+                          onPressed: () async {
+                            await switchAccount(box.get('owner')[0]["uid"],box.get('owner')[0]["password"]);
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(50.0),
+                        ),
+                        labelText: 'Search',
+                      ),
+                      onChanged: (text) async {
+                        if ((int.tryParse(text) != null)) {
+                          setState(() {
+                            searchValOption = true;
+                            phoneNumber = text;
+                          });
+                          await getUserData();
+                        } else {
+                          setState(() {
+                            searchName = text;
+                            searchValOption = true;
+                            phoneNumber = "none";
+                          });
+                          await getUserData();
+                        }
+                      },
+                    ),
+                  ),
+
+                  GetBuilder<StockQuery>(
+                      builder: (myController) {
+                        return   Expanded(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: myController.compPick.length + 1,
+                            separatorBuilder: (context, index) => const Divider(height: 1.0),
+                            itemBuilder: (context, index) {
+                              if (index < myController.compPick.length) {
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                                  child: InkWell(
+                                    onTap: () async{
+                                      //copy of Add contact because it is one which is Og;
+                                      (Get.put(StockQuery()).updateHideLoader(false));
+                                      await switchAccount(myController.compPick[index]["uid"].toString(),myController.compPick[index]["password"].toString());
+                                     // print(myController.compPick[index]["password"].toString());
+                                    },
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: getRandomColor(),
+                                        child: Icon(_getRandomIcon()),
+                                      ),
+                                      title: Text(myController.compPick[index]["companyName"]),
+                                      subtitle: Text(myController.compPick[index]["name"]),
+                                      trailing: IconButton(
+                                        icon: const Icon(Icons.add),
+                                        iconSize: 23.0,
+                                        color: Colors.blue,
+                                        onPressed: () async {
+                                          //(Get.put(StockQuery()).updateHideLoader(false));
+                                         // await switchAccount(myController.compPick[index]["uid"],myController.compPick[index]["password"]);
+                                          (Get.put(StockQuery()).updateHideLoader(false));
+                                          await switchAccount(myController.compPick[index]["uid"].toString(),myController.compPick[index]["password"].toString());
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return Container();
+                              }
+                            },
+                          ),
+                        );
+                      }),
+
+
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() {
+      // Do whatever you want after closing the bottom sheet
+    });
+  }
   void searchUser(BuildContext context) {
     Get.bottomSheet(
       StatefulBuilder(
@@ -3274,7 +3846,7 @@ class CheckoutPage extends StatelessWidget {
                                                     //controller: TextEditingController(text:"${_data[index]["textchange_var"]??_data[index]["qty"]}"),
 
                                                     keyboardType: TextInputType.number,
-                                                    focusNode: getFocusCheckout("hell"),
+                                                    focusNode: getFocusCheckout(chekoutResult[index]["productCode"]),
                                                     decoration: InputDecoration(
                                                       hintText: '-${chekoutResult[index]["totalQty"]}-',
                                                       hintStyle: const TextStyle(color: Colors.blue),

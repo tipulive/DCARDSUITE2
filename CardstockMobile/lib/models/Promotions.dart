@@ -5,6 +5,7 @@ class Promotions {
   final String? subscriber;
   final String? token;
   final String? promoName;
+  final String? promoData;
   final String? promo_msg;
   final String? reach;
   final String? gain;
@@ -25,6 +26,7 @@ class Promotions {
     this.subscriber,
     this.token,
     this.promoName,
+    this.promoData,
     this.promo_msg,
     this.reach,
     this.gain,
@@ -46,6 +48,7 @@ class Promotions {
       subscriber:json['subscriber'],
       token:json['token'],
       promoName:json['promoName'],
+      promoData:json['promoData'],
       promo_msg:json['promo_msg'],
       reach:json['reach'],
       gain:json['gain'],
@@ -67,6 +70,7 @@ class Promotions {
       'subscriber':subscriber,
       'token':token,
       'promoName':promoName,
+      'promoData':promoData,
       'promo_msg':promo_msg,
       'reach':reach,
       'gain':gain,

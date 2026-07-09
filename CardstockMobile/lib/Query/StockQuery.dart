@@ -77,6 +77,17 @@ class StockQuery extends GetxController{
     update();
 
   }
+  List<dynamic> compPick = [];
+  updatecompPick(valData){
+    compPick.clear();
+
+    if (valData != null) {
+      compPick.addAll(valData);
+    }
+
+    update();
+
+  }
   String lang="English";
   updateLang(valData){
     lang=valData;
@@ -102,7 +113,7 @@ class StockQuery extends GetxController{
   bool resizable=true;
   updateResizable(valData)
   {
-    resizable=false;
+    resizable=valData;
     update();
   }
 
@@ -388,6 +399,91 @@ class StockQuery extends GetxController{
       return null;
     }
   }
+
+  //Switch to Different Account
+  Future<dynamic> switchAccount(User userData) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+//view,search
+    final params = {
+      "uid":userData.uid,
+      "encryptData":userData.password,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/switchAccount", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+  //display and search Account
+  Future<dynamic> miniAccount(Topups topData) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+//view,search
+    final params = {
+      "optionCase":topData.optionCase,
+      "uidOwner":topData.uid,
+      "name":topData.name,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/miniAccount", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+
   //not done Spending as depense
   searchUser(User user,Topups topData) async{
     try {
@@ -655,6 +751,7 @@ class StockQuery extends GetxController{
       var params =  {
         "uid":participatedData.uid,
         "uidUser":participatedData.uidUser,
+        "promoData":promotionData.promoData,
 
         "OrderId":participatedData.subscriber,
         //"OrderId":"eric-05",
@@ -689,6 +786,7 @@ class StockQuery extends GetxController{
         //print(false);
       }
     } catch (e) {
+      //print(e);
       //return false;
     }
 
@@ -1437,6 +1535,90 @@ class StockQuery extends GetxController{
 
     }
   }
+  Future<dynamic> reqStock(QuickBonus product) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "productCode":product.productName,
+      "recSubscriber":product.subscriber,
+      "commentData":product.description,
+      "req_qty":product.reqQty,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/reqStock", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+  Future<dynamic> receiveStock(QuickBonus product) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "uid":product.uid,
+      "productCodeSub":product.productName,
+      "subscriberSub":product.subscriber,
+      "req_qtySub":product.reqQty,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/receiveStock", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
   Future<dynamic> paidDept2(User userData) async {
     final adminData = Get.find<AdminQuery>().obj;
     final String? authToken = adminData["result"]?[0]?["AuthToken"];
@@ -1687,6 +1869,7 @@ print(params);
       return null;
     }
   }
+
   Future<dio.Response?> viewDeptDetails(User userData) async {
     try {
       final dioClient = dio.Dio();

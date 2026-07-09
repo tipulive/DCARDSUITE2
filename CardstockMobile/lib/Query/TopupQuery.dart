@@ -223,7 +223,7 @@ class TopupQuery extends GetxController{
         }
         else{
           Get.put(HideShowState()).setHomenavigator(0);
-          await Get.put(AdminQuery()).logout();
+          await Get.put(AdminQuery()).logout(true);
 
           Get.toNamed('/Login');
         }

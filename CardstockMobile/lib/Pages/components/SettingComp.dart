@@ -1,7 +1,6 @@
 
 
 
-import '../../Query/StockQuery.dart';
 
 import '../../Pages/components/ProductComp.dart';
 import '../../Pages/components/SetAdminPaymentComp.dart';
@@ -34,6 +33,7 @@ import '../SetWithdrawBalancePage.dart';
 import '../employePage.dart';
 import '../components/SetSpendingComp.dart';
 import '../components/SetAllSaleComp.dart';
+import 'AccountScreen.dart';
 import 'CheckappVersion.dart';
 import 'ContactComp.dart';
 import '../../Utilconfig/language/language.dart';
@@ -100,10 +100,10 @@ class _SettingCompState extends State<SettingComp> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(width:25),
+                          const SizedBox(width:25),
                           Text(Get.put(AdminQuery()).obj["result"][0]["subscriber"]),
-                          SizedBox(width: 5),
-                          Icon(Icons.arrow_drop_down),
+                          const SizedBox(width: 5),
+                          const Icon(Icons.arrow_drop_down),
                         ],
                       ),
                     ),
@@ -147,6 +147,13 @@ class _SettingCompState extends State<SettingComp> {
                 onTap: (){
                   spending();
                 },
+
+    child: detailsProfile("Account",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,account)),//Last Time Purchase
+    const SizedBox(height:5,),
+    GestureDetector(
+    onTap: (){
+    account();
+    },
                 child: detailsProfile("Spendings",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,spending)),//Last Time Purchase
             const SizedBox(height:5,),
             GestureDetector(
@@ -251,7 +258,7 @@ class _SettingCompState extends State<SettingComp> {
                             elevation:0,
                           ),
                           onPressed: () async{
-                            await Get.put(AdminQuery()).logout();
+                            await Get.put(AdminQuery()).logout(true);
 
                             Get.toNamed('/Login');
                           },
@@ -537,6 +544,15 @@ allSales() async{
   });
 
 }
+account() async{
+
+  Get.to(() =>SetPage(dynamicMethod: () {
+    return  const AccountScreen();
+  }),arguments:{
+    "title":"All Sales",
+  });
+
+}
 spending() async{
 
   Get.to(() =>SetPage(dynamicMethod: () {
@@ -635,7 +651,7 @@ logout() async{
           onPressed: () async{
             //Get.put(HideShowState()).setHomenavigator(0);
             Get.put(HideShowState()).setHomenavigator(0);
-            await Get.put(AdminQuery()).logout();
+            await Get.put(AdminQuery()).logout(true);
 
             Get.toNamed('/Login');
           },

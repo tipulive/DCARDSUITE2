@@ -20,7 +20,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 
 class SafeDeptComp extends StatefulWidget {
-  const SafeDeptComp({Key? key}) : super(key: key);
+  const SafeDeptComp({super.key});
 
   @override
   State<SafeDeptComp> createState() => _SafeDeptCompState();
@@ -28,8 +28,8 @@ class SafeDeptComp extends StatefulWidget {
 
 class _SafeDeptCompState extends State<SafeDeptComp> {
 
-  ScrollController _scrollController = ScrollController();// detect scroll
-  List<dynamic> _data = [];
+  final ScrollController _scrollController = ScrollController();// detect scroll
+  final List<dynamic> _data = [];
   List<dynamic> thisListOrder = [];
   List<dynamic> orderData = [];
 
@@ -75,7 +75,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
               child: Container(
                 alignment: Alignment.center,
                 color: Colors.white70,
-                child: CircularProgressIndicator(),
+                child: const CircularProgressIndicator(),
               ),
             ),
           ),
@@ -93,14 +93,14 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
         //ProfilePic().profile(),
 
         Text("Dept",style:GoogleFonts.pacifico(fontSize:15,color: Colors.teal,fontWeight: FontWeight.w700)),
-        Text("Total:${(_data.length>0)?_data[0]['totDept']:0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
+        Text("Total:${(_data.isNotEmpty)?_data[0]['totDept']:0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
 
 
 
         Container(
           height: 55,
           //padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-          margin: EdgeInsets.fromLTRB(10, 20, 10, 10),
+          margin: const EdgeInsets.fromLTRB(10, 20, 10, 10),
           child: TextField(
 
             decoration: InputDecoration(
@@ -127,12 +127,11 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                 }
                 else{
                   _data.clear();
-                  Quickdata();
+                  quickdata();
                 }
 
 
               } catch (e) {
-                print('Error: $e');
               }
 
               //print(this._data[index]["total_var"]);
@@ -152,7 +151,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
               {
                 FocusNode test=FocusNode() ;
 
-                this._data[index]['focusNode']=test;
+                _data[index]['focusNode']=test;
                 return Card(
                   elevation:0,
                   //margin: EdgeInsets.symmetric(vertical:1,horizontal:5),
@@ -164,8 +163,8 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
                   child: ListTile(
                       leading: CircleAvatar(
-                        child: Icon(_getRandomIcon()),
                         backgroundColor:getRandomColor(),
+                        child: Icon(_getRandomIcon()),
                       ),
                       title:Row(
                         children: [
@@ -185,7 +184,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                         text: TextSpan(
                                           text: "${_data[index]['name']}:",
                                           style: DefaultTextStyle.of(context).style,
-                                          children: <TextSpan>[
+                                          children: const <TextSpan>[
 
 
                                           ],
@@ -213,7 +212,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
 
-                                    Icon(Icons.segment,color:Colors.orange,size:13,),
+                                    const Icon(Icons.segment,color:Colors.orange,size:13,),
                                     Text("UID:${_data[index]['OrderId']}"),
 
                                   ],
@@ -223,7 +222,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
 
-                                    Icon(Icons.segment,color:Colors.orange,size:13,),
+                                    const Icon(Icons.segment,color:Colors.orange,size:13,),
                                     Text("Dept:${_data[index]['dept']}"),
 
                                   ],
@@ -239,8 +238,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                           ],
                         ),
                       ),
-                      trailing:Container(child:
-                      GestureDetector(
+                      trailing:GestureDetector(
                           onTap: () async{
                             // This function will be called when the icon is tapped.
                             // thisOrder(_data[index],index);
@@ -271,10 +269,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
 
                           },
-                          child:Icon(Icons.grid_view,color:Colors.orange)
-                      )
-
-
+                          child:const Icon(Icons.grid_view,color:Colors.orange)
                       )
 
                     //trailing: Text()
@@ -284,10 +279,10 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
               }
               else{
                 return  Padding(
-                  padding:EdgeInsets.symmetric(vertical: 32),
+                  padding:const EdgeInsets.symmetric(vertical: 32),
                   child:Center(
                       child:hasMoreData?
-                      CircularProgressIndicator()
+                      const CircularProgressIndicator()
                           :const Text("no more Data")
 
                   ),
@@ -300,12 +295,13 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
       ],
     );
   }
+  @override
   void initState()
   {
     super.initState();
     //getapi();
 
-    Quickdata();
+    quickdata();
     _scrollController.addListener(_scrollListener);
 
   }
@@ -314,11 +310,12 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
         !_scrollController.position.outOfRange) {
       _page=_page+10;
 
-      Quickdata();
+      quickdata();
     }
   }
 
 
+  @override
   void dispose() {
 
 
@@ -346,7 +343,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
   //
 
-  Quickdata()async
+  quickdata()async
   {
     if(isLoading) return;
     isLoading=true;
@@ -439,9 +436,9 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
         builder: (BuildContext context, StateSetter setState) {
           return
             Container(
-              padding:EdgeInsets.all(5.0),
+              padding:const EdgeInsets.all(5.0),
               height: 600,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(30),
@@ -472,7 +469,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
 
                           return Container(
-                            margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                            margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                             child: Card(
                               elevation:0,
                               //margin: EdgeInsets.symmetric(vertical:1,horizontal:5),
@@ -487,8 +484,8 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                   // Text("sum:${orderSum}"),
                                   ListTile(
                                       leading: CircleAvatar(
-                                        child: Icon(_getRandomIcon()),
                                         backgroundColor:getRandomColor(),
+                                        child: Icon(_getRandomIcon()),
                                       ),
                                       title:Row(
                                         children: [
@@ -502,7 +499,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                                   text: TextSpan(
                                                     text:"${thisListOrder[index]["productName"]} (${thisListOrder[index]["pcs"]} pcs):",
                                                     style: DefaultTextStyle.of(context).style,
-                                                    children: <TextSpan>[
+                                                    children: const <TextSpan>[
 
 
                                                     ],
@@ -522,11 +519,12 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                                           WidgetSpan(
 
                                                             child: IntrinsicWidth(
+                                                              stepWidth: 0.5,
                                                               child: TextField(
 
 
                                                                 keyboardType: TextInputType.number,
-                                                                decoration: InputDecoration(
+                                                                decoration: const InputDecoration(
                                                                   hintText: '-1-',
                                                                   // hintText: '   -${(((Get.put(HideShowState()).delivery)[index]["totalQty"])!=((Get.put(HideShowState()).delivery)[index]["totalCount"]))?(((Get.put(HideShowState()).delivery)[index]["totalQty"]-(Get.put(HideShowState()).delivery)[index]["totalCount"])):1}-',
                                                                   hintStyle: TextStyle(color: Colors.red),
@@ -536,7 +534,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
 
                                                                 ),
-                                                                style: TextStyle(
+                                                                style: const TextStyle(
                                                                   color: Colors.blue, // Set the text color to red
 
                                                                 ),
@@ -548,7 +546,6 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
                                                                     if(((Get.put(HideShowState()).delivery)[index]["totalQty"])>=(Get.put(HideShowState()).delivery)[index]["currentQty"])
                                                                     {
-                                                                      print((Get.put(HideShowState()).delivery)[index]["currentQty"]);
 
 
 
@@ -582,8 +579,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
 
                                                                 },
-                                                              ),
-                                                              stepWidth: 0.5, // set minimum width to 100
+                                                              ), // set minimum width to 100
                                                             ),
                                                           ),
 
@@ -613,7 +609,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                             children: <Widget>[
                                               if((Get.put(HideShowState()).delivery)[index]["hideAddCart"]==1)
                                                 IconButton(
-                                                  icon: Icon(Icons.add_shopping_cart,
+                                                  icon: const Icon(Icons.add_shopping_cart,
                                                       size: 23.0,
                                                       color: Colors.grey),
                                                   onPressed: () async{
@@ -626,11 +622,11 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
                                                     num totCount=(((Get.put(HideShowState()).delivery)[index]["totalCount"]-(Get.put(HideShowState()).delivery)[index]["currentQty"])>=0)?(Get.put(HideShowState()).delivery)[index]["totalCount"]:0;
                                                     if(totCount>0)
                                                     {
-                                                      var resultData=(await StockQuery().stockCount(Topups(uid:"${orderData[0]}"),QuickBonus(uid:"${productCode}",qty:"${(Get.put(HideShowState()).delivery)[index]["currentQty"]}",subscriber:"StockName",status:"status",description:"Delivered"), User(uid: "UidTransport",name:"refName"))).data;
+                                                      var resultData=(await StockQuery().stockCount(Topups(uid:"${orderData[0]}"),QuickBonus(uid:productCode,qty:"${(Get.put(HideShowState()).delivery)[index]["currentQty"]}",subscriber:"StockName",status:"status",description:"Delivered"), User(uid: "UidTransport",name:"refName"))).data;
 
                                                       if(resultData["status"])
                                                       {
-                                                        Quickdata();
+                                                        quickdata();
                                                         // thisOrder2();
                                                         setState(() {
 
@@ -654,7 +650,7 @@ class _SafeDeptCompState extends State<SafeDeptComp> {
 
 
                                               IconButton(
-                                                icon: Icon(
+                                                icon: const Icon(
                                                     Icons.delete,
                                                     size: 23.0,
                                                     color: Colors.red

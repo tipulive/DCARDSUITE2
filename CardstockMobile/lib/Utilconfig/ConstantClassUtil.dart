@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'dart:math' as Math;
 import '../Query/AdminQuery.dart';
 import '../Query/StockQuery.dart';
 
@@ -21,10 +21,10 @@ class ConstantClassUtil extends GetxController
   /*static const String urlApp =
       "https://stockapi.appdev.live";*/
   static const String urlApp =
-  "https://discs-earrings-managers-ranking.trycloudflare.com";
+  "https://seekers-similarly-milwaukee-selected.trycloudflare.com";
      // "https://stockapi.appdev.live";
 
-  static const String urlLink = "$urlApp/api";
+  static const String urlLink="$urlApp/api";
 
   /*static const urlLink="https://stockapi.appdev.live/api";
   static const urlApp="https://stockapi.appdev.live";*/
@@ -109,7 +109,10 @@ class ConstantClassUtil extends GetxController
       return sum + double.tryParse(value.toString())!;
     });
   }
-
+  double truncateToDecimalPlaces(double value, int fractionalDigits) {
+    double mod = Math.pow(10.0, fractionalDigits).toDouble();
+    return ((value * mod).truncate().toDouble() / mod);
+  }
   String buildWhatsAppMessage(List<Map<String, dynamic>> data,Map<String, dynamic> users) {
     // Helper to safely convert dynamic values to int
 

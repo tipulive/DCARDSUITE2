@@ -12,7 +12,7 @@ import '../Query/AdminQuery.dart';
 import '../Utilconfig/HideShowState.dart';
 import '../models/Admin.dart';
 import '../Utilconfig/ConstantClassUtil.dart';
-import '../Utilconfig/CardTest.dart';
+import '../Utilconfig/PromotionQData.dart';
 import '../Utilconfig/PromotionService.dart';
 import '../Utilconfig/Promotion.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -179,9 +179,9 @@ class _LoginState extends State<Login> {
                         onPressed: () {
 
                          // var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
-                          var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
+                         /* var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
                           print(JsonEncoder.withIndent('  ').convert(result1));
-                          print(result1);
+                          print(result1);*/
 
                         },
                         child: Text(
@@ -247,7 +247,7 @@ class _LoginState extends State<Login> {
         // print("done");
         //return response.data;
         //return response.data["User"]["name"];
-        if((await AdminQuery().addData(Admin(uid:response.data["User"]["uid"],name:response.data["User"]["name"],subscriber:response.data["User"]["subscriber"],AuthToken: response.data["token"],email: response.data["User"]["email"],phone: response.data["User"]["tel"])))>0)
+        if((await AdminQuery().addData(Admin(uid:response.data["User"]["uid"],name:response.data["User"]["name"],subscriber:response.data["User"]["subscriber"],AuthToken: response.data["token"],email: response.data["User"]["email"],phone: response.data["User"]["tel"],CompanyName:response.data["User"]["CompanyName"],password:response.data["User"]["password"])))>0)
         {
           //Get.to(Homepage());
           //Get.to(() => Homepage());

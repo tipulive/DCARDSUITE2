@@ -199,7 +199,7 @@ final fontSizeData=13.0;
                         children: [
 
                           const Icon(Icons.segment,color:Colors.orange,size:13,),
-                          Text("${(_data.isNotEmpty)?_data[0]['totalStock']:0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
+                         // Text("${(_data.isNotEmpty)?ConstantClassUtil().truncateToDecimalPlaces(_data[0]['totalStock'], 2):0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
 
 
 
@@ -633,14 +633,27 @@ final fontSizeData=13.0;
                             ],
                           ),
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.save,color:Colors.deepOrange), // Replace with your desired icon
-                          onPressed: () {
-                            // attachPicture();
-                            // Add your button press logic here
-                            updateProducts();
-                          },
-                        ),
+                        trailing:Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () {},
+                              child: const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Icon(Icons.send, color: Colors.blue),
+                              ),
+                            ),
+
+                            const SizedBox(width: 2), // Minimal gap
+                            InkWell(
+                              onTap: updateProducts,
+                              child: const Padding(
+                                padding: EdgeInsets.all(8.0), // Adjust as needed
+                                child: Icon(Icons.save, color: Colors.deepOrange),
+                              ),
+                            ),
+                          ],
+                        )
 
                         //trailing: Text()
                       ),
@@ -1353,6 +1366,7 @@ final fontSizeData=13.0;
   }
 
   void attachPicture(productCode,imgUrl){
+    imgUrl=(imgUrl=='none')?'{}':imgUrl;
     Map<String, dynamic> imgVersion = jsonDecode(imgUrl);
     //Get.put(StockQuery().updateImgVersion(imgVersion));
    // Get.put(StockQuery()).updateImgVersion(jsonDecode(img_url));

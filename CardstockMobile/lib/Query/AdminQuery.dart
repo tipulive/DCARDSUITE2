@@ -53,11 +53,15 @@ auth() async{//this is hive
     }
 
   }*/
-  logout()async{
+  logout(bool ownerDelete)async{
     var box = Hive.box('myBox');
     if (box.containsKey('auth')) {
       await box.delete('auth');
-     // print("Auth key removed");
+      if(ownerDelete)
+        {
+          await box.delete('owner');
+        }
+      // print("Auth key removed");
       updateAdminState(0);
       return 0;
     } else {
@@ -97,8 +101,45 @@ auth() async{//this is hive
 
 
   }
+  Future switchAcc(Admin adminData) async{
+    var box=Hive.box("myBox");
+
+    await box.put('auth', [
+      {
+        'id': '1',
+        'uid':adminData.uid,
+        'photo_url': 'none',
+        'name': adminData.name,
+        'email': adminData.email,
+        'password': 'none',
+        'phone': adminData.phone,
+        'status': 'none',
+        'platform': 'none',
+        'CompanyName':adminData.CompanyName,
+        'AuthToken': adminData.AuthToken,
+        'subscriber': adminData.subscriber,
+        'country': 'none',
+        'created_at': 'none',
+        'updated_at': 'none',
+      }
+    ]);
+    if(box.containsKey('auth')) {
+      return 3;
+    }else{
+      return 0;
+    }
+  }
   Future addData(Admin adminData) async{
     var box=Hive.box("myBox");
+    await box.put('owner',[
+      {
+        "uid":adminData.uid,
+        "name":adminData.name,
+        "subscriber":adminData.subscriber,
+        "password":adminData.password,
+        "companyName":adminData.CompanyName
+      }
+    ]);
     await box.put('auth', [
       {
         'id': '1',

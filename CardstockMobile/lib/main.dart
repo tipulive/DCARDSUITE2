@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 import 'Pages/routes.dart';
 import 'Query/StockQuery.dart';
-import 'Utilconfig/CardTest.dart';
+import 'Utilconfig/PromotionQData.dart';
 import 'Utilconfig/ConstantClassUtil.dart';
 import 'Utilconfig/AppInfo.dart';
 
@@ -47,6 +47,7 @@ void main() async{
   /*this will make apps not going to sleep Mode*/
   runApp(const MyApp());
   Get.put(StockQuery(), permanent: true);
+  Get.put(PromotionQData(), permanent: true);
 
 }
 
@@ -170,9 +171,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
    checkPromo(){
-     var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
+     /*var result1=Promotion.applyBestPromotion(PromotionService().cart, CardTest().promotions);
      print(const JsonEncoder.withIndent('  ').convert(result1));
+  */
   }
+
   checkAuth() async{
     await Future.delayed(const Duration(seconds: 3));
     if(await Get.put(AdminQuery()).auth()==0)//no data in localDb

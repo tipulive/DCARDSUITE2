@@ -1,63 +1,50 @@
 
-
-
 class Promotion {
-  /// Apply best applicable promotion from multiple promotions
+  /// Applies the best applicable promotion and returns a breakdown.
+  /// Returns `quick` and `long` lists, each containing reward items (`inStock`) and bonus totals.
   static Map<String, dynamic> applyBestPromotion(
-      Map<String, dynamic> cart, List<Map<String, dynamic>> promotions) {
+      Map<String, dynamic> cart,
+      List<Map<String, dynamic>> promotions,
+      ) {
+    final Map<String, dynamic> promotionResults = {};
+    final List<Map<String, dynamic>> applicablePromotions = [];
+    final List<Map<String, dynamic>> nonApplicablePromotions = [];
+    final List<Map<String, dynamic>> cartItems =
+    (cart['items'] as List).cast<Map<String, dynamic>>();
 
-    List<Map<String, dynamic>> applicablePromotions = [];
-    List<Map<String, dynamic>> nonApplicablePromotions = [];
-    Map<String, dynamic> promotionResults = {};
+    for (final promotion in promotions) {
+      final condition = _normalizeCondition(promotion['condition']);
+      final isApplicable = checkPromotionConditions(condition, cart, cartItems);
+      final promoId = promotion['id'].toString();
+      final promoType = promotion['promotype'] as String;
 
-    // Check each promotion for applicability
-    for (var promotion in promotions) {
-      bool conditionsMet = checkPromotionConditions(
-          promotion['condition'], promotion['promotion']['items']["inStock"], cart);
+      if (isApplicable) {
+        final filteredItems = filterCartProductsByCondition(condition, cartItems);
+        final cartTotals = calculateCartTotals(filteredItems);
+        final bonusData = _calculateBonus(promotion, cartTotals);
+        final bonus = bonusData['bonus'] as int;
+        final dividend = bonusData['dividend'] as int;
 
-      String promotionId = promotion['id'].toString();
-      String promotionType = promotion['promotype'];
-
-      if (conditionsMet) {
-        // Filter cart items based on allowProduct rule
-        List<Map<String, dynamic>> filteredCartItems =
-        filterCartProductsByCondition(promotion['condition'], cart['items']);
-
-        // Calculate totals from filtered cart items
-        Map<String, dynamic> cartTotals = calculateCartTotals(filteredCartItems);
-        applicablePromotions.add(promotion);
-
-        /*double minValue = (cartTotals['amount'] / promotion['condition']["cartTotal"]) < (cartTotals['count'] /promotion['condition']["cartCount"]) ? cartTotals['amount'] / promotion['condition']["cartTotal"] : cartTotals['count'] / promotion['condition']["cartCount"];
-        int bonus = (promotion['promotion']['amount'] * minValue).floor();*/
-        // int bonus=((cartTotals['amount'] / promotion['condition']["cartTotal"]) * promotion['promotion']['amount']).floor();
-        var result =calculateBonus(promotion,cartTotals);
-        int bonus=result["bonus"];
-        promotionResults[promotionId] = {
+        promotionResults[promoId] = {
           'applied': true,
-
-          'promotype': promotionType,
-
-          'amount': promotion['promotion']['amount'],
-
-          'bonusTot':bonus,
-          "dividend":result["dividend"],
-          'cartTotal':cartTotals['amount'],
-          'cartCount':cartTotals['count'],
-          //"proAm":promotion['condition'],
-          //"proTotal":cartTotals,
-          'reason': 'All conditions met'
+          'promotype': promoType,
+          'amount': _toNum(promotion['promotion']['amount']),
+          'bonusTot': bonus,
+          'dividend': dividend,
+          'cartTotal': cartTotals['amount'],
+          'cartCount': cartTotals['count'],
+          'reason': 'All conditions met',
         };
+        applicablePromotions.add(promotion);
       } else {
-        nonApplicablePromotions.add(promotion);
-
-        // Get detailed reason why promotion wasn't applied
-        String reason = getPromotionFailureReason(promotion['condition'], cart);
-        promotionResults[promotionId] = {
+        final reason = getPromotionFailureReason(condition, cart, cartItems);
+        promotionResults[promoId] = {
           'applied': false,
-          'promotype': promotionType,
-          'amount': promotion['promotion']['amount'],
-          'reason': reason
+          'promotype': promoType,
+          'amount': _toNum(promotion['promotion']['amount']),
+          'reason': reason,
         };
+        nonApplicablePromotions.add(promotion);
       }
     }
 
@@ -65,469 +52,453 @@ class Promotion {
       return {
         'success': false,
         'message': 'No applicable promotions found',
-        'promotion': null,
+        'quick': [],          // consistent empty lists
+        'long': [],           // consistent empty lists
         'cart': cart,
         'allPromotionsStatus': promotionResults,
         'applicablePromotions': [],
-        'nonApplicablePromotions': nonApplicablePromotions
+        'nonApplicablePromotions': nonApplicablePromotions,
       };
     }
 
-    // Find the best promotion (highest amount)
-    applicablePromotions.sort((a, b) {
-      return b['promotion']['amount'].compareTo(a['promotion']['amount']);
-    });
+    // Sort by promotion amount (highest first)
+    applicablePromotions.sort(
+          (a, b) => _toNum(b['promotion']['amount']).compareTo(_toNum(a['promotion']['amount'])),
+    );
 
-    Map<String, dynamic> bestPromotion = applicablePromotions[0];
-    String bestPromotionId = bestPromotion['id'].toString();
-
-    // Apply the best promotion
-    /*Map<String, dynamic> result = applyPromotionToCart(
-        bestPromotion['promotion'], cart,promotions);
-    result['promotion']['id'] = bestPromotion['id'];
-    result['promotion']['promotype'] = bestPromotion['promotype'];
-
-    // Add detailed promotion status
-    result['allPromotionsStatus'] = promotionResults;
-    result['applicablePromotions'] = applicablePromotions.map((p) => {
-      'id': p['id'],
-      'promotype': p['promotype'],
-      'amount': p['promotion']['amount']
-    }).toList();
-    result['nonApplicablePromotions'] = nonApplicablePromotions.map((p) => {
-      'id': p['id'],
-      'promotype': p['promotype'],
-      'amount': p['promotion']['amount'],
-      'reason': promotionResults[p['id'].toString()]['reason']
-    }).toList();
-    result['bestPromotionId'] = bestPromotionId;*/
-
-    return  formResult(cart, promotions,promotionResults);
+    return _buildPromotionBreakdown(cart, promotions, promotionResults);
   }
-  static Map<String, dynamic> calculateBonus(
+
+  /// Normalises condition fields: unifies naming, converts types, removes "none".
+  static Map<String, dynamic> _normalizeCondition(Map<String, dynamic> condition) {
+    final normalized = Map<String, dynamic>.from(condition);
+
+    // Map "productRule" → "allowProduct" (supports both keys)
+    final productRuleKey = normalized.keys.firstWhere(
+          (k) => k.toLowerCase() == 'productrule',
+      orElse: () => '',
+    );
+    if (productRuleKey.isNotEmpty) {
+      normalized['allowProduct'] = normalized[productRuleKey];
+    }
+
+    // Normalise productRule values
+    if (normalized.containsKey('allowProduct')) {
+      String rule = normalized['allowProduct'].toString().toLowerCase();
+      if (rule == 'only') rule = 'Only';
+      if (rule == 'all') rule = 'all';
+      if (rule == 'allex' || rule == 'allexcept') rule = 'allex'; // supports "allExcept"
+      normalized['allowProduct'] = rule;
+    } else {
+      normalized['allowProduct'] = 'all';
+    }
+
+    // Normalise TotalToCount
+    if (normalized.containsKey('TotalToCount')) {
+      String tot = normalized['TotalToCount'].toString().toLowerCase();
+      if (tot == 'ccount') normalized['TotalToCount'] = 'cCount';
+      if (tot == 'ctotal') normalized['TotalToCount'] = 'CTotal';
+      if (tot == 'both') normalized['TotalToCount'] = 'both';
+    } else {
+      normalized['TotalToCount'] = 'cCount';
+    }
+
+    // Convert string numbers to num/int
+    if (normalized.containsKey('cartTotal')) {
+      if (normalized['cartTotal'] is String) {
+        normalized['cartTotal'] = double.parse(normalized['cartTotal'] as String);
+      }
+    } else {
+      normalized['cartTotal'] = 0.0;
+    }
+
+    if (normalized.containsKey('cartCount')) {
+      if (normalized['cartCount'] is String) {
+        normalized['cartCount'] = int.parse(normalized['cartCount'] as String);
+      }
+    } else {
+      normalized['cartCount'] = 0;
+    }
+
+    // Normalise products list (remove "none", empty strings)
+    if (normalized.containsKey('products')) {
+      if (normalized['products'] is String) {
+        normalized['products'] = [normalized['products'] as String];
+      }
+      normalized['products'] = (normalized['products'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty && e.toLowerCase() != 'none')
+          .toList();
+    } else {
+      normalized['products'] = [];
+    }
+
+    // Normalise exProducts (split commas, remove "none")
+    if (normalized.containsKey('exProducts')) {
+      if (normalized['exProducts'] is String) {
+        normalized['exProducts'] = (normalized['exProducts'] as String)
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty && s.toLowerCase() != 'none')
+            .toList();
+      } else if (normalized['exProducts'] is List) {
+        normalized['exProducts'] = (normalized['exProducts'] as List)
+            .expand((e) => e is String ? e.split(',').map((s) => s.trim()) : [e.toString().trim()])
+            .where((s) => s.isNotEmpty && s.toLowerCase() != 'none')
+            .toList();
+      }
+    } else {
+      normalized['exProducts'] = [];
+    }
+
+    // Normalise card value
+    if (normalized.containsKey('card')) {
+      String card = normalized['card'].toString().toLowerCase();
+      if (card == 'yes') normalized['card'] = 'yes';
+      if (card == 'no') normalized['card'] = 'no';
+      if (card == 'both') normalized['card'] = 'both';
+    } else {
+      normalized['card'] = 'both';
+    }
+
+    return normalized;
+  }
+
+  static num _toNum(dynamic value) {
+    if (value is num) return value;
+    if (value is String) return num.parse(value);
+    return 0;
+  }
+
+  /// Calculates bonus and multiplier for quick promotions.
+  /// For long promotions, dividend = 1 and bonus = promotion amount.
+  static Map<String, dynamic> _calculateBonus(
       Map<String, dynamic> promotion,
       Map<String, dynamic> cartTotals,
       ) {
-
-    if (promotion['promotype'] == "quick") {
-
-      if (promotion['condition']["TotalToCount"] == "both") {
-
-        double totalFactor =
-            cartTotals['amount'] / promotion['condition']["cartTotal"];
-
-        double countFactor =
-            cartTotals['count'] / promotion['condition']["cartCount"];
-
-        double factor = totalFactor.clamp(0, countFactor);
-
-        int bonus =
-        (factor).floor();
-        //print(bonus);
-        // bonus=(promotion['condition']["cartTotal"]/cartTotals['amount'])
-
-
-
-        return {
-          "status": true,
-          "type": "both",
-          "bonus": bonus,
-          "factor": factor,
-          "dividend":bonus
-        };
-      }
-
-      if (promotion['condition']["TotalToCount"] == "CTotal") {
-
-        print(cartTotals);
-        int bonus = (
-            (promotion['promotion']['amount'] /
-                promotion['condition']["cartTotal"]) *
-                cartTotals['amount']
-        ).floor();
-        int divident = (
-            (cartTotals['amount'] /
-                promotion['condition']["cartTotal"])).floor();
-
-        return {
-          "status": true,
-          "type": "CTotal",
-          "bonus": bonus,
-          "dividend":divident
-        };
-      }
-
-      if (promotion['condition']["TotalToCount"] == "cCount") {
-
-        int bonus = (
-            (promotion['promotion']['amount'] /
-                promotion['condition']["cartCount"]) *
-                cartTotals['count']
-        ).floor();
-        int dividen=(
-            (cartTotals['count'] /
-                promotion['condition']["cartCount"])
-
-        ).floor();
-
-        return {
-          "status": true,
-          "type": "cCount",
-          "bonus": bonus,
-          "dividend":dividen
-        };
-      }
+    if (promotion['promotype'] != 'quick') {
+      return {
+        'status': true,
+        'bonus': _toNum(promotion['promotion']['amount']).toInt(),
+        'dividend': 1,
+      };
     }
 
-    return {
-      "status": false,
-      "bonus": 0,
-    };
-  }
-  /// Get detailed reason why promotion conditions were not met
-  static String getPromotionFailureReason(
-      Map<String, dynamic> condition, Map<String, dynamic> cart) {
-
-    // Check card condition
-    if (!checkCardCondition(condition['card'], cart['card'])) {
-      String expectedCard = condition['card'];
-      bool actualCard = cart['card'];
-      return "Card condition not met: Expected card='$expectedCard', Actual card='$actualCard'";
-    }
-
-    // Filter cart items based on allowProduct rule
-    List<Map<String, dynamic>> filteredCartItems =
-    filterCartProductsByCondition(condition, cart['items']);
-
-    // Calculate totals from filtered cart items
-    Map<String, dynamic> cartTotals = calculateCartTotals(filteredCartItems);
-
-    // Check cart total/count conditions
-    String rule = condition['TotalToCount'];
-    num requiredAmount = condition['cartTotal'] as num;
-    int requiredCount = condition['cartCount'] as int;
-    num actualAmount = cartTotals['amount'];
-    int actualCount = cartTotals['count'];
-
-    String filterRule = condition['allowProduct'];
-    String filterDescription = '';
-
-    switch(filterRule) {
-      case 'Only':
-        List<String> allowedProducts = List<String>.from(condition['products']);
-        filterDescription = "Only products: ${allowedProducts.join(', ')}";
-        break;
-      case 'allex':
-        List<String> excludedProducts = List<String>.from(condition['exProducts']);
-        filterDescription = "All except products: ${excludedProducts.join(', ')}";
-        break;
-      case 'all':
-        filterDescription = "All products";
-        break;
-    }
+    final condition = _normalizeCondition(promotion['condition']);
+    final rule = condition['TotalToCount'] as String;
+    final promoAmount = _toNum(promotion['promotion']['amount']);
+    final requiredTotal = condition['cartTotal'] as num;
+    final requiredCount = condition['cartCount'] as int;
+    final actualTotal = cartTotals['amount'] as num;
+    final actualCount = cartTotals['count'] as int;
 
     if (rule == 'both') {
-      if (actualAmount < requiredAmount && actualCount < requiredCount) {
-        return "Cart total and count insufficient: Amount (${actualAmount.toStringAsFixed(2)} < $requiredAmount) AND Count ($actualCount < $requiredCount) | Filter: $filterDescription";
-      } else if (actualAmount < requiredAmount) {
-        return "Cart total insufficient: Amount (${actualAmount.toStringAsFixed(2)} < $requiredAmount) | Count ($actualCount >= $requiredCount) | Filter: $filterDescription";
-      } else if (actualCount < requiredCount) {
-        return "Cart count insufficient: Count ($actualCount < $requiredCount) | Amount (${actualAmount.toStringAsFixed(2)} >= $requiredAmount) | Filter: $filterDescription";
-      }
-    } else if (rule == 'CTotal') {
-      if (actualAmount < requiredAmount) {
-        return "Cart total insufficient: Amount (${actualAmount.toStringAsFixed(2)} < $requiredAmount) | Filter: $filterDescription";
-      }
-    } else if (rule == 'cCount') {
-      if (actualCount < requiredCount) {
-        return "Cart count insufficient: Count ($actualCount < $requiredCount) | Filter: $filterDescription";
-      }
+      final totalFactor = actualTotal / requiredTotal;
+      final countFactor = actualCount / requiredCount;
+      final factor = totalFactor < countFactor ? totalFactor : countFactor;
+      final multiplier = factor.floor();
+      final bonus = (promoAmount * multiplier).toInt();
+      return {
+        'status': true,
+        'type': 'both',
+        'bonus': bonus,
+        'dividend': multiplier,
+      };
     }
 
+    if (rule == 'CTotal') {
+      final multiplier = (actualTotal / requiredTotal).floor();
+      final bonus = (promoAmount * multiplier).toInt();
+      return {
+        'status': true,
+        'type': 'CTotal',
+        'bonus': bonus,
+        'dividend': multiplier,
+      };
+    }
+
+    if (rule == 'cCount') {
+      final multiplier = (actualCount / requiredCount).floor();
+      final bonus = (promoAmount * multiplier).toInt();
+      return {
+        'status': true,
+        'type': 'cCount',
+        'bonus': bonus,
+        'dividend': multiplier,
+      };
+    }
+
+    return {'status': false, 'bonus': 0, 'dividend': 0};
+  }
+
+  static String getPromotionFailureReason(
+      Map<String, dynamic> condition,
+      Map<String, dynamic> cart,
+      List<Map<String, dynamic>> cartItems,
+      ) {
+    final cond = _normalizeCondition(condition);
+
+    if (!checkCardCondition(cond['card'], cart['card'] as bool)) {
+      return "Card condition not met: expected '${cond['card']}', actual '${cart['card']}'";
+    }
+
+    final filteredItems = filterCartProductsByCondition(cond, cartItems);
+    if (filteredItems.isEmpty && cond['allowProduct'] != 'all') {
+      final filterDesc = _describeFilter(cond);
+      return "No eligible products in cart | $filterDesc";
+    }
+
+    final totals = calculateCartTotals(filteredItems);
+    final rule = cond['TotalToCount'] as String;
+    final requiredTotal = cond['cartTotal'] as num;
+    final requiredCount = cond['cartCount'] as int;
+    final actualTotal = totals['amount'];
+    final actualCount = totals['count'];
+    final filterDesc = _describeFilter(cond);
+
+    if (rule == 'both') {
+      if (actualTotal < requiredTotal && actualCount < requiredCount) {
+        return "Cart total & count insufficient: amount ($actualTotal < $requiredTotal) AND count ($actualCount < $requiredCount) | $filterDesc";
+      } else if (actualTotal < requiredTotal) {
+        return "Cart total insufficient: amount ($actualTotal < $requiredTotal) | count ($actualCount >= $requiredCount) | $filterDesc";
+      } else if (actualCount < requiredCount) {
+        return "Cart count insufficient: count ($actualCount < $requiredCount) | amount ($actualTotal >= $requiredTotal) | $filterDesc";
+      }
+    } else if (rule == 'CTotal' && actualTotal < requiredTotal) {
+      return "Cart total insufficient: amount ($actualTotal < $requiredTotal) | $filterDesc";
+    } else if (rule == 'cCount' && actualCount < requiredCount) {
+      return "Cart count insufficient: count ($actualCount < $requiredCount) | $filterDesc";
+    }
     return "Unknown condition failure";
   }
 
-  /// Check if all promotion conditions are satisfied
-  static bool checkPromotionConditions(Map<String, dynamic> condition,
-      List<Map<String, dynamic>> promotionItems, Map<String, dynamic> cart) {
-    // 1. Check card condition
-    if (!checkCardCondition(condition['card'], cart['card'])) {
-      return false;
+  static String _describeFilter(Map<String, dynamic> condition) {
+    final rule = condition['allowProduct'] as String;
+    switch (rule) {
+      case 'Only':
+        final products = (condition['products'] as List).join(', ');
+        return "Only products: $products";
+      case 'allex':
+        final excluded = (condition['exProducts'] as List).join(', ');
+        return "All except: $excluded";
+      default:
+        return "All products";
     }
-
-    // 2. Filter cart items based on allowProduct rule
-    List<Map<String, dynamic>> filteredCartItems =
-    filterCartProductsByCondition(condition, cart['items']);
-
-    // 3. Calculate totals from filtered cart items
-    Map<String, dynamic> cartTotals = calculateCartTotals(filteredCartItems);
-
-    // 4. Check cart total/count conditions
-    return checkCartTotalCondition(condition, cartTotals);
   }
 
-  /// Check card condition
-  static bool checkCardCondition(String requiredCardStatus, bool userHasCard) {
-    if (requiredCardStatus == 'both') {
-      return true;
-    }
-    if (requiredCardStatus == 'yes') {
-      return userHasCard == true;
-    }
-    if (requiredCardStatus == 'no') {
-      return userHasCard == false;
-    }
+  static bool checkPromotionConditions(
+      Map<String, dynamic> condition,
+      Map<String, dynamic> cart,
+      List<Map<String, dynamic>> cartItems,
+      ) {
+    final cond = _normalizeCondition(condition);
+    if (!checkCardCondition(cond['card'], cart['card'] as bool)) return false;
+
+    final filteredItems = filterCartProductsByCondition(cond, cartItems);
+    if (filteredItems.isEmpty && cond['allowProduct'] != 'all') return false;
+
+    final totals = calculateCartTotals(filteredItems);
+    return _checkCartTotalCondition(cond, totals);
+  }
+
+  static bool checkCardCondition(String required, bool userHasCard) {
+    if (required == 'both') return true;
+    if (required == 'yes') return userHasCard;
+    if (required == 'no') return !userHasCard;
     return false;
   }
 
-  /// Filter cart products based on allowProduct rule
   static List<Map<String, dynamic>> filterCartProductsByCondition(
-      Map<String, dynamic> condition, List<Map<String, dynamic>> cartItems) {
-    String allowRule = condition['allowProduct'];
-    List<String> allowedProducts = condition['products'] != null
-        ? List<String>.from(condition['products'])
-        : [];
-    List<String> excludedProducts = condition['exProducts'] != null
-        ? List<String>.from(condition['exProducts'])
-        : [];
+      Map<String, dynamic> condition,
+      List<Map<String, dynamic>> cartItems,
+      ) {
+    final cond = _normalizeCondition(condition);
+    final rule = cond['allowProduct'] as String;
+    if (rule == 'all') return cartItems;
 
-    if (allowRule == 'all') {
-      return cartItems;
+    final allowed = (cond['products'] as List).cast<String>();
+    final excluded = (cond['exProducts'] as List).cast<String>();
+
+    if (rule == 'Only') {
+      return cartItems.where((item) => allowed.contains(item['productName'])).toList();
     }
 
-    if (allowRule == 'Only') {
-      List<Map<String, dynamic>> filtered = [];
-      for (var item in cartItems) {
-        if (allowedProducts.contains(item['productName'])) {
-          filtered.add(item);
-        }
-      }
-      return filtered;
-    }
-
-    if (allowRule == 'allex') {
-      List<Map<String, dynamic>> filtered = [];
-      for (var item in cartItems) {
-        if (!excludedProducts.contains(item['productName'])) {
-          filtered.add(item);
-        }
-      }
-      return filtered;
+    if (rule == 'allex') {
+      return cartItems.where((item) => !excluded.contains(item['productName'])).toList();
     }
 
     return cartItems;
   }
 
-  /// Calculate total amount and total count from cart items
-  static Map<String, dynamic> calculateCartTotals(
-      List<Map<String, dynamic>> cartItems) {
-    double totalAmount = 0;
-    int totalCount = 0;
-
-    for (var item in cartItems) {
-      totalAmount += (item['price'] as num) * (item['qty'] as num);
-      totalCount += item['qty'] as int;
+  static Map<String, dynamic> calculateCartTotals(List<Map<String, dynamic>> items) {
+    double total = 0;
+    int count = 0;
+    for (final item in items) {
+      total += (item['price'] as num) * (item['qty'] as int);
+      count += item['qty'] as int;
     }
-
-    return {
-      'amount': totalAmount,
-      'count': totalCount,
-    };
+    return {'amount': total, 'count': count};
   }
 
-  /// Check cart total condition based on TotalToCount rule
-  static bool checkCartTotalCondition(
-      Map<String, dynamic> condition, Map<String, dynamic> cartTotals) {
-    String rule = condition['TotalToCount'];
-    num requiredAmount = condition['cartTotal'] as num;
-    int requiredCount = condition['cartCount'] as int;
+  static bool _checkCartTotalCondition(
+      Map<String, dynamic> condition,
+      Map<String, dynamic> totals,
+      ) {
+    final cond = _normalizeCondition(condition);
+    final rule = cond['TotalToCount'] as String;
+    final requiredTotal = cond['cartTotal'] as num;
+    final requiredCount = cond['cartCount'] as int;
 
     if (rule == 'both') {
-      return (cartTotals['amount'] >= requiredAmount &&
-          cartTotals['count'] >= requiredCount);
+      return totals['amount'] >= requiredTotal && totals['count'] >= requiredCount;
     }
-
-    if (rule == 'CTotal') {
-      return (cartTotals['amount'] >= requiredAmount);
-    }
-
-    if (rule == 'cCount') {
-      return (cartTotals['count'] >= requiredCount);
-    }
-
+    if (rule == 'CTotal') return totals['amount'] >= requiredTotal;
+    if (rule == 'cCount') return totals['count'] >= requiredCount;
     return false;
   }
 
-  /// Apply promotion to cart
-  static Map<String, dynamic> applyPromotionToCart(
-      Map<String, dynamic> promotion, Map<String, dynamic> cart,List<Map<String, dynamic>> promotionsData) {
-    num promotionAmount = promotion['amount'] as num;
-    List<Map<String, dynamic>> promotionItems =
-    List<Map<String, dynamic>>.from(promotion['items']["inStock"]);
+  static Map<String, dynamic> _buildPromotionBreakdown(
+      Map<String, dynamic> cart,
+      List<Map<String, dynamic>> promotions,
+      Map<String, dynamic> promotionResults,
+      ) {
+    final List<Map<String, dynamic>> quickEntries = [];
+    final List<Map<String, dynamic>> longEntries = [];
 
-    List<Map<String, dynamic>> applicableItems = [];
-    List<Map<String, dynamic>> missingItems = [];
+    for (final promo in promotions) {
+      final id = promo['id'].toString();
+      final result = promotionResults[id];
+      if (result == null || result['applied'] != true) continue;
 
-    for (var promoItem in promotionItems) {
-      bool found = false;
-      for (var cartItem in cart['items']) {
-        if (cartItem['productName'] == promoItem['productName']) {
-          Map<String, dynamic> applicableItem =
-          Map<String, dynamic>.from(promoItem);
-          applicableItem.addAll({
-            'cartPrice': cartItem['price'],
-            'cartQty': cartItem['qty'],
-          });
-          applicableItems.add(applicableItem);
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        missingItems.add(promoItem);
+      final promoType = promo['promotype'] as String;
+      final condition = _normalizeCondition(promo['condition']);
+      final bonusTotal = result['bonusTot'] as int;
+      final dividend = result['dividend'] as int;
+      final cartTotal = (result['cartTotal'] as num).toDouble();
+      final cartCount = result['cartCount'] as int;
+      final rule = condition['TotalToCount'] as String;
+      final inputPoint = rule == 'cCount' ? cartCount : cartTotal;
+
+      final multiplier = (promoType == 'quick') ? dividend : 1;
+
+      // Extract reward items (the products the customer will receive)
+      final promoItemsRaw = promo['promotion']['items']['inStock'] as List;
+      final rewardItems = promoItemsRaw.map((item) {
+        return {
+          'productName': item['productName'] as String,
+          'qty': _toNum(item['qty']).toInt(),
+        };
+      }).toList();
+
+      // Rewards are given in full – no cart stock check
+      final rewards = _buildRewardItems(rewardItems, multiplier);
+
+      final entry = {
+        'id': id,
+        'inStock': rewards,
+        'BonusTotal': bonusTotal,
+        'condition': condition,
+        'inputCount': cartCount,
+        'inputTotal': cartTotal,
+        'inputPoint': inputPoint,
+      };
+
+      if (promoType == 'quick') {
+        quickEntries.add(entry);
+      } else {
+        longEntries.add(entry);
       }
     }
 
-    num discountValue = promotionAmount;
-    num newCartTotal = (cart['total'] as num) - discountValue;
-    if (newCartTotal < 0) newCartTotal = 0;
-
-    return {
-      'success': true,
-      'message': 'Promotion applied successfully',
-      'promotion': {
-       //'data':formResult(cart, promotionsData),
-        'amount': promotionAmount,
-        'discount': discountValue,
-        'items': promotionItems,
-        'applicable_items': applicableItems,
-        'missing_items': missingItems,
-      },
-      'cart': {
-        'original_total': cart['total'],
-        'new_total': newCartTotal,
-        'saved': discountValue,
-        'count': cart['count'],
-        'has_card': cart['card'],
-      },
-    };
-   // return formResult(cart, promotionsData);
+    return {'success':true,'quick': quickEntries, 'long': longEntries};
   }
 
+  /// Returns the full list of reward items multiplied by the multiplier.
+  static List<Map<String, dynamic>> _buildRewardItems(
+      List<Map<String, dynamic>> rewardItems,
+      int multiplier,
+      ) {
+    final Map<String, int> rewardQty = {};
+    for (final item in rewardItems) {
+      final name = item['productName'] as String;
+      final qty = (item['qty'] as int) * multiplier;
+      rewardQty[name] = (rewardQty[name] ?? 0) + qty;
+    }
 
-  /// Complete function that applies best promotion and returns formatted result
-  static Map<String, dynamic> getBestPromotionFormatted(
-      Map<String, dynamic> cart, List<Map<String, dynamic>> promotions) {
-    Map<String, dynamic> result = applyBestPromotion(cart, promotions);
-    return result;
-    //return formatPromotionResult(result);
+    final List<Map<String, dynamic>> rewards = [];
+    for (final entry in rewardQty.entries) {
+      rewards.add({'productName': entry.key, 'qtyBonus': entry.value});
+    }
+    return rewards;
   }
 
-  static Map<String, dynamic> formResult(
-      Map<String, dynamic> cart, List<Map<String, dynamic>> promotions,Map<String, dynamic> promotionResults) {
-    // Get actual cart total (you can modify this value)
-   // int actualCartTotal = 1500; // Example: customer's cart total
+  /// Formats the promotion result as human‑readable text.
+  static String formatResultAsText(Map<String, dynamic> result) {
+    final buffer = StringBuffer();
+    // If the result has a success flag and it's false, show the message
+    if (result.containsKey('success') && result['success'] == false) {
+      buffer.writeln('😞 ${result['message']}');
+      buffer.writeln('   Check your card status or add more qualifying products.');
+      return buffer.toString();
+    }
 
-    // Separate quick and long promotions
-    List<Map<String, dynamic>> quickPromos = [];
-    List<Map<String, dynamic>> longPromos = [];
-//print(promotionResults["1bv"]["applied"]);
-    //print(promotionResults);
+    final quickList = result['quick'] as List<Map<String, dynamic>>;
+    final longList = result['long'] as List<Map<String, dynamic>>;
 
-    for (var promo in promotions) {
+    if (quickList.isNotEmpty) {
+      buffer.writeln('🎁 QUICK PROMOTIONS (multiplied by your cart):\n');
+      for (final promo in quickList) {
+        buffer.writeln('📌 Promotion ID: ${promo['id']}');
+        buffer.writeln('   💰 Bonus total: ${promo['BonusTotal']} RWF');
+        buffer.writeln('   📊 Based on: ${_describeTotalToCount(promo['condition']['TotalToCount'])}');
+        buffer.writeln('   🛒 Your qualifying cart: ${promo['inputCount']} items / ${promo['inputTotal']} RWF');
 
-      if(promotionResults[promo["id"]]["applied"])
-      {
-        if (promo["promotype"] == "quick") {
-          quickPromos.add(promo);
-        } else if (promo["promotype"] == "long") {
-          promo["inputCount"]=promotionResults[promo["id"]]["cartCount"];
-          promo["inputTotal"]=promotionResults[promo["id"]]["cartTotal"];
-          promo["inputPoint"]=(promo["condition"]["TotalToCount"]=="cCount")?promotionResults[promo["id"]]["cartCount"]:promotionResults[promo["id"]]["cartTotal"];
-          longPromos.add(promo);
+        if (promo['inStock'].isNotEmpty) {
+          buffer.writeln('   ✅ REWARDS (you get these for free):');
+          for (final item in promo['inStock']) {
+            buffer.writeln('      - ${item['productName']} x ${item['qtyBonus']}');
+          }
+        } else {
+          buffer.writeln('   ⚠️ No reward items defined for this promotion.');
         }
+        buffer.writeln();
       }
-
     }
 
-    // Process QUICK promotions (apply multiplier based on cartTotal)
-    Map<String, int> quickQtyMap = {};
+    if (longList.isNotEmpty) {
+      buffer.writeln('🎁 LONG PROMOTIONS (single application):\n');
+      for (final promo in longList) {
+        buffer.writeln('📌 Promotion ID: ${promo['id']}');
+        buffer.writeln('   💰 Bonus total: ${promo['BonusTotal']} RWF');
+        buffer.writeln('   📊 Based on: ${_describeTotalToCount(promo['condition']['TotalToCount'])}');
+        buffer.writeln('   🛒 Your qualifying cart: ${promo['inputCount']} items / ${promo['inputTotal']} RWF');
 
-    num quickBonusTotal = 0;
-
-    for (var promo in quickPromos) {
-      //int conditionCartTotal = promo["condition"]["cartTotal"] as int;
-
-
-      // Calculate how many times to apply this promotion
-      int multiplier = promotionResults[promo["id"]]["dividend"].floor();
-
-      if (multiplier > 0) {
-        // Add bonus amount multiplied
-       // quickBonusTotal += (promo["promotion"]["amount"] as int) * multiplier;
-       // quickBonusTotal +=promotionResults[promo["id"]]["bonusTot"];
-        quickBonusTotal +=(promotionResults[promo["id"]]["dividend"]*promo["promotion"]['amount']).floor();
-        // Add items with multiplier
-        var inStockList = promo["promotion"]["items"]["inStock"] as List;
-        for (var item in inStockList) {
-          String name = item["productName"] as String;
-          int qty = (item["qty"] as int) * multiplier;
-          quickQtyMap[name] = (quickQtyMap[name] ?? 0) + qty;
+        if (promo['inStock'].isNotEmpty) {
+          buffer.writeln('   ✅ REWARDS (you get these for free):');
+          for (final item in promo['inStock']) {
+            buffer.writeln('      - ${item['productName']} x ${item['qtyBonus']}');
+          }
+        } else {
+          buffer.writeln('   ⚠️ No reward items defined for this promotion.');
         }
+        buffer.writeln();
       }
     }
 
-    List<Map<String, dynamic>> quickInStock = [];
-    quickQtyMap.forEach((productName, qtyBonus) {
-      quickInStock.add({
-        "productName": productName,
-        "qtyBonus": qtyBonus,
-      });
-    });
-
-    Map<String, dynamic> quickResult = {
-      "inStock": quickInStock,
-      "BonusTotal": quickBonusTotal,
-    };
-
-    // Process LONG promotions (keep separate, no multiplier)
-    List<Map<String, dynamic>> longResultList = [];
-
-    for (var promo in longPromos) {
-      Map<String, int> longQtyMap = {};
-      var inStockList = promo["promotion"]["items"]["inStock"] as List;
-
-      for (var item in inStockList) {
-        String name = item["productName"] as String;
-        int qty = item["qty"] as int;
-        longQtyMap[name] = (longQtyMap[name] ?? 0) + qty;
-      }
-
-      List<Map<String, dynamic>> longInStock = [];
-      longQtyMap.forEach((productName, qtyBonus) {
-        longInStock.add({
-          "productName": productName,
-          "qtyBonus": qtyBonus,
-        });
-      });
-
-      longResultList.add({
-        "id": promo["id"],
-        "inStock": longInStock,
-        "BonusTotal": promo["promotion"]["amount"] as int,
-        "condition": promo["condition"],
-        "inputCount": promo["inputCount"]??0,
-        "inputTotal":promo["inputTotal"]??0,
-        "inputPoint":promo["inputPoint"]??0,//to be submitted in database
-      });
+    if (quickList.isEmpty && longList.isEmpty) {
+      buffer.writeln('😞 No promotions are applicable to your current cart.');
+      buffer.writeln('   Check your card status or add more qualifying products.');
     }
 
-    // Final result
-    Map<String, dynamic> result = {
-      "quick": quickResult,
-      "long": longResultList,
-    };
-    return result;
-    //return formatPromotionResult(result);
+    return buffer.toString();
+  }
+
+  static String _describeTotalToCount(String rule) {
+    switch (rule) {
+      case 'cCount': return 'item quantity';
+      case 'CTotal': return 'cart total amount';
+      case 'both': return 'both quantity and amount';
+      default: return rule;
+    }
   }
 }
