@@ -19,6 +19,7 @@ class CreateRepaidAdminsTable extends Migration
             $table->string('uidPaid')->index('uidPaid');//
             $table->string('amount')->default('none');
             $table->string('subscriber')->default('none')->index("subscriber");//company Name
+            $table->string('intermediary_id')->default('none')->index("intermediary_id");//uwo bahereye receiver amafaranga
             $table->string('uidReceiver')->default('none')->index("uidReceiver");//company Name
             $table->string('purpose')->default('none');//Cyungu and so on
             $table->string('systemUid')->default('none')->index("systemUid");

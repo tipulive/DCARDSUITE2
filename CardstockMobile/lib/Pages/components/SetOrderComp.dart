@@ -1069,6 +1069,7 @@ class _SetOrderCompState extends State<SetOrderComp> {
     );
   }
   void viewPicture(productCode,imgUrl){
+    imgUrl=(imgUrl=='none')?'{}':imgUrl;
     Map<String, dynamic> imgVersion = jsonDecode(imgUrl);
     String urLink='${ConstantClassUtil.urlApp}/images/product/';
 

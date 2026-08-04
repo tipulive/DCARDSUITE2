@@ -147,8 +147,9 @@ class CardController extends Controller
     {
 
         $PhoneNumber=$input['Ccode']."".$input['phone'];
-        $check1=DB::select("select *from users where PhoneNumber=:PhoneNumber limit 1",array(
-            "PhoneNumber"=>$PhoneNumber
+        $check1=DB::select("select *from users where PhoneNumber=:PhoneNumber and subscriber=:subscriber limit 1",array(
+            "PhoneNumber"=>$PhoneNumber,
+            "subscriber"=>auth::user()->subscriber
         ));
         if($check1)
         {
@@ -182,8 +183,9 @@ class CardController extends Controller
     }
     public function GetCardDetail($input){// to check if he is already reach target
 
-        $check1=DB::select("select *from users where carduid=:carduid limit 1",array(
+        $check1=DB::select("select *from users where carduid=:carduid and subscriber limit 1",array(
             "carduid"=>$input["carduid"],
+            "subscriber"=>auth::user()->subscriber
         ));
         if($check1)
         {

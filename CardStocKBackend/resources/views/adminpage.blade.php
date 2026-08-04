@@ -6866,6 +6866,7 @@ function addExisting(data){
 var Usertoken=localStorage.getItem("Usertoken");
 $.ajax({
 
+
 url:`./api/addNewUserMini`,
 type:'post',
 beforeSend: function (xhr) {
@@ -6875,7 +6876,9 @@ xhr.setRequestHeader('Authorization', `Bearer ${Usertoken}`);
 data:{
 uidOwner:existUserid,
 ownerSub:existSubscriber,
+
 name:existName,
+miniOwner:data["uid"],
 minicompanyName:data["CompanyName"],
 miniOwnerSubscriber:data["subscriber"],
 PhoneNumber:data["PhoneNumber"],

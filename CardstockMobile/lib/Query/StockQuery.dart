@@ -34,7 +34,8 @@ class StockQuery extends GetxController{
     update();
 
   }
-  var promo;
+
+  var promo='{"success": false, "message": "Invalid promo code"}';
   updatePromo(valData){
     //usersPick.clear();
 
@@ -45,6 +46,7 @@ class StockQuery extends GetxController{
     update();
 
   }
+
   Map<String, dynamic> imgVersion = {};
   updateImgVersion(valData){
     //usersPick.clear();
@@ -164,6 +166,15 @@ class StockQuery extends GetxController{
     hidePickClick=valdata;
     update();
   }
+
+
+  Map<String, dynamic> reqProductData={};
+  updateReqProductData(valData)
+  {
+    //userProfile.clear();
+    reqProductData.addAll(valData);
+    update();
+  }
   Map<String, dynamic> userProfile=
   {
     //"uid": "kebineericMuna_1674160265",
@@ -176,13 +187,22 @@ class StockQuery extends GetxController{
     "country": "Rwanda",
     "initCountry": "none",
     "PhoneNumber": "+250782389359",
-    "carduid": "TEALTD_7hEnj_1672352175"
+    "martial_status":"none",
+    "carduid": "none"
   }
   ;
+
   updateUserProfile(valData)
   {
     //userProfile.clear();
     userProfile=valData;
+    update();
+  }
+
+  updateCleanUserProfile()
+  {
+    userProfile.clear();
+
     update();
   }
   var dataSearch = [];
@@ -484,7 +504,56 @@ class StockQuery extends GetxController{
     }
   }
 
+  //display and search Account
+  Future<dynamic> searchAdminUser(User user,Topups topData) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+//view,search
+    final params = {
+      "name":user.name,
+      "phoneNumber":user.phone,
+      "platform":user.platform,
+      "isStatus":user.status,//offNotPick means gonna pick any
+      "isAdmin":topData.optionCase,
+      "limitData":topData.startlimit,
+      "searchOption":topData.searchOption,
+      "sortOrder":topData.sortOrder??'ASC',
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.get(
+        "/SearchUser", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
   //not done Spending as depense
+
+
   searchUser(User user,Topups topData) async{
     try {
 
@@ -764,6 +833,7 @@ class StockQuery extends GetxController{
 
         //"options": [1,2,3],
       };
+      //print(params);
       //return false;
       String authToken =(Get.put(AdminQuery()).obj)["result"][0]["AuthToken"];
       var url="${ConstantClassUtil.urlLink}/SubmitOrder";
@@ -1535,6 +1605,38 @@ class StockQuery extends GetxController{
 
     }
   }
+  Future<dio.Response?> viewRecReqStock(Topups topupData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/ViewRecReqStock",
+        queryParameters: {
+          "status":"1",
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
   Future<dynamic> reqStock(QuickBonus product) async {
     final adminData = Get.find<AdminQuery>().obj;
     final String? authToken = adminData["result"]?[0]?["AuthToken"];
@@ -1619,6 +1721,166 @@ class StockQuery extends GetxController{
       return null;
     }
   }
+
+  //Request Stock and Send Stock
+
+
+  //Request Stock and Send Stock
+
+  //payAdmin and Withdraw
+  Future<dio.Response?> viewReqStockPay(Topups topupData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/viewReqStockPay",
+        queryParameters: {
+         // "uidReqPay":"kebineericMuna_1668935525",
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
+
+
+  Future<dio.Response?> viewReqStockPayHist(Topups topupData) async {
+    try {
+      final dioClient = dio.Dio();
+
+      final authToken =
+      Get.find<AdminQuery>().obj["result"][0]["AuthToken"];
+
+      final response = await dioClient.get(
+        "${ConstantClassUtil.urlLink}/viewReqStockPayHist",
+        queryParameters: {
+
+          "app_vers": AppInfo.version,
+        },
+        options: dio.Options(
+          headers: {
+            HttpHeaders.contentTypeHeader: "application/json",
+            HttpHeaders.authorizationHeader: "Bearer $authToken",
+          },
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+
+      return response.statusCode == 200 ? response : null;
+    } on dio.DioException catch (e) {
+      debugPrint("Dio error: ${e.response?.data ?? e.message}");
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      return null;
+    }
+  }
+  Future<dynamic> reqPaymentStock(Participated participate) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "amount":participate.inputData,
+      "uidReceiver":participate.uidCreator,
+      "purpose":participate.status,
+      "commentData":participate.promotion_msg,
+
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/reqPaymentStock", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+  Future<dynamic> stockPayAdmin(Participated participate) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "uid":participate.uid,//uid of reqPayment
+      "uidUserSub":participate.uidUser,//uid sender
+      "receivedSub":participate.inputData,//receuver subscriber
+
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/StockPayAdmin", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+
+  //payAdmin and Withdraw
   Future<dynamic> paidDept2(User userData) async {
     final adminData = Get.find<AdminQuery>().obj;
     final String? authToken = adminData["result"]?[0]?["AuthToken"];

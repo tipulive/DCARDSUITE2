@@ -90,32 +90,33 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"uidOwner":"kebineericMuna_1668935525",
- "ownerSub":"TEALTD",
- "miniOwner":"Kayiranga_1668876519",
-"name":"kayiranga",
-"minicompanyName":"DMSMLTD",
-"miniOwnerSubscriber":"DMSMLTD777",
-"PhoneNumber":"+23782389359",
+
+"uidOwner":"inkweto_1785671682",
+ "ownerSub":"inkwetoLtd_1785671682",
+
+"name":"Matekayiranga",
+"minicompanyName":"MATEVBG",
+"miniOwnerSubscriber":"MateKa",
+"PhoneNumber":"+243977777778",
  "app_vers":"{{app_vers}}"
 
 
 
 }
-#### addNewUserMini,this will check condition of uidOwner and miniOwner only
+#### this is like monitor someone's Account addNewUserMini,this will check condition of uidOwner and miniOwner only
 POST  {{baseUrl}}/addExistUserMini
 content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
 
-"uidOwner":"kebineericMuna_1668935525",
- "ownerSub":"TEALTD",
- "miniOwner":"Kayiranga_1668876519",
-"name":"kayiranga",
-"minicompanyName":"DMSMLTD",
-"miniOwnerSubscriber":"DMSMLTD777",
-"PhoneNumber":"+23782389359",
+"uidOwner":"ama_1785661733",
+ "ownerSub":"AmaniLtd_1785661733",
+ "miniOwner":"telephoneMatera_1785707341",
+"name":"Amaniini Account",
+"minicompanyName":"MadrasMateras",
+"miniOwnerSubscriber":"MateraLtd_1785662772",
+"PhoneNumber":"+243977777774",
  "app_vers":"{{app_vers}}"
 
 
@@ -860,10 +861,10 @@ Authorization: Bearer {{Auth_token}}
 
 {
 "phoneNumber":"+250",
-"name":"gogo",
+"name":"ang",
 "limitData":10,
-"platform":"4000",
-"searchOption":"false",
+"platform":"3000",
+"searchOption":false,
 "isAdmin":"true",
 "isStatus":"true"
 
@@ -1155,6 +1156,19 @@ Authorization: Bearer {{Auth_token}}
 
 
 }
+### mypromotion //uidPromo="none" then equal to uid
+GET  {{baseUrl}}/GetMyPromotion
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"eric_1773588194",
+"app_vers":"{{app_vers}}"
+
+
+
+}
+###
 
 ### myAccount
 GET  {{baseUrl}}/myAccount
@@ -1176,12 +1190,47 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"amount":"300",
+
+"amount":"250",
+"uidReceiver":"Ange_1779748991",
 "purpose":"kwishyura Stock",
 "commentData":"Nishyuye Theo",
  "app_vers":"{{app_vers}}"
 
 
+
+}
+
+### payment Admin View no Approval//uidReqPay is optional
+GET  {{baseUrl}}/viewReqStockPay
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidReqPay":"",
+ "app_vers":"{{app_vers}}"
+}
+### payment Admin Approval
+GET  {{baseUrl}}/viewReqStockPayHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidReqPay":"kebineericMuna_1668935525",
+ "app_vers":"{{app_vers}}"
+
+}
+
+###received Stock, subscriberSub here is The receiver done
+POST  {{baseUrl}}/StockPayAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_fq_1785487057",
+"uidUserSub":"kebineericMuna_1668935525",
+"receivedSub":"1500",
+ "app_vers":"{{app_vers}}"
 
 }
 #### Mini Account
@@ -1206,9 +1255,11 @@ Content-Type: application/json
 Authorization: Bearer {{Auth_token}}
 
 {
+    "platform":"mobile",
 "app_vers":"{{app_vers}}"
 
 }
+
 ####
 POST  {{baseUrl}}/SubmitOrder
 Content-Type: application/json

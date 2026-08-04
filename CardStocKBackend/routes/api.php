@@ -56,6 +56,12 @@ Route::middleware('auth:sanctum')->group( function () {//here is to protect mult
     Route::get('/AddCurrency','CompanyController@AddCurrency')->name('AddCurrency');
     Route::get('/UpdateCurrency','CompanyController@UpdateCurrency')->name('UpdateCurrency');
     /*Currency */
+    /*Promotion Data*/
+
+    Route::post('/withdrawLongPromo','CompanyController@withdrawLongPromo')->name('withdrawLongPromo');
+    Route::get('/GetMyPromotion','PromotionController@GetMyPromotion')->name('GetMyPromotion');
+    /*Promotion Data*/
+
     /*Account done Testing*/
     Route::get('/SubscriberAccount','CompanyController@SubscriberAccount')->name('SubscriberAccount');
     Route::get('/myAccount','CompanyController@myAccount')->name('myAccount');

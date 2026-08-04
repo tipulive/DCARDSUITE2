@@ -3,6 +3,7 @@ import 'dart:io';
 
 
 import 'package:dio/dio.dart';
+import 'package:dstockapp/Query/StockQuery.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -222,6 +223,7 @@ class _LoginState extends State<Login> {
     // print(await SyncService().SyncDownloadCard());
     //print(await SyncService().SyncUploadCard());
     //print(await CardQuery().SyncOffCardAdd());
+
     setState(() {
       showOveray=true;
     });
@@ -247,6 +249,23 @@ class _LoginState extends State<Login> {
         // print("done");
         //return response.data;
         //return response.data["User"]["name"];
+        Map<String, dynamic> userProfile=
+        {
+          //"uid": "kebineericMuna_1674160265",
+          "uid": "none",
+          "name":response.data["User"]["name"],
+
+          "email": "on@gmail.com",
+          "phone": "782389359",
+          "Ccode": "+250",
+          "country": "Rwanda",
+          "initCountry": "none",
+          "PhoneNumber": "+250782389359",
+          "martial_status":"none",
+          "carduid": "none"
+        }
+        ;
+        await Get.put(StockQuery()).updateUserProfile(userProfile);
         if((await AdminQuery().addData(Admin(uid:response.data["User"]["uid"],name:response.data["User"]["name"],subscriber:response.data["User"]["subscriber"],AuthToken: response.data["token"],email: response.data["User"]["email"],phone: response.data["User"]["tel"],CompanyName:response.data["User"]["CompanyName"],password:response.data["User"]["password"])))>0)
         {
           //Get.to(Homepage());

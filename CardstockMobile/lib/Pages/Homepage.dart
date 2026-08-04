@@ -43,6 +43,9 @@ import '../Utilconfig/PromotionQData.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 
+import 'components/promo_badge.dart';
+
+
 
 
 
@@ -116,12 +119,27 @@ class _HomepageState extends State<Homepage> {
   Language langV=Language();
   var box=Hive.box("myBox");
   String selectedCurrency = "FRC";
+  final products = [
+    PromoProduct(
+      id: '1',
+      icon: Icons.wallet_giftcard,
+      name: 'Wireless Earbuds',
+      oldPrice: '\$19.99',
+    ),
+    PromoProduct(
+      id: '2',
+      icon: Icons.phone_iphone,
+      name: 'Premium Phone Case',
+      oldPrice: '\$29.99',
+    ),
+    // ... up to 5 items (they scroll)
+  ];
 
 
   void showConfirmBottomSheet() async{
     String userProfile=(myStockQuery.userProfile)["uid"];
     // print("Total dettes: $userProfile");
-   // print((myStockQuery.userProfile)["uid"]);
+    // print((myStockQuery.userProfile)["uid"]);
     setState(() {
 
       showOver=true;
@@ -237,7 +255,7 @@ class _HomepageState extends State<Homepage> {
 
   }
 
-   /*void showConfirmBottomSheet() async{
+  /*void showConfirmBottomSheet() async{
      String userProfile=(myStockQuery.userProfile)["uid"];
     // print("Total dettes: $userProfile");
      setState(() {
@@ -356,6 +374,7 @@ class _HomepageState extends State<Homepage> {
 
   myOrderSubmit() async{
     //Get.back();
+    //print("submit");
     setState(() {
 
       showOver=true;
@@ -405,9 +424,13 @@ class _HomepageState extends State<Homepage> {
 
       //var mypromo=JsonEncoder.withIndent('  ').convert(myStockQuery.promo);
       //
+      //print("submit");
+
       var myPromo=myStockQuery.promo;
       Map<String, dynamic> data = jsonDecode(myPromo);
+     // print("hello");
       var promo=(data["success"])?myPromo:'none';
+
       var resultData=(await StockQuery().submitOrder(Participated(uid:"Nyota_1672353378"
           ,uidUser:userProfile,subscriber:orderId,inputData:inputDataText),Promotions(
           token:"$orderSum",promoData:promo,gain:"350",uid:"PointSales1"
@@ -454,6 +477,7 @@ class _HomepageState extends State<Homepage> {
         pickDefaultUser(true,true);
       }
     } catch (e) {
+
       setState(() {
 
         showOver=false;
@@ -497,7 +521,7 @@ class _HomepageState extends State<Homepage> {
 
     //FocusScope.of(context).unfocus();//hide keyboard on screen loadin
     return Scaffold(
-     //resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
+      //resizeToAvoidBottomInset:(Get.put(StockQuery()).resizable),
       resizeToAvoidBottomInset:myStockQuery.resizable,
 
 
@@ -507,9 +531,9 @@ class _HomepageState extends State<Homepage> {
           Column(
             children: [
               //Qr Code
-          //    const SizedBox(height: 40,),
+              //    const SizedBox(height: 40,),
 
-             /* ImageCardWidget(
+              /* ImageCardWidget(
                 mainImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
                 smallImageUrls: [
                   '${ConstantClassUtil.urlApp}/images/bg_10g6.jpg',
@@ -540,7 +564,7 @@ class _HomepageState extends State<Homepage> {
                         color: Colors.red,
                       ),
                     ),
-                    
+
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -558,12 +582,12 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
               ),
-              
+
               GetBuilder<StockQuery>(
                 builder: (hideShowcontroller) {
                   //return Text('Data: ${_controller.data}');
                   return
-                 // (hideShowcontroller.userProfile["uid"]!='none')?
+                    // (hideShowcontroller.userProfile["uid"]!='none')?
                     (hideShowcontroller.hidePickClick)?
                     InkWell(
                       onTap: (){
@@ -598,13 +622,13 @@ class _HomepageState extends State<Homepage> {
 
               // SearchBarField(search: _data,searchController:searchContro,PerformSearch:,),
               SearchBarField(
-               searchBy:(text) async{
-                 setState(() {
-                   (Get.put(StockQuery()).updateSelected(text));
+                searchBy:(text) async{
+                  setState(() {
+                    (Get.put(StockQuery()).updateSelected(text));
 
-                 });
-                 //(Get.put(StockQuery()).selectedOption),
-               } ,
+                  });
+                  //(Get.put(StockQuery()).selectedOption),
+                } ,
                 // Correct: explicitly assigning null
                 searchMethod:(text) async{
                   if (text!= searchText) {
@@ -630,6 +654,7 @@ class _HomepageState extends State<Homepage> {
                 Expanded(
                   child: ProductSearchList(
                     addCartMethod: (dynamicData) {
+                     // print(dynamicData);
                       addCartPlus(dynamicData);
                     },
                     viewPictureMethod: (productCode, imgUrl) {
@@ -656,14 +681,11 @@ class _HomepageState extends State<Homepage> {
                             iconSize: 23.0,
                             color: Colors.blue,
                             onPressed: () async{
-                              setState(() {
-                                phoneNumber="test";
-                                searchValOption=false;
-                              });
-
-
-                              await getUserData();
-                              searchUser(context);
+                              final uid=(myStockQuery.userProfile)["uid"];
+                              var response=await PromotionQData().getMyPromotion(User(uid: uid));
+                              if (response != null && response.data != null) {
+                                viewPromo(response.data);
+                              }
                             }
 
                         ), // Replace with your desired icon
@@ -712,9 +734,12 @@ class _HomepageState extends State<Homepage> {
                   children:  [
                     // Adjust the space between icon and text
                     InkWell(
-                      onTap: (){
-                        print(myStockQuery.promo);
-                      },
+                        onTap: () async{
+                          //print((myStockQuery.userProfile)["carduid"]);
+                          print(myStockQuery.promo);
+                          //print(await (Get.put(PromotionQData()).promotions));
+                          //print(myStockQuery.userProfile);
+                        },
                         child: Text("promo")
 
                     ),
@@ -809,7 +834,7 @@ class _HomepageState extends State<Homepage> {
                   ],
                 ),
               //Text("id ${(Get.put(StockQuery()).order["resultData"][0]["uid"])}"),
-             // Text("Total:${(Get.put(StockQuery()).orderSum)}"),
+              // Text("Total:${(Get.put(StockQuery()).orderSum)}"),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1019,7 +1044,7 @@ class _HomepageState extends State<Homepage> {
                         decoration: InputDecoration(
                           hintText: 'Expense...',
                           border: InputBorder.none,
-                         /* prefixIcon: const Icon(
+                          /* prefixIcon: const Icon(
                             Icons.receipt_long_outlined,
                           ),*/
 
@@ -1203,67 +1228,67 @@ class _HomepageState extends State<Homepage> {
                 saveChangeQtyMethod(productCode,indexData,currentEditQty);
               },deleteCheckout:(productCode) async{
 
-  if(await getPromotion())
-  {
-    try {
+                if(await getPromotion())
+                {
+                  try {
 
-      setState(() {
-        showOver=true;
-      });
+                    setState(() {
+                      showOver=true;
+                    });
 
 
-      var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
-      if(resultData["status"])
-      {
-        //print(resultData);
-        /* List<dynamic> orderVal=[
+                    var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
+                    if(resultData["status"])
+                    {
+                      //print(resultData);
+                      /* List<dynamic> orderVal=[
                       {
                         "name":"Unknown",
                         "uid":""
                       }
                     ];*/
-        setState(() {
-          showOver=false;
-          setState(() {
-            cartData.removeWhere((item) => item['productCode'] == productCode);
-            num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
-            (Get.put(StockQuery()).updateSumOrder(totalVal));
+                      setState(() {
+                        showOver=false;
+                        setState(() {
+                          cartData.removeWhere((item) => item['productCode'] == productCode);
+                          num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
+                          (Get.put(StockQuery()).updateSumOrder(totalVal));
 
-            //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
+                          //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
 
-            if(cartData.isEmpty)
-            {
-              (Get.put(StockQuery()).updateHidePickClick(true));
-              // (Get.put(StockQuery()).updateOrder(orderVal));
-              pickDefaultUser(true,true);
-              (Get.put(StockQuery()).updateDeptOrder(0));
-              inputDataDept.text="";
-            }
-          });
-          Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-          var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
-          print(promo1);
-          (myStockQuery.updatePromo(promo1));
-
-
-
-        });
-        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-        applyPromotion(cartD);
-
-      }
-      else{
-
-        setState(() {
-
-          showOver=false;
-          dataSearch.clear();
+                          if(cartData.isEmpty)
+                          {
+                            (Get.put(StockQuery()).updateHidePickClick(true));
+                            // (Get.put(StockQuery()).updateOrder(orderVal));
+                            pickDefaultUser(true,true);
+                            (Get.put(StockQuery()).updateDeptOrder(0));
+                            inputDataDept.text="";
+                          }
+                        });
+                        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+                        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
+                        //print(promo1);
+                        (myStockQuery.updatePromo(promo1));
 
 
-        });
-      }
-    } catch (e) {
-      /* showDialog(
+
+                      });
+                      Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+                      applyPromotion(cartD);
+
+                    }
+                    else{
+
+                      setState(() {
+
+                        showOver=false;
+                        dataSearch.clear();
+
+
+                      });
+                    }
+                  } catch (e) {
+                    /* showDialog(
                    context: context,
                    builder: (context) => AlertDialog(
                      title: const Text("Error"),
@@ -1271,8 +1296,8 @@ class _HomepageState extends State<Homepage> {
                    ),
                  );*/
 
-    }
-  }
+                  }
+                }
 
 
 
@@ -1314,7 +1339,13 @@ class _HomepageState extends State<Homepage> {
               ),
             ],
           ),
-
+          /* Positioned(
+            top: MediaQuery.of(context).size.height * 0.4,
+            right: 0,
+            child: PromoBadge(
+              products: products,
+            ),
+          ),*/
           if(showOver)
             Positioned.fill(
               child: Center(
@@ -1453,7 +1484,7 @@ class _HomepageState extends State<Homepage> {
             "country": "Rwanda",
             "initCountry": "none",
             "PhoneNumber": "+250782389359",
-            "carduid": "TEALTD_7hEnj_1672352175"
+            "carduid": "none"
           }
           ;
           setState(() {
@@ -1554,7 +1585,7 @@ class _HomepageState extends State<Homepage> {
           setState(() {
 
 
-           myStockQuery.updatedataSearch([]);
+            myStockQuery.updatedataSearch([]);
             myStockQuery.updateResizable(true);
             //Get.put(StockQuery()).updateResizable(true);
           });
@@ -1608,7 +1639,7 @@ class _HomepageState extends State<Homepage> {
           "country": "Rwanda",
           "initCountry": "none",
           "PhoneNumber": "none",
-          "carduid": "TEALTD_7hEnj_1672352175"
+          "carduid": "none"
         };
 
         (Get.put(StockQuery()).updateUserProfile(userProfile));
@@ -1633,8 +1664,8 @@ class _HomepageState extends State<Homepage> {
         //print(cartData);
         Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
         var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, promoData.promotions));
-      // print(promoData.promotions);
-        print(promo1);
+        // print(promoData.promotions);
+        //print(promo1);
         (myStockQuery.updatePromo(promo1));
       }
       else{
@@ -1708,7 +1739,7 @@ class _HomepageState extends State<Homepage> {
 
 
     } catch (e) {
-     /* showDialog(
+      /* showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Error"),
@@ -2162,6 +2193,7 @@ class _HomepageState extends State<Homepage> {
 
   }
   void addCartPlus(dynamic dynamicData) async{
+    //print((Get.put(StockQuery()).userProfile)["uid"]);
     if((Get.put(StockQuery()).userProfile)["uid"]=="none")
     {
       Get.dialog(
@@ -2178,16 +2210,20 @@ class _HomepageState extends State<Homepage> {
               ),
               onPressed: () async{
 
+
+
                 Get.back(canPop: false);
                 await pickDefaultUser(false,true);
 
                 if((Get.put(StockQuery()).userProfile)["uid"]!='none')
                 {
+                  //print(myStockQuery.reqProductData);
 
-                  await placeOrder(dynamicData);
+                  await placeOrder(myStockQuery.reqProductData);
                   //Get.back(canPop: false);
 
                 }
+
 
 
               },
@@ -2219,6 +2255,7 @@ class _HomepageState extends State<Homepage> {
 
     (Get.put(StockQuery()).updateHideLoader(false));
     //var resultData=(await StockQuery().searchUser(User(uid:"",name:"anyName",phone:"any",platform:"4000",status:"Default"),Topups(optionCase:"false",startlimit:1,searchOption:false))).data;
+    try {
     var resultData=(await StockQuery().pickDefault());
 
 //print((myStockQuery.userProfile));
@@ -2235,10 +2272,10 @@ class _HomepageState extends State<Homepage> {
         (Get.put(StockQuery()).updateHideLoader(true));
         var userProfile =
         {
-         /* "uid": "${resultData["result"][0]["uid"]}",
+          /* "uid": "${resultData["result"][0]["uid"]}",
           "name": "${resultData["result"][0]["name"]}",*/
-         "uid": resultData["uid"],
-         "name":resultData["name"],
+          "uid": resultData["uid"],
+          "name":resultData["name"],
 
           "email": "on@gmail.com",
           "phone": "782389359",
@@ -2247,28 +2284,28 @@ class _HomepageState extends State<Homepage> {
           "country": "Rwanda",
           "initCountry": "none",
           "PhoneNumber": "none",
-          "carduid": "TEALTD_7hEnj_1672352175"
+          "carduid": "none"
         };
 
-       
 
 
-  if(isOrderNotExist==true){
-    (Get.put(StockQuery()).updateUserProfile(userProfile));
-    List<dynamic> orderVal=[
-      {
-        //"name":"${resultData["result"][0]["name"]}",
-        "name": resultData["name"],
-        "uid":"${(resetOrder==true)?'none':(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"
-      }
-    ];
-    setState(() {
-      (Get.put(StockQuery()).updateOrder(orderVal));
-    });
-  }else{
-   // changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
-    changeUserInOrder(resultData["uid"],resultData["name"],"0789");
-  }
+
+        if(isOrderNotExist==true){
+          (Get.put(StockQuery()).updateUserProfile(userProfile));
+          List<dynamic> orderVal=[
+            {
+              //"name":"${resultData["result"][0]["name"]}",
+              "name": resultData["name"],
+              "uid":"${(resetOrder==true)?'none':(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"
+            }
+          ];
+          setState(() {
+            (Get.put(StockQuery()).updateOrder(orderVal));
+          });
+        }else{
+          // changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
+          changeUserInOrder(resultData["uid"],resultData["name"],"0789");
+        }
 
 
 
@@ -2288,6 +2325,7 @@ class _HomepageState extends State<Homepage> {
 
     }
     else{
+
       (Get.put(StockQuery()).updateHideLoader(true));
 
       setState(() {
@@ -2296,6 +2334,9 @@ class _HomepageState extends State<Homepage> {
 
 
       });
+    }
+    } catch (e) {
+      print(e);
     }
   }
 
@@ -2313,7 +2354,7 @@ class _HomepageState extends State<Homepage> {
         "country": "Rwanda",
         "initCountry": "none",
         "PhoneNumber": "$phoneNumber",
-        "carduid": "TEALTD_7hEnj_1672352175"
+        "carduid": "none"
       };
       setState(() {
         (Get.put(StockQuery()).updateUserProfile(userProfile));
@@ -2326,138 +2367,142 @@ class _HomepageState extends State<Homepage> {
   }
 
   placeOrder(dynamicData) async{
+
     if(await getPromotion())
+    {
+
+      setState(() {
+        productSearch=false;
+      });
+      (Get.put(StockQuery()).updateResizable(true));
+      (Get.put(StockQuery()).updateHideLoader(false));
+      bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
+
+      if(containsProductCode)
       {
+        (Get.put(StockQuery()).updateHideLoader(true));
+        (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
+        (Get.put(StockQuery()).updateHideProductList(true));
+
+        Get.snackbar("error", " Product already Added Please increase Qty",backgroundColor: const Color(0xff9a1c55),
+            colorText: const Color(0xffffffff),
+            titleText:Text("${dynamicData['ProductName']}",style:const TextStyle(color:Color(
+                0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
+
+            icon: const Icon(Icons.access_alarm),
+            duration: const Duration(seconds: 4));
+
+
+      }
+      else{
+        // print(containsProductCode);
+
+
         setState(() {
-          productSearch=false;
+
+          showOver=true;
+
+          // productSearchPopup=false;
+          // dataSearch.clear();
+
+
         });
-        (Get.put(StockQuery()).updateResizable(true));
-        (Get.put(StockQuery()).updateHideLoader(false));
-        bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
 
-        if(containsProductCode)
-        {
-          (Get.put(StockQuery()).updateHideLoader(true));
-          (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
-          (Get.put(StockQuery()).updateHideProductList(true));
-
-          Get.snackbar("error", " Product already Added Please increase Qty",backgroundColor: const Color(0xff9a1c55),
-              colorText: const Color(0xffffffff),
-              titleText:Text("${dynamicData['ProductName']}",style:const TextStyle(color:Color(
-                  0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
-
-              icon: const Icon(Icons.access_alarm),
-              duration: const Duration(seconds: 4));
+        try {
+          dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
+          dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
+          dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
+          num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
 
 
-        }
-        else{
-          // print(containsProductCode);
+          //print("${dynamicData["req_qty"]}");
+          var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
 
 
-          setState(() {
-
-            showOver=true;
-
-            // productSearchPopup=false;
-            // dataSearch.clear();
+          if(resultData["status"])
+          {
 
 
-          });
-
-          try {
-            dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
-            dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
-            dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
-            num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
-
-
-            //print("${dynamicData["req_qty"]}");
-            var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
-            if(resultData["status"])
-            {
-
-
-              // print(cartData.length);
+            // print(cartData.length);
 
 //here i must Add no assign Card Then Unknown else Card ClientName
-              List<dynamic> orderVal=[
-                {
-                  "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
-                  "uid":resultData["OrderId"]
-                }
-              ];
-              //print(cartData);
-
-              //print(resultData);
-              setState(() {
-                showOver=false;
-
-                (Get.put(StockQuery()).updateOrder(orderVal));
-                (Get.put(StockQuery()).updateSumOrder(totalVal));
-
-
-                cartData.insertAll(0,[dynamicData]);
-
-                dataSearch.clear();
-                //(Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-                (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
-                (Get.put(StockQuery()).updateHideProductList(true));
-                (Get.put(StockQuery()).updateHideLoader(true));
-
-
-                searchContro.text="";
-
-              });
-
-              // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
-              // print(cartData);
-              // print(ConstantClassUtil().convertCart(cartData));
-              Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-              //
-               //print("hello");
-
-              applyPromotion(cartD);
-
-
-            }
-            else{
-
-              setState(() {
-
-                showOver=false;
-                dataSearch.clear();
-                (Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-                (Get.put(StockQuery()).updateHideLoader(true));
-
-
-              });
-              if(resultData["result"]==1){
-                checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
+            List<dynamic> orderVal=[
+              {
+                "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
+                "uid":resultData["OrderId"]
               }
+            ];
+            //print(cartData);
+
+            //print(resultData);
+            setState(() {
+              showOver=false;
+
+              (Get.put(StockQuery()).updateOrder(orderVal));
+              (Get.put(StockQuery()).updateSumOrder(totalVal));
+
+
+              cartData.insertAll(0,[dynamicData]);
+
+              dataSearch.clear();
+              //(Get.put(StockQuery()).updatedataSearch(dataSearch));
+
+              (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
+              (Get.put(StockQuery()).updateHideProductList(true));
+              (Get.put(StockQuery()).updateHideLoader(true));
+
+
+              searchContro.text="";
+
+            });
+
+            // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
+            // print(cartData);
+            // print(ConstantClassUtil().convertCart(cartData));
+            Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+            //
+            //print("hello");
+
+            applyPromotion(cartD);
+
+
+          }
+          else{
+
+            setState(() {
+
+              showOver=false;
+              dataSearch.clear();
+              (Get.put(StockQuery()).updatedataSearch(dataSearch));
+
+              (Get.put(StockQuery()).updateHideLoader(true));
+
+
+            });
+            if(resultData["result"]==1){
+              checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
             }
-          } catch (e) {
-            /* showDialog(
+          }
+        } catch (e) {
+          /* showDialog(
          context: context,
          builder: (context) => AlertDialog(
            title: const Text("Error"),
            content: Text(e.toString()),
          ),
        );*/
-          }
-
-
-
         }
 
-      }else{
+
+
+      }
+
+    }else{
       print("false");
     }
 
 
-         /*if(await getPromotion())
+    /*if(await getPromotion())
             {
 
             }else{
@@ -2476,7 +2521,7 @@ class _HomepageState extends State<Homepage> {
 
         return true;
       }else{
-        print(' promote ${result}');
+        //  print(' promote ${result}');
         //List<Map<String, dynamic>> promo =[];
         Map<String, dynamic> promo = {};
         promoData.updatePromotions(promo);
@@ -2511,7 +2556,7 @@ class _HomepageState extends State<Homepage> {
     //print(box.get('owner'));
     setState(() {
 
-     // (Get.put(StockQuery()).updateHideLoader(false));
+      // (Get.put(StockQuery()).updateHideLoader(false));
       showOver=true;
     });
 
@@ -2528,6 +2573,23 @@ class _HomepageState extends State<Homepage> {
       });
       if((await AdminQuery().switchAcc(Admin(uid:resultData["User"]["uid"],name:resultData["User"]["name"],subscriber:resultData["User"]["subscriber"],AuthToken: resultData["token"],email: resultData["User"]["email"],phone: resultData["User"]["tel"],CompanyName:resultData["User"]["CompanyName"] )))>0)
       {
+        Map<String, dynamic> userProfile=
+        {
+          //"uid": "kebineericMuna_1674160265",
+          "uid": "none",
+
+
+          "email": "on@gmail.com",
+          "phone": "782389359",
+          "Ccode": "+250",
+          "country": "Rwanda",
+          "initCountry": "none",
+          "PhoneNumber": "+250782389359",
+          "martial_status":"none",
+          "carduid": "none"
+        }
+        ;
+        await Get.put(StockQuery()).updateUserProfile(userProfile);
         //Get.to(Homepage());
         //Get.to(() => Homepage());
 
@@ -2568,7 +2630,7 @@ class _HomepageState extends State<Homepage> {
     });
 
     var resultData=(await myStockQuery.miniAccount(Topups(optionCase:optionCase,name: name,uid:box.get('owner')[0]["uid"])));
-     //print("amaData:${resultData}");
+    //print("amaData:${resultData}");
 
     if(resultData["status"])
     {
@@ -2605,7 +2667,7 @@ class _HomepageState extends State<Homepage> {
 
       setState(() {
 
-       // users.clear();
+        // users.clear();
 
 
       });
@@ -2613,131 +2675,923 @@ class _HomepageState extends State<Homepage> {
   }
   void searchCompany(BuildContext context) {
     Get.bottomSheet(
-      StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(5.0),
-              height: 600,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
+      SafeArea(
+        child: Container(
+          height: Get.height * 0.82,
+          decoration: const BoxDecoration(
+            color: Color(0xffF8F9FB),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30),
+            ),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+
+              /// Drag Handle
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: Column(
-                children: [
-                  //const Center(child: Text("Client:Name")),
-                  Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                    child: InkWell(
-                      onTap: () async{
-                        await switchAccount(box.get('owner')[0]["uid"],box.get('owner')[0]["password"]);
-                      },
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: getRandomColor(),
-                          child: Icon(_getRandomIcon()),
-                        ),
-                        title: Text(box.get('owner')[0]["companyName"]??box.get('owner')[0]["name"]),
-                        subtitle: Text(box.get('owner')[0]["name"]),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add),
-                          iconSize: 23.0,
-                          color: Colors.blue,
-                          onPressed: () async {
-                            await switchAccount(box.get('owner')[0]["uid"],box.get('owner')[0]["password"]);
-                          },
-                        ),
+
+              const SizedBox(height: 24),
+
+              /// Title
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  "Switch Account",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  "Choose another company account to continue.",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              /// Current Account
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  elevation: 1,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () async {
+                      await switchAccount(
+                        box.get('owner')[0]["uid"],
+                        box.get('owner')[0]["password"],
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(
+                              Icons.business_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          const SizedBox(width: 16),
+
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  box.get('owner')[0]["companyName"] ??
+                                      box.get('owner')[0]["name"],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  box.get('owner')[0]["name"] ?? "",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Icon(
+                              Icons.check_circle,
+                              color: Colors.green.shade600,
+                              size: 22,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(50.0),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// Search
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    return Material(
+                      elevation: 2,
+                      borderRadius: BorderRadius.circular(18),
+                      shadowColor: Colors.black12,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: "Search company or phone...",
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius:
+                            BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
-                        labelText: 'Search',
-                      ),
-                      onChanged: (text) async {
-                        if ((int.tryParse(text) != null)) {
-                          setState(() {
+                        onChanged: (text) async {
+                          if (int.tryParse(text) != null) {
                             searchValOption = true;
                             phoneNumber = text;
-                          });
-                          await getUserData();
-                        } else {
-                          setState(() {
-                            searchName = text;
+                          } else {
                             searchValOption = true;
                             phoneNumber = "none";
-                          });
+                            searchName = text;
+                          }
+
+                          setState(() {});
                           await getUserData();
-                        }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// Section Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Text(
+                      "Available Accounts",
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Expanded(
+                child: GetBuilder<StockQuery>(
+                  builder: (controller) {
+                    if (controller.compPick.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No accounts found",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(
+                          20, 0, 20, 20),
+                      itemCount: controller.compPick.length,
+                      separatorBuilder: (_, __) =>
+                      const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = controller.compPick[index];
+
+                        return Material(
+                          color: Colors.white,
+                          elevation: .5,
+                          borderRadius:
+                          BorderRadius.circular(18),
+                          child: InkWell(
+                            borderRadius:
+                            BorderRadius.circular(18),
+                            onTap: () async {
+                              Get.put(StockQuery())
+                                  .updateHideLoader(false);
+
+                              await switchAccount(
+                                item["uid"].toString(),
+                                item["password"].toString(),
+                              );
+                            },
+                            child: Padding(
+                              padding:
+                              const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue
+                                          .withOpacity(.08),
+                                      borderRadius:
+                                      BorderRadius
+                                          .circular(15),
+                                    ),
+                                    child: Icon(
+                                      Icons.business,
+                                      color:
+                                      Colors.blue.shade700,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 16),
+
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment
+                                          .start,
+                                      children: [
+                                        Text(
+                                          item["companyName"] ??
+                                              "",
+                                          style:
+                                          const TextStyle(
+                                            fontWeight:
+                                            FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                            height: 4),
+                                        Text(
+                                          item["name"] ?? "",
+                                          style: TextStyle(
+                                            color: Colors
+                                                .grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  Icon(
+                                    Icons
+                                        .arrow_forward_ios_rounded,
+                                    size: 16,
+                                    color:
+                                    Colors.grey.shade400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+  void viewPromo(Map<String, dynamic> apiResponse) {
+    // Extract list from response safely
+    final List<dynamic> promos = apiResponse['result'] ?? [];
+
+    // Pool of random colors and icons to pick from
+    final List<Color> randomColors = [
+      Colors.orange,
+      Colors.blue,
+      Colors.green,
+      Colors.purple,
+      Colors.teal,
+      Colors.deepOrange,
+    ];
+
+    final List<IconData> randomIcons = [
+      Icons.local_offer,
+      Icons.local_shipping,
+      Icons.account_balance_wallet,
+      Icons.card_giftcard,
+      Icons.stars,
+      Icons.flash_on,
+    ];
+
+    final Random random = Random();
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.65,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+
+                const Text(
+                  'Available Promotions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Empty List Fallback
+                if (promos.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'No promotions available.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                // Promotions List
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: promos.length,
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final promo = promos[index];
+
+                        // Assign random color and icon per item
+                        final Color badgeColor =
+                        randomColors[random.nextInt(randomColors.length)];
+                        final IconData icon =
+                        randomIcons[random.nextInt(randomIcons.length)];
+
+                        // Extract fields from API payload
+                        final String promoUid =
+                            promo['uid'] ?? 'promo_7G_1785491870';
+                        final String promoName =
+                            promo['promoName'] ?? 'Vega Promotion';
+
+                        // Mapped values based on request
+                        final String badgeText = promoUid;
+                        final String title = promoName.toUpperCase();
+                        const String subtitle =
+                            'Get special rewards and exclusive discounts when you complete this promo.';
+                        const String buttonText = 'Apply';
+
+                        return Card(
+                          elevation: 0,
+                          color: Colors.grey[50],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: badgeColor.withOpacity(0.1),
+                                  child: Icon(icon, color: badgeColor, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Badge showing UID
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: badgeColor.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          badgeText,
+                                          style: TextStyle(
+                                            color: badgeColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+
+                                      // Promotion Name
+                                      Text(
+                                        title,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+
+                                      // Dummy Description
+                                      Text(
+                                        subtitle,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+
+                                // Right Side Buttons
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Top-Right Button (Info/Details)
+                                    InkWell(
+                                      onTap: () {
+                                        // Action for info tap
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: Icon(
+                                          Icons.info_outline,
+                                          size: 18,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 16),
+
+                                    // Bottom-Right Button (Apply Action)
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        //debugPrint("Applied Promo UID: $promoUid");
+                                        viewPromotions(apiResponse);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        buttonText,
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
-
-                  GetBuilder<StockQuery>(
-                      builder: (myController) {
-                        return   Expanded(
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: myController.compPick.length + 1,
-                            separatorBuilder: (context, index) => const Divider(height: 1.0),
-                            itemBuilder: (context, index) {
-                              if (index < myController.compPick.length) {
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                                  child: InkWell(
-                                    onTap: () async{
-                                      //copy of Add contact because it is one which is Og;
-                                      (Get.put(StockQuery()).updateHideLoader(false));
-                                      await switchAccount(myController.compPick[index]["uid"].toString(),myController.compPick[index]["password"].toString());
-                                     // print(myController.compPick[index]["password"].toString());
-                                    },
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: getRandomColor(),
-                                        child: Icon(_getRandomIcon()),
-                                      ),
-                                      title: Text(myController.compPick[index]["companyName"]),
-                                      subtitle: Text(myController.compPick[index]["name"]),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.add),
-                                        iconSize: 23.0,
-                                        color: Colors.blue,
-                                        onPressed: () async {
-                                          //(Get.put(StockQuery()).updateHideLoader(false));
-                                         // await switchAccount(myController.compPick[index]["uid"],myController.compPick[index]["password"]);
-                                          (Get.put(StockQuery()).updateHideLoader(false));
-                                          await switchAccount(myController.compPick[index]["uid"].toString(),myController.compPick[index]["password"].toString());
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                return Container();
-                              }
-                            },
-                          ),
-                        );
-                      }),
-
-
-                ],
-              ),
+              ],
             ),
           );
         },
       ),
-    ).whenComplete(() {
-      // Do whatever you want after closing the bottom sheet
-    });
+    ).whenComplete(() {});
+  }
+  void viewPromotions(Map<String, dynamic> apiResponse) {
+    final List<String> availableIcons = ['✨', '🛍️', '🧴', '🎁', '⭐', '📦', '🎉'];
+    final Random random = Random();
+
+    String promoCode = "PROMO";
+    double totalBonusAmount = 0.0;
+    List<Map<String, String>> freeProducts = [];
+
+    // Variables to build the final output JSON
+    String countCondition = 'cCount';
+    int remaincCount = 0;
+    int remaincTotal = 0;
+    List<Map<String, dynamic>> itemsBonusPayload = [];
+
+    if (apiResponse['status'] == true &&
+        apiResponse['result'] != null &&
+        (apiResponse['result'] as List).isNotEmpty) {
+
+      final promoData = apiResponse['result'][0];
+
+      promoCode = promoData['promoName']?.toString().toUpperCase() ?? "PROMO";
+
+      // Parse thresholds and current input totals
+      final double condCount = double.tryParse(promoData['condCount']?.toString() ?? '0') ?? 0;
+      final double condTotal = double.tryParse(promoData['condTotal']?.toString() ?? '0') ?? 0;
+
+      final double cCount = double.tryParse(promoData['cCount']?.toString() ?? '0') ?? 0;
+      final double cTotal = double.tryParse(promoData['cTotal']?.toString() ?? '0') ?? 0;
+
+      countCondition = promoData['countCondition']?.toString() ?? 'cCount';
+
+      // 1. Calculate Multiplier
+      int multiplier = 0;
+
+      if (countCondition == 'cCount') {
+        if (condCount > 0) {
+          multiplier = (cCount / condCount).floor();
+        }
+      } else if (countCondition == 'cTotal') {
+        if (condTotal > 0) {
+          multiplier = (cTotal / condTotal).floor();
+        }
+      } else if (countCondition == 'both') {
+        if (condCount > 0 && condTotal > 0) {
+          int countMultiplier = (cCount / condCount).floor();
+          int totalMultiplier = (cTotal / condTotal).floor();
+          multiplier = min(countMultiplier, totalMultiplier);
+        }
+      }
+
+      // 2. Calculate remaining balances
+      if (countCondition == 'cCount') {
+        remaincCount = (cCount - (multiplier * condCount)).toInt();
+        remaincTotal = cTotal.toInt(); // Untouched
+      } else if (countCondition == 'cTotal') {
+        remaincCount = cCount.toInt(); // Untouched
+        remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
+      } else if (countCondition == 'both') {
+        remaincCount = (cCount - (multiplier * condCount)).toInt();
+        remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
+      }
+
+      // 3. Calculate Total Bonus Amount
+      final double baseBonusAmount = double.tryParse(promoData['bonusAmount']?.toString() ?? '0') ?? 0.0;
+      totalBonusAmount = baseBonusAmount * multiplier;
+
+      // 4. Parse bonusStocks and prepare UI list & output payload
+      String? bonusStocksRaw = promoData['bonusStocks'];
+      if (multiplier > 0 && bonusStocksRaw != null && bonusStocksRaw.isNotEmpty) {
+        try {
+          List<dynamic> parsedStocks = jsonDecode(bonusStocksRaw);
+
+          freeProducts = parsedStocks.map<Map<String, String>>((item) {
+            int baseQty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+            int finalQty = baseQty * multiplier;
+
+            String name = item['productName']?.toString() ?? 'Product';
+            String randomIcon = availableIcons[random.nextInt(availableIcons.length)];
+
+            // Populate JSON result items
+            itemsBonusPayload.add({
+              'productName': name,
+              'qty': finalQty,
+            });
+
+            return {
+              'productName': name,
+              'qty': finalQty.toString(),
+              'icon': randomIcon,
+            };
+          }).toList();
+        } catch (e) {
+          debugPrint("Error parsing bonusStocks: $e");
+        }
+      }
+    }
+
+    // Create output payload object
+    final Map<String, dynamic> resultPayload = {
+      "countCondition": countCondition,
+      "remaincCount": remaincCount.toString(),
+      "remaincTotal": remaincTotal.toString(),
+      "TotalBonus": totalBonusAmount.toInt().toString(),
+      "itemsBonus": itemsBonusPayload,
+    };
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          final theme = Theme.of(context);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Promotions',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Savings Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.primaryColor.withOpacity(0.08),
+                        theme.primaryColor.withOpacity(0.02),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.primaryColor.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.local_offer_outlined,
+                          color: theme.primaryColor,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Code: $promoCode',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Total Discount',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '-\$${totalBonusAmount.toStringAsFixed(2)}',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Free Products Section
+                if (freeProducts.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Text(
+                        'Free Gifts Unlocked',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${freeProducts.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: freeProducts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = freeProducts[index];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.15),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                item['icon'] ?? '🎁',
+                                style: const TextStyle(fontSize: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['productName'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Qty: ${item['qty'] ?? '1'}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'FREE',
+                                  style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Got It Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      // Print formatted JSON payload on click
+                      const JsonEncoder encoder = JsonEncoder.withIndent('  ');
+                      final String formattedJson = encoder.convert(resultPayload);
+
+                      debugPrint(formattedJson); // Or print(formattedJson);
+
+                      Get.back();
+                    },
+                    child: const Text(
+                      'Got It',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
   }
   void searchUser(BuildContext context) {
     Get.bottomSheet(
@@ -2784,157 +3638,157 @@ class _HomepageState extends State<Homepage> {
                       },
                     ),
                   ),
-            GetBuilder<StockQuery>(
-              builder: (myController) {
-                return   Expanded(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: myController.usersPick.length + 1,
-                    separatorBuilder: (context, index) => const Divider(height: 1.0),
-                    itemBuilder: (context, index) {
-                      if (index < myController.usersPick.length) {
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                          child: InkWell(
-                            onTap: () async{
-                              //copy of Add contact because it is one which is Og;
-                              (Get.put(StockQuery()).updateHideLoader(false));
-                              if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
-                                var userProfile = {
-                                  "uid": "${myController.usersPick[index]["uid"]}",
-                                  "name": "${myController.usersPick[index]["name"]}",
-                                  "email": "on@gmail.com",
-                                  "phone": "782389359",
-                                  "Ccode": "+250",
-                                  "country": "Rwanda",
-                                  "initCountry": "none",
-                                  "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                  "carduid": "TEALTD_7hEnj_1672352175"
-                                };
-                                setState(() {
-                                  (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                  (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                  (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                });
-                                Future.microtask(() {
-                                  Navigator.of(context).pop();
-                                });
-                              } else {
+                  GetBuilder<StockQuery>(
+                      builder: (myController) {
+                        return   Expanded(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: myController.usersPick.length + 1,
+                            separatorBuilder: (context, index) => const Divider(height: 1.0),
+                            itemBuilder: (context, index) {
+                              if (index < myController.usersPick.length) {
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                                  child: InkWell(
+                                    onTap: () async{
+                                      //copy of Add contact because it is one which is Og;
+                                      (Get.put(StockQuery()).updateHideLoader(false));
+                                      if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
+                                        var userProfile = {
+                                          "uid": "${myController.usersPick[index]["uid"]}",
+                                          "name": "${myController.usersPick[index]["name"]}",
+                                          "email": "on@gmail.com",
+                                          "phone": "782389359",
+                                          "Ccode": "+250",
+                                          "country": "Rwanda",
+                                          "initCountry": "none",
+                                          "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                          "carduid": "none"
+                                        };
+                                        setState(() {
+                                          (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                          (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                          (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                        });
+                                        Future.microtask(() {
+                                          Navigator.of(context).pop();
+                                        });
+                                      } else {
 
-                                var resultData = (await StockQuery().updateInOrder(
-                                    QuickBonus(
-                                        uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
-                                        productName: "productCode",
-                                        description: "comment",
-                                        status: "UpdateUserInOrder"),
-                                    Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
-                                    .data;
-                                if (resultData["status"]) {
-                                  var userProfile = {
-                                    "uid": "${myController.usersPick[index]["uid"]}",
-                                    "name": "${myController.usersPick[index]["name"]}",
-                                    "email": "on@gmail.com",
-                                    "phone": "782389359",
-                                    "Ccode": "+250",
-                                    "country": "Rwanda",
-                                    "initCountry": "none",
-                                    "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                    "carduid": "TEALTD_7hEnj_1672352175"
-                                  };
-                                  setState(() {
-                                    (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                    (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                    (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                  });
-                                  Future.microtask(() {
-                                    Navigator.of(context).pop();
-                                  });
-                                } else {
-                                  // Handle error
-                                }
+                                        var resultData = (await StockQuery().updateInOrder(
+                                            QuickBonus(
+                                                uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
+                                                productName: "productCode",
+                                                description: "comment",
+                                                status: "UpdateUserInOrder"),
+                                            Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
+                                            .data;
+                                        if (resultData["status"]) {
+                                          var userProfile = {
+                                            "uid": "${myController.usersPick[index]["uid"]}",
+                                            "name": "${myController.usersPick[index]["name"]}",
+                                            "email": "on@gmail.com",
+                                            "phone": "782389359",
+                                            "Ccode": "+250",
+                                            "country": "Rwanda",
+                                            "initCountry": "none",
+                                            "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                            "carduid": "none"
+                                          };
+                                          setState(() {
+                                            (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                            (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                            (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                          });
+                                          Future.microtask(() {
+                                            Navigator.of(context).pop();
+                                          });
+                                        } else {
+                                          // Handle error
+                                        }
+                                      }
+                                    },
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: getRandomColor(),
+                                        child: Icon(_getRandomIcon()),
+                                      ),
+                                      title: Text(myController.usersPick[index]["name"]),
+                                      subtitle: Text(myController.usersPick[index]["PhoneNumber"]),
+                                      trailing: IconButton(
+                                        icon: const Icon(Icons.add),
+                                        iconSize: 23.0,
+                                        color: Colors.blue,
+                                        onPressed: () async {
+
+                                          //print("search");
+                                          (Get.put(StockQuery()).updateHideLoader(false));
+                                          if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
+                                            var userProfile = {
+                                              "uid": "${myController.usersPick[index]["uid"]}",
+                                              "name": "${myController.usersPick[index]["name"]}",
+                                              "email": "on@gmail.com",
+                                              "phone": "782389359",
+                                              "Ccode": "+250",
+                                              "country": "Rwanda",
+                                              "initCountry": "none",
+                                              "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                              "carduid": "none"
+                                            };
+                                            setState(() {
+                                              (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                              (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                              (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                            });
+                                            Future.microtask(() {
+                                              Navigator.of(context).pop();
+                                            });
+                                          } else {
+
+                                            var resultData = (await StockQuery().updateInOrder(
+                                                QuickBonus(
+                                                    uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
+                                                    productName: "productCode",
+                                                    description: "comment",
+                                                    status: "UpdateUserInOrder"),
+                                                Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
+                                                .data;
+                                            if (resultData["status"]) {
+                                              var userProfile = {
+                                                "uid": "${myController.usersPick[index]["uid"]}",
+                                                "name": "${myController.usersPick[index]["name"]}",
+                                                "email": "on@gmail.com",
+                                                "phone": "782389359",
+                                                "Ccode": "+250",
+                                                "country": "Rwanda",
+                                                "initCountry": "none",
+                                                "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
+                                                "carduid": "none"
+                                              };
+                                              setState(() {
+                                                (Get.put(StockQuery()).updateUserProfile(userProfile));
+                                                (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+                                                (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
+                                              });
+                                              Future.microtask(() {
+                                                Navigator.of(context).pop();
+                                              });
+                                            } else {
+                                              // Handle error
+                                            }
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return Container();
                               }
                             },
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: getRandomColor(),
-                                child: Icon(_getRandomIcon()),
-                              ),
-                              title: Text(myController.usersPick[index]["name"]),
-                              subtitle: Text(myController.usersPick[index]["PhoneNumber"]),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.add),
-                                iconSize: 23.0,
-                                color: Colors.blue,
-                                onPressed: () async {
-
-                                  //print("search");
-                                  (Get.put(StockQuery()).updateHideLoader(false));
-                                  if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
-                                    var userProfile = {
-                                      "uid": "${myController.usersPick[index]["uid"]}",
-                                      "name": "${myController.usersPick[index]["name"]}",
-                                      "email": "on@gmail.com",
-                                      "phone": "782389359",
-                                      "Ccode": "+250",
-                                      "country": "Rwanda",
-                                      "initCountry": "none",
-                                      "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                      "carduid": "TEALTD_7hEnj_1672352175"
-                                    };
-                                    setState(() {
-                                      (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                      (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                      (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                    });
-                                    Future.microtask(() {
-                                      Navigator.of(context).pop();
-                                    });
-                                  } else {
-
-                                    var resultData = (await StockQuery().updateInOrder(
-                                        QuickBonus(
-                                            uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
-                                            productName: "productCode",
-                                            description: "comment",
-                                            status: "UpdateUserInOrder"),
-                                        Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
-                                        .data;
-                                    if (resultData["status"]) {
-                                      var userProfile = {
-                                        "uid": "${myController.usersPick[index]["uid"]}",
-                                        "name": "${myController.usersPick[index]["name"]}",
-                                        "email": "on@gmail.com",
-                                        "phone": "782389359",
-                                        "Ccode": "+250",
-                                        "country": "Rwanda",
-                                        "initCountry": "none",
-                                        "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                        "carduid": "TEALTD_7hEnj_1672352175"
-                                      };
-                                      setState(() {
-                                        (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                        (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                        (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                      });
-                                      Future.microtask(() {
-                                        Navigator.of(context).pop();
-                                      });
-                                    } else {
-                                      // Handle error
-                                    }
-                                  }
-                                },
-                              ),
-                            ),
                           ),
                         );
-                      } else {
-                        return Container();
-                      }
-                    },
-                  ),
-                );
-              }),
+                      }),
 
 
                 ],
@@ -2958,7 +3812,7 @@ class _HomepageState extends State<Homepage> {
     });
     //(Get.put(StockQuery()).updateHideLoader(false));
     var resultData=(await StockQuery().searchUser(User(uid:"",name:searchName,phone:phoneNumber,platform:"4000",status:"offNotPick"),Topups(optionCase:"false",startlimit:limitData,searchOption:searchValOption,sortOrder:"ASC"))).data;
-   // print("amaData:${resultData}");
+    // print("amaData:${resultData}");
 
     if(resultData["status"])
     {
@@ -2975,7 +3829,7 @@ class _HomepageState extends State<Homepage> {
           (Get.put(StockQuery()).updateusersPick(resultData["result"]));
 
         });
-       // print(users);
+        // print(users);
       }
       else{
         setState(() {
@@ -3438,7 +4292,7 @@ class SearchBarField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     // Default selected option
+    // Default selected option
 
     List<String> dropdownOptions = ['Name', 'Code'];
     return Container(
@@ -3457,7 +4311,7 @@ class SearchBarField extends StatelessWidget {
                 value:(Get.put(StockQuery()).selectedOption),
                 onChanged: (newValue) {
                   //(Get.put(StockQuery()).updateSelected(newValue));
-                 searchBy(newValue!);
+                  searchBy(newValue!);
                 },
                 items: dropdownOptions.map((option) {
                   return DropdownMenuItem(
@@ -3680,6 +4534,8 @@ class ProductSearchList extends StatelessWidget {
                                           size: 23.0,
                                           color: Colors.grey),
                                       onPressed: () async{
+                                        //print(searchResult[index]);
+                                        myLoadercontroller.updateReqProductData(searchResult[index]);
                                         addCartMethod(searchResult[index]);
                                       },
                                     );

@@ -116,7 +116,8 @@ if($checkUser){
 else{
     $check=DB::table("users")
     ->insert([
-        'name'=>$companyQuery,
+        'name'=>$input['name'],
+        //'name'=>$companyQuery,
         //'fname'=>$input['fname'],
         //'lname'=>$input['lname'],
         'email'=>$input['email'],

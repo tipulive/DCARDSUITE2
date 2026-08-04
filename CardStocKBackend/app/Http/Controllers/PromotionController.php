@@ -28,6 +28,96 @@ class PromotionController extends Controller
 
     }
 
+/*withdraw Long PromoData */
+    public function withdawPromo($input)//long promo withdraw
+    {
+        try {
+
+
+            DB::transaction(function () use ($input) {
+                $mamaUid="MSolange_1709926940";
+            $input["UserId"]=($input["uidUser"]===$mamaUid)?$mamaUid:Auth::user()->uid;
+            $input["uidCreator"]=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
+            $input["subscriber"]=Auth::user()->subscriber;
+               $this->ProcesswithdrawLongPromo($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    public function ProcesswithdrawLongPromo($input)
+    {
+
+           // $input["outPromoAmountSub"] = $data["quick"]["BonusAmountTotal"];
+
+            $promo=$input["promoData"];
+            $data = json_decode($promo, true);
+            $input["outPromoAmountSub"] =$data["TotalBonus"];
+
+            $result = $this->withdrawLongPromo($input, $data);
+
+            if ($result) {
+                $input["totalPromoT"]=$result["totalPromo"];
+                $input["totalPromoQtyT"]=$result["totalQty"];
+                 $input["outPromoAssetSub"] =$result["totalPromo"];
+                $input["outProAssetQtySub"] =$result["totalQty"];
+
+                // Success - process order
+                (new StockController)->NewSubmitOrder($input);
+                // $result; // Return results instead of throwing exception
+            } else {
+                throw new \Exception("Unable to Process Quick Promotion");
+            }
+
+    }
+    public function withdrawLongPromo($input, $data)
+    {
+        $results = [];
+        $totalPromo = 0;
+        $totalQty = 0;
+
+
+
+            $input["saveQuickUid"]=$input["longPromoId"];
+            for($iv=0;$iv<count($data["itemsBonus"]);$iv++)
+            {
+                $result = $this->saveWithdrawLongPromo($data["itemsBonus"][$iv], $input);
+                if ($result) {
+                    $results[] = $result;
+                    $totalPromo += $result["totalPromo"] ?? 0;
+                    $totalQty += $result["totalQty"] ?? 0;
+                } else {
+                    return false; // Or handle failure as needed
+                }
+            }
+
+
+    }
+        public function saveWithdrawLongPromo($data, $input)
+        {
+            $input["productCodeSub"] = $data["productName"];
+            $input["req_qtySub"] = (int)$data['qty'];
+            $input["uidClient"] = "eric_177358819";
+            $input["myOrderId"] = $input["OrderId"] ?? (new StockController)->CreateUid($input);
+            $input["subscriberSub"]=Auth::user()->subscriber;
+
+            $stockController = new StockController();
+            $result = $stockController->UpdateSafariOrderHistory($input);
+
+            return $result ?: false;
+        }
+   /*withdraw Long PromoData */
     public function reusePromo($input)
     {
         $inStock = $input["promo"]["promotion"]["items"]["inStock"];
@@ -44,6 +134,7 @@ class PromotionController extends Controller
        return $stringData="JSON_OBJECT(
             'id', :promoId,
             'name',:name,
+            'description', :description,
             'startDate',:startDate,
             'endDate',:endDate,
             'promotype', :promoType,
@@ -74,8 +165,20 @@ class PromotionController extends Controller
             "'TotalToCount', :TotalToCount",
             "'cartTotal', :cartTotal",
             "'cartCount', :cartCount",
+            "'targetCount', :targetCount",
+            "'targetTotal', :targetTotal",
+
+
+           // "'userType', :userType",
+
             "'card', :cardData"
         ];
+
+        $conditionParts[] = "'userTypes', JSON_EXTRACT(:userTypes, '$')";
+        $userTypesJson = json_encode(
+            array_map('trim', explode(',', $input["userTypes"]))
+        );
+        $bindParams['userTypes'] =$userTypesJson ?? null;
 
         $productRule =$input["promo"]["condition"]["productRule"];
 
@@ -300,9 +403,19 @@ return $inStockJsonString = implode(",", $json_items);
                    return DB::table("promoCreate")
                     ->insert([
                         "uid"=>$input["promo"]["id"],
+                        "name"=>$input["promo"]["name"],
+                        "description"=>$input["promo"]["description"],
                         "refId"=>$input["promoMainUid"],
                         "uidCreator"=>Auth::user()->uid,
                         "promoschema"=>json_encode($input["promo"]),
+                        "cCount"=>$input["promo"]["condition"]["cartCount"],
+                        "cTotal"=>$input["promo"]["condition"]["cartTotal"],
+                        "countCondition"=>$input["promo"]["condition"]["TotalToCount"],
+                        "bonusAmount"=>$input["promo"]["promotion"]["amount"],
+                        "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]),
+                       // "target"=>$input["promo"]["condition"]["TargetPoint"],//means minimum to withdraw
+                        "targetCount"=>$input["promo"]["condition"]["targetCount"]??'0',//means minimum to withdraw
+                        "targetTotal"=>$input["promo"]["condition"]["targetTotal"]??'0',//means minimum to withdraw
                         "subscriber"=>Auth::user()->subscriber,
                         "created_at"=>$this->today
 
@@ -311,9 +424,19 @@ return $inStockJsonString = implode(",", $json_items);
 
     public function UpdatePromoCreate($input)
     {
-        return DB::update("update promoCreate set promoschema=:promoschema where uid=:uid and subscriber=:subscriber",[
+        return DB::update("update promoCreate set promoschema=:promoschema,name=:name,description=:description,cCount=:cCount,cTotal=:cTotal,countCondition=:countCondition,bonusAmount=:bonusAmount,targetCount=:targetCount,targetTotal=:targetTotal,bonusStocks=:bonusStocks where uid=:uid and subscriber=:subscriber",[
             "promoschema"=>json_encode($input["promo"]),
+            "name"=>$input["promo"]["name"],
+            "description"=>$input["promo"]["description"],
             "uid"=>$input["promo"]["id"],
+            "cCount"=>$input["promo"]["condition"]["cartCount"],
+            "cTotal"=>$input["promo"]["condition"]["cartTotal"],
+            "countCondition"=>$input["promo"]["condition"]["TotalToCount"],
+            "bonusAmount"=>$input["promo"]["promotion"]["amount"],
+            "targetCount"=>$input["promo"]["condition"]["targetCount"]??'0',//means minimum to withdraw
+            "targetTotal"=>$input["promo"]["condition"]["targetTotal"]??'0',//means minimum to withdraw
+            "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]),
+           //
             "subscriber"=>Auth::user()->subscriber
         ]);
     }
@@ -385,6 +508,112 @@ return response([
 
     }*/
 
+    public function GetMyPromotion(Request $request)
+    {
+        $input=$request->all();
+        $check=DB::select("
+        SELECT
+            r.uid,
+            r.uidUser,
+            r.updated_at,
+            r.cCount,
+            r.cTotal,
+            r.pointIn,
+
+            a.name AS promoOwner,
+            b.name AS promoName,
+            b.cCount AS condCount,
+            b.cTotal AS condTotal,
+            b.countCondition AS countCondition,
+            b.bonusAmount AS bonusAmount,
+            b.bonusStocks AS bonusStocks,
+            b.targetTotal AS targetTotal,
+            b.description,
+            b.targetCount AS targetCount
+        FROM promoaccount r
+        INNER JOIN  promocreate b ON r.uid = b.uid
+        INNER JOIN users a ON r.uidUser = a.uid
+        WHERE r.uidUser = :uid
+        ORDER BY r.id DESC
+        LIMIT 10
+    ", [
+        "uid"=>$input["uidUser"]??Auth::user()->uid
+
+    ]);
+
+    if($check)
+    {
+        return response([
+
+            "status"=>true,
+
+            "result"=>$check,
+
+
+         ]);
+    }
+    else{
+        return response([
+            "status"=>false,
+            "mess"=>"No Promo Found",
+
+
+         ]);
+    }
+
+
+    }
+    public function GetMyPromotionHist(Request $request)
+    {
+        $input=$request->all();
+        $check=DB::select("
+        SELECT
+            r.uid,
+            r.uidUser,
+            r.created_at,
+
+            a.name AS promoOwner,
+            b.name AS promoName,
+            b.countCondition AS countCondition,
+            b.bonusAmount AS bonusAmount,
+            b.bonusStocks AS bonusStocks,
+            b.targetTotal AS targetTotal,
+            b.description,
+            b.targetCount AS targetCount
+        FROM  longpromohist r
+        INNER JOIN  promocreate b ON r.uid = b.uid
+        INNER JOIN users a ON r.uidUser = a.uid
+        WHERE r.uidUser = :uidUser and r.uid=:uidPromo
+        ORDER BY r.id DESC
+        LIMIT 10
+    ", [
+        "uidUser"=>$input["uidUser"]??Auth::user()->uid,
+        "uidPromo"=>$input["uidPromo"],
+
+    ]);
+
+    if($check)
+    {
+        return response([
+
+            "status"=>true,
+
+            "result"=>$check,
+
+
+         ]);
+    }
+    else{
+        return response([
+            "status"=>false,
+            "mess"=>"No Promo Found",
+
+
+         ]);
+    }
+
+
+    }
     public function EditPromotion($input){
         try {
 
@@ -549,6 +778,7 @@ $newpromoschema = json_encode($filtered);*/
             "promoId"=>$input["promo"]["id"],
             "promoType" =>$input["promo"]["promotype"],
             "name"=>$input["promo"]["name"],
+            'description' => $input['promo']['description'] ?? 'You wil get free discount',
             "startDate"=>$input["promo"]["startDate"],
             "endDate"=>$input["promo"]["endDate"],
             "amount"=>$input["promo"]["promotion"]["amount"],
@@ -561,6 +791,9 @@ $newpromoschema = json_encode($filtered);*/
             "TotalToCount"=>$input["promo"]["condition"]["TotalToCount"],
             "cartTotal"=>$input["promo"]["condition"]["cartTotal"],
             "cartCount"=>$input["promo"]["condition"]["cartCount"],
+            "targetCount"=>$input["promo"]["condition"]["targetCount"],
+            "targetTotal"=>$input["promo"]["condition"]["targetTotal"],
+
             "cardData"=>$input["promo"]["condition"]["card"],
 
             "subscriber"=>Auth::user()->subscriber,
@@ -1051,13 +1284,13 @@ $newpromoschema = json_encode($filtered);*/
              }
 
         }else{
-          /*  if((new StockController)->NewSubmitOrder($input))
+        if((new StockController)->NewSubmitOrder($input))
         {
             return true;
         }
         else{
             return false;
-        }*/
+        }
         }
 
 

@@ -118,7 +118,7 @@ class AdminController extends Controller
     }
     public function processNewMiniAccount($input){//uidOWN condition and miniOwnerSUbscriber
         $uid=preg_replace('/[^A-Za-z0-9-]/','',$input['name']);###this is  a name of existing user
-
+        $uid=Auth::user()->uid;
         $input['UidAdminCreated']=$input["miniOwner"]??"Mn_".$uid.""."_".date(time());
         $input["subscriber"]=$input["miniOwnerSubscriber"];
         if($this->checkSubscriberExist($input))

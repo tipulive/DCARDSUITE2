@@ -575,7 +575,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
                       child: ListTile(
                         leading: InkWell(
                           onTap: () async{
-                           // print("share");
+                            // print("share");
 
                           },
                           child: CircleAvatar(
@@ -644,6 +644,29 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
                                       const Icon(Icons.segment,color:Colors.orange,size:13,),
                                       Text("Amount:${_data[index]['totalPaid']}"),
+
+
+
+                                    ],
+                                  ),
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+
+                                      const Icon(Icons.segment,color:Colors.orange,size:13,),
+                                      Text("Paid:${_data[index]['paid']}"),
+
+
+
+                                    ],
+                                  ),
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+
+                                      const Icon(Icons.wallet_giftcard,color:Colors.orange,size:13,),
+                                      Text("Bonus:${getRemaining(_data[index]['totalPaid'],_data[index]['paid'],_data[index]['debt'])}  ${(_data[index]['gain']=='none')?"":'+${_data[index]['gain']}'}"),
+
 
 
                                     ],
@@ -790,7 +813,21 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
 
 
+  double getRemaining(String totalStr, String paidStr, String debtStr) {
+    // Parse safely; if parsing fails, default to 0.0
+    final total = double.tryParse(totalStr) ?? 0.0;
+    final paid = double.tryParse(paidStr) ?? 0.0;
+    final debt = double.tryParse(debtStr) ?? 0.0;
 
+    final remaining = total - (paid+debt);
+
+    // Use epsilon for floating‑point safety
+    const epsilon = 1e-9;
+    if (remaining.abs() < epsilon || (remaining - debt).abs() < epsilon) {
+      return 0.0;
+    }
+    return remaining;
+  }
   Color getRandomColor() {
     Random random = Random();
     return Color.fromARGB(
@@ -822,7 +859,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
     var resultData=(await StockQuery().viewAnySales(Topups(startlimit:limit,endlimit:_page,name:nameVal,optionCase:"$searchVal",advancedSearch:advancedSearch,created_at:thisDate,updated_at:toDate))).data;
 
-    print(resultData);
+   // print(resultData);
     if(resultData["status"])
     {
 
@@ -901,7 +938,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
     var resultData=(await StockQuery().viewSalesByUid(Topups(uid:"${orderData[0]}",startlimit:limit,endlimit:_page))).data;
     // var resultData=(await StockQuery().orderViewByUid(Topups(uid:"0s",startlimit:limit,endlimit:_page))).data;
-    //print(resultData);
+    print(resultData);
     if(resultData["status"])
     {
 
@@ -1161,6 +1198,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
     );
   }
   void viewPicture(productCode,imgUrl){
+    imgUrl=(imgUrl=='none')?'{}':imgUrl;
     Map<String, dynamic> imgVersion = jsonDecode(imgUrl);
     String urLink='${ConstantClassUtil.urlApp}/images/product/';
 
@@ -1216,230 +1254,475 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
   }
   void viewThisOrder() {
-
     Get.bottomSheet(
-
       StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
-          return
-            Container(
+          // --- Compute summary totals (UI only) ---
+          final totalItems = thisListOrder.length;
+          final totalQtyAll = thisListOrder.fold<int>(
+            0,
+                (sum, item) => sum + (int.tryParse(item["totalQty"]?.toString() ?? '0') ?? 0),
+          );
+          final totalAmountAll = thisListOrder.fold<double>(
+            0,
+                (sum, item) => sum + (double.tryParse(item["totalAmount"]?.toString() ?? '0') ?? 0),
+          );
 
-              padding:const EdgeInsets.all(5.0),
-              height: 600,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
+          return Container(
+            padding: const EdgeInsets.all(0),
+            height: 620,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
               ),
-              child: Column(
-                children: [
-
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(color: Colors.black),
-                      children: [
-
-                        //TextSpan(text: "Total dettes:${totalD.toString()}"),
-                        WidgetSpan(
-                          child:  IconButton(
-                            visualDensity: VisualDensity.compact,
-                            icon: const Icon(Icons.share, color: Colors.blueAccent),
-                            onPressed: ()async{
-                              // print(users);
-                              final List<Map<String, dynamic>> usersMap =
-                              List<Map<String, dynamic>>.from(thisListOrder);
-
-                             // final shareMsg = buildWhatsAppMessage(usersMap,orderData[1]);
-                              Map<String, dynamic> users = {
-                                "name": orderData[1],
-
-                                "title": "Order Sales"
-                              };
-                              final shareMsg =ConstantClassUtil().buildWhatsAppMessage(usersMap,users);
-                              await ConstantClassUtil().shareToWhatsApp("", shareMsg);
-
-
-                            },
-                          ),
-
-
-                        ),
-                      ],
-                    ),
+            ),
+            child: Column(
+              children: [
+                // ----- Drag Handle -----
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  height: 4,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  Center(child: Text("Client:${orderData[1]}")),
-                  Center(child: Text("UID:${orderData[0]}")),
+                ),
+                const SizedBox(height: 8),
 
-                  Expanded(
+                // ----- Header with gradient -----
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Color(0xFF4A90E2),
+                        child: Icon(Icons.person, color: Colors.white, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${orderData[1]}  •  Order Details',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1A2B4A),
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+
+                // ----- Client Info (modern chip) -----
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 10),
+                      Text(
+                        'UID: ${orderData[0]}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1A2B4A),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.share, color: Colors.blue),
+                        onPressed: () async {
+                          final List<Map<String, dynamic>> usersMap =
+                          List<Map<String, dynamic>>.from(thisListOrder);
+                          Map<String, dynamic> users = {
+                            "name": orderData[1],
+                            "title": "Order Sales"
+                          };
+                          final shareMsg = ConstantClassUtil()
+                              .buildWhatsAppMessage(usersMap, users);
+                          await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ----- SUMMARY CARD (Total Amount + Total Qty at the top) -----
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Total Amount
+                      Column(
+                        children: [
+                          const Text(
+                            'Total Amount',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7A8F),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            totalAmountAll.toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A2B4A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.grey[300],
+                      ),
+                      // Total Qty
+                      Column(
+                        children: [
+                          const Text(
+                            'Total Quantity',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7A8F),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$totalQtyAll',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A2B4A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.grey[300],
+                      ),
+                      // Total Items (optional)
+                      Column(
+                        children: [
+                          const Text(
+                            'Total Items',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7A8F),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$totalItems',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A2B4A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ----- List of Items -----
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ListView.builder(
-
-
-                      itemCount:thisListOrder.length+1,
+                      itemCount: thisListOrder.length + 1,
                       itemBuilder: (context, index) {
-
-                        if(index<thisListOrder.length)
-                        {
-
+                        if (index < thisListOrder.length) {
+                          // Do NOT move – required for original logic
                           (Get.put(HideShowState())).isDelivery(thisListOrder);
 
+                          final item = thisListOrder[index];
+                          final hideShow = Get.put(HideShowState());
+                          final deliveryData = hideShow.delivery[index];
+                          final totalQty = double.tryParse(deliveryData["totalQty"]?.toString() ?? '0') ?? 0;
+                          final totalCount = double.tryParse(deliveryData["totalCount"]?.toString() ?? '0') ?? 0;
+                          final delivered = totalQty - totalCount;
+                          final deliveryProgress = totalQty > 0 ? (totalCount / totalQty).clamp(0.0, 1.0) : 0.0;
 
-
-                          //Get.put(HideShowState())).isDelivery(thisListOrder[index]);
-
+                          // --- Use a lock state from the item, default to true ---
+                          // Ensure the item has an "isLocked" field; if not, set it.
+                          item["isLocked"] = item["isLocked"] ?? true;
 
                           return Stack(
                             children: [
-                              Container(
-                                margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                                child: Card(
-                                  elevation:0.5,
-                                  //margin: EdgeInsets.symmetric(vertical:1,horizontal:5),
-                                  color:Colors.white,
-                                  //color:Colors.white70,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(7),
-                                    //side: BorderSide(color:_data[index]["color_var"]??true?Colors.white:Colors.green, width: 2),
-                                  ),
-
-                                  child: Column(
-                                    children: [
-                                      // Text("sum:${orderSum}"),
-                                      ListTile(
-                                        leading: GestureDetector(
-                                          onTap:(){
-                                            viewPicture(thisListOrder[index]["productCode"],thisListOrder[index]["img_url"]);
-
-                                          },
-                                          child: CircleAvatar(
-                                            backgroundColor:getRandomColor(),
-                                            child: Icon(_getRandomIcon()),
-                                          ),
-                                        ),
-                                        title:Row(
-                                          children: [
-                                            Expanded(
-
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-
-                                                  RichText(
-                                                    text: TextSpan(
-                                                      text:"${thisListOrder[index]["productCode"]} (${thisListOrder[index]["pcs"]} pcs):",
-                                                      style: DefaultTextStyle.of(context).style,
-                                                      children: const <TextSpan>[
-
-
+                              // ---------- CARD WITH LOCK BADGE AND GIFT ON SECOND LINE ----------
+                              Card(
+                                elevation: 1,
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    // Card content
+                                    Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // Product icon
+                                              GestureDetector(
+                                                onTap: () {
+                                                  viewPicture(
+                                                    item["productCode"],
+                                                    item["img_url"],
+                                                  );
+                                                },
+                                                child: CircleAvatar(
+                                                  backgroundColor: getRandomColor(),
+                                                  radius: 24,
+                                                  child: Icon(
+                                                    _getRandomIcon(),
+                                                    color: Colors.white,
+                                                    size: 26,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 14),
+                                              // Product info
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    // First line: product code + pcs
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                            '${item["productCode"]} (${item["pcs"]} pcs)',
+                                                            style: const TextStyle(
+                                                              fontSize: 15,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Color(0xFF1A2B4A),
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
                                                       ],
                                                     ),
-                                                  ),
-                                                  Text("Price:${(thisListOrder[index]["price"])}"),
-
-
-                                                  Text.rich(
-                                                      TextSpan(
-                                                          children: [
-                                                            TextSpan(
-                                                              text: 'Qty ${thisListOrder[index]["totalQty"]}:',
-
+                                                    const SizedBox(height: 6),
+                                                    // Second line: Price + Qty (left) and Gift icon (right)
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          'Price: ${item["price"]}',
+                                                          style: const TextStyle(
+                                                            fontSize: 13,
+                                                            color: Color(0xFF6B7A8F),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 16),
+                                                        Text(
+                                                          'Qty: ${item["totalQty"]}',
+                                                          style: const TextStyle(
+                                                            fontSize: 13,
+                                                            color: Color(0xFF6B7A8F),
+                                                          ),
+                                                        ),
+                                                        const Spacer(),
+                                                        // Gift icon (only if promotionUid is not 'none')
+                                                        if (item["promotionUid"] != 'none')
+                                                          const Icon(
+                                                            Icons.card_giftcard,
+                                                            color: Colors.amber,
+                                                            size: 20,
+                                                          ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    // Delivery progress bar (unchanged)
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                            CrossAxisAlignment.start,
+                                                            children: [
+                                                              Row(
+                                                                mainAxisAlignment:
+                                                                MainAxisAlignment.spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Delivered: $delivered / $totalQty',
+                                                                    style: const TextStyle(
+                                                                      fontSize: 12,
+                                                                      fontWeight: FontWeight.w500,
+                                                                      color: Color(0xFF4A90E2),
+                                                                    ),
+                                                                  ),
+                                                                  if (delivered > 0)
+                                                                    Text(
+                                                                      '${(deliveryProgress * 100).toStringAsFixed(0)}%',
+                                                                      style: const TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Color(0xFF4A90E2),
+                                                                      ),
+                                                                    ),
+                                                                ],
+                                                              ),
+                                                              const SizedBox(height: 4),
+                                                              LinearProgressIndicator(
+                                                                value: deliveryProgress,
+                                                                backgroundColor: Colors.grey[200],
+                                                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                                                  Color(0xFF4A90E2),
+                                                                ),
+                                                                minHeight: 4,
+                                                                borderRadius: BorderRadius.circular(2),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        // Shipping icon if pending
+                                                        if (delivered > 0)
+                                                          InkWell(
+                                                            onTap: () async {
+                                                              setState(() {
+                                                                productExist = "true";
+                                                              });
+                                                              await deliverStockView(
+                                                                deliveryData["productCode"],
+                                                                deliveryData["uid"],
+                                                              );
+                                                            },
+                                                            child: const Icon(
+                                                              Icons.local_shipping,
+                                                              color: Colors.redAccent,
+                                                              size: 24,
                                                             ),
-
-
-
-                                                          ]
-                                                      )
-                                                  ),
-
-                                                  Wrap(
-                                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                                    children: [
-
-                                                      Text("Deliver:${(((Get.put(HideShowState()).delivery)[index]["totalQty"])!=((Get.put(HideShowState()).delivery)[index]["totalCount"]))?((num.parse((Get.put(HideShowState()).delivery)[index]["totalQty"])-num.parse((Get.put(HideShowState()).delivery)[index]["totalCount"]))):0}"),
-                                                      const SizedBox(width:8,),
-                                                      (((Get.put(HideShowState()).delivery)[index]["totalQty"])!=((Get.put(HideShowState()).delivery)[index]["totalCount"]))?
-                                                      InkWell(
-                                                          onTap: () async{
-                                                            setState(() {
-                                                              productExist="true";
-
-                                                            });
-
-
-                                                            //
-                                                            await deliverStockView((Get.put(HideShowState()).delivery)[index]["productCode"],(Get.put(HideShowState()).delivery)[index]["uid"]);
-                                                          },
-
-
-                                                          child: const Icon(Icons.local_shipping,color:Colors.red,size:25,)):const Text("")
-                                                    ],
-                                                  ),
-
-                                                ],
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            )
-
-
-
-
-
-
-                                          ],
-                                        ),
-
-
-                                        trailing:Text("${thisListOrder[index]["totalAmount"]}"),
-
-                                        //trailing: Text()
+                                            ],
+                                          ),
+                                          const Divider(height: 16, thickness: 0.5),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text(
+                                                'Item Total',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Color(0xFF6B7A8F),
+                                                ),
+                                              ),
+                                              Text(
+                                                '${item["totalAmount"]}',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF1A2B4A),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-
-
-                                    ],
-                                  ),
+                                    ),
+                                    // ---------- INTERACTIVE LOCK BADGE ----------
+                                    Positioned(
+                                      top: -2,
+                                      right: -4,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          // Toggle the lock state for this item
+                                          setState(() {
+                                            item["isLocked"] = !(item["isLocked"] as bool);
+                                          });
+                                        },
+                                        child: Tooltip(
+                                          message: item["isLocked"] == true
+                                              ? 'Locked (tap to unlock)'
+                                              : 'Unlocked (tap to lock)',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              // Background color changes based on state
+                                              color: item["isLocked"] == true
+                                                  ? Colors.orange
+                                                  : Colors.blue,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.2),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              // Icon changes between lock and lock_open
+                                              item["isLocked"] == true
+                                                  ? Icons.lock
+                                                  : Icons.lock_open,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              // Loader overlay (unchanged)
                               GetBuilder<StockQuery>(
                                 builder: (myLoadercontroller) {
-                                  //return Text('Data: ${_controller.data}');
-                                  return
-                                    (myLoadercontroller.hideLoader)?
-                                    const Text(""):
-                                    Positioned.fill(
-                                      child: Center(
-                                        child: Container(
-                                          alignment: Alignment.center,
-                                          color: Colors.white70,
-                                          child: const CircularProgressIndicator(),
-                                        ),
-                                      ),
-                                    );
+                                  return myLoadercontroller.hideLoader
+                                      ? const SizedBox.shrink()
+                                      : Positioned.fill(
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      color: Colors.white70,
+                                      child: const CircularProgressIndicator(),
+                                    ),
+                                  );
                                 },
                               ),
                             ],
                           );
-
-                        }
-                        else{
+                        } else {
                           return Container();
                         }
-
                       },
                     ),
                   ),
-                ],
-              ),
-            );
+                ),
+              ],
+            ),
+          );
         },
       ),
-    ).whenComplete(() {
-      // Get.put(HideShowState()).isDelivery(0);
-      //do whatever you want after closing the bottom sheet
-
-    });
-
+    ).whenComplete(() {});
   }
-
 
 
 

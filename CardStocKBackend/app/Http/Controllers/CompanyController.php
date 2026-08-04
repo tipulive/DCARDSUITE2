@@ -36,6 +36,52 @@ class CompanyController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
+
+    public function withdrawLongPromo(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new PromotionController)->withdrawLongPromo($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
 /*Currency */
 
 //View Currency

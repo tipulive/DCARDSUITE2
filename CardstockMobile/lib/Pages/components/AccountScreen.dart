@@ -3,9 +3,15 @@ import 'package:dstockapp/Pages/components/SalesPage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../Query/SendStockController.dart';
+import '../../Query/StockQuery.dart';
 import '../../Query/account_controller.dart';
+import '../../Utilconfig/ConstantClassUtil.dart';
+import '../../models/Participated.dart';
+import '../../models/Topups.dart';
+import '../../models/User.dart';
 import '../Homepage.dart';
- // Make sure to import your new controller
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,8 +47,762 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   int _selectedIndex = 2;
 
-  // Initialize and inject our performance-optimized controller
   final AccountController controller = Get.put(AccountController());
+  final StockQuery myStockQuery = Get.find<StockQuery>();
+  var box = Hive.box("myBox");
+
+  // Recent transactions state
+  List<dynamic> _recentTransactions = [];
+  bool _isLoadingRecent = true;
+
+  // Accent colors for card stripes (same as SalesPage)
+  final List<Color> _accentColors = [
+    const Color(0xFF1A315E),
+    Colors.teal.shade500,
+    Colors.purple.shade500,
+    Colors.amber.shade700,
+    Colors.indigo.shade500,
+    Colors.pink.shade400,
+    Colors.green.shade600,
+    Colors.cyan.shade600,
+    Colors.deepOrange.shade400,
+    Colors.blue.shade600,
+  ];
+
+  String searchName = "";
+  String phoneNumber = "";
+  int limitData = 10;
+  bool searchValOption = false;
+
+  // ✅ Load both balance and transactions automatically on screen open
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecentTransactions();
+    controller.fetchCompanyRecord(); // 👈 fetches total balance and other data
+  }
+
+  // ------------------------------------------------------------------
+  // 1. FETCH RECENT TRANSACTIONS
+  // ------------------------------------------------------------------
+  Future<void> _fetchRecentTransactions() async {
+    setState(() => _isLoadingRecent = true);
+    try {
+      final response = await myStockQuery.viewReqStockPay(Topups());
+      if (response != null && response.data != null) {
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : (response.data["result"] ?? response.data["data"] ?? []);
+        setState(() {
+          _recentTransactions = data;
+          _isLoadingRecent = false;
+        });
+      } else {
+        setState(() => _isLoadingRecent = false);
+      }
+    } catch (e) {
+      debugPrint("Error fetching recent transactions: $e");
+      setState(() => _isLoadingRecent = false);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // 2. REQUEST PAYMENT (FIXED: no conflicting Get.back() calls)
+  // ------------------------------------------------------------------
+  Future<void> reqPayment(String qty, String uid, BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // Show loading dialog
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(color: Colors.orange),
+      ),
+      barrierDismissible: false,
+    );
+
+    bool success = false;
+
+    try {
+      final ownerData = box.get('owner');
+      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
+          ? ownerData[0]["uid"] ?? ""
+          : "";
+
+      final resultData = await myStockQuery.reqPaymentStock(
+        Participated(
+          inputData: qty,
+          uidCreator: uidCreator,
+          status: "Req Payment",
+          promotion_msg: "req to receive Amount",
+        ),
+      );
+
+      if (resultData != null && resultData["status"] == true) {
+        // Refresh transactions (and optionally balance)
+        await _fetchRecentTransactions();
+        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
+        success = true;
+      }
+    } catch (e) {
+      debugPrint("Error requesting payment: $e");
+    } finally {
+      // 1. Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      // 2. Show snackbar based on result
+      if (success) {
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        // 3. Close the bottom sheet only on success
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to send request. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // 3. COMPANY SELECTION
+  // ------------------------------------------------------------------
+  void searchCompany(BuildContext context) {
+    final SendStockController controller = Get.find<SendStockController>();
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          height: Get.height * 0.82,
+          decoration: const BoxDecoration(
+            color: Color(0xffF8F9FB),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  "Choose recipient Company",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  "Select a company to send your stock to.",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(18),
+                  shadowColor: Colors.black12,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search company or phone...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (text) {
+                      // Implement search filtering logic here
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Text(
+                      "Available Accounts",
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: GetBuilder<StockQuery>(
+                  builder: (stockController) {
+                    if (stockController.compPick.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No accounts found",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: stockController.compPick.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = stockController.compPick[index];
+                        return Material(
+                          color: Colors.white,
+                          elevation: .5,
+                          borderRadius: BorderRadius.circular(18),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () {
+                              controller.selectCompany(
+                                Map<String, dynamic>.from(item),
+                              );
+                              Get.back();
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(.08),
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: Icon(
+                                      Icons.business,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item["name"] ?? "",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item["PhoneNumber"] ?? "",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 16,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 4. SEND STOCK BOTTOM SHEET (UPDATED: passes context to reqPayment)
+  // ------------------------------------------------------------------
+  void sendStockAmount(
+      BuildContext context,
+      dynamic productCode,
+      dynamic qtyData, {
+        String initialQuantity = "1",
+      }) {
+    final SendStockController controller = Get.isRegistered<SendStockController>()
+        ? Get.find<SendStockController>()
+        : Get.put(SendStockController());
+
+    final double totalAvailable = double.tryParse(qtyData.toString()) ?? 0.0;
+    controller.initData(initialQty: initialQuantity);
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xffF8F9FB),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    "Specify Amount and recipient company below.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Obx(() {
+                    final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
+                    final remaining = totalAvailable - enteredQty;
+                    final isExceeded = enteredQty > totalAvailable;
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isExceeded ? Colors.red.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isExceeded ? Colors.red.shade300 : Colors.orange.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isExceeded ? Colors.red.shade100 : Colors.orange.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              isExceeded ? '⚠️' : '🥭',
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Current Stock",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isExceeded
+                                            ? Colors.red.shade900
+                                            : Colors.orange.shade900,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      "$qtyData Available",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: isExceeded
+                                            ? Colors.red.shade700
+                                            : Colors.orange.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isExceeded
+                                      ? "Exceeds available stock!"
+                                      : "${remaining % 1 == 0 ? remaining.toInt() : remaining.toStringAsFixed(1)} Remaining after send",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isExceeded
+                                        ? Colors.red.shade700
+                                        : Colors.green.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: 18,
+                            color: Colors.orange.shade800,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "TAP TO ENTER AMOUNT",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 170,
+                        child: Material(
+                          elevation: 2,
+                          borderRadius: BorderRadius.circular(18),
+                          shadowColor: Colors.black12,
+                          child: TextField(
+                            controller: controller.quantityController,
+                            textAlign: TextAlign.center,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            autofocus: false,
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade900,
+                            ),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              hintText: "0",
+                              suffixIcon: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                  color: Colors.orange.shade400,
+                                ),
+                              ),
+                              suffixIconConstraints: const BoxConstraints(
+                                minWidth: 24,
+                                minHeight: 24,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: Colors.orange.shade200,
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: Colors.orange.shade700,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Obx(() {
+                    final hasCompany = controller.selectedCompany.isNotEmpty;
+                    final compName = controller.selectedCompany["name"] ??
+                        controller.selectedCompany["PhoneNumber"] ??
+                        "Select Company";
+                    final subTitle = hasCompany
+                        ? (controller.selectedCompany["PhoneNumber"] ?? "Selected Recipient")
+                        : "Tap to choose recipient";
+
+                    return Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      elevation: 1,
+                      shadowColor: Colors.black12,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          await getCompData("view", "");
+                          if (!context.mounted) return;
+                          searchCompany(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: hasCompany
+                                      ? Colors.green.shade50
+                                      : Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  hasCompany
+                                      ? Icons.check_circle_rounded
+                                      : Icons.business_rounded,
+                                  color: hasCompany
+                                      ? Colors.green.shade700
+                                      : Colors.blue.shade700,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      compName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: hasCompany
+                                            ? Colors.black
+                                            : Colors.grey.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subTitle,
+                                      style: TextStyle(
+                                        color: hasCompany
+                                            ? Colors.green.shade800
+                                            : Colors.grey.shade600,
+                                        fontSize: 13,
+                                        fontWeight: hasCompany
+                                            ? FontWeight.w500
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Obx(() {
+                    final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
+                    final isExceeded = enteredQty > totalAvailable;
+
+                    final canSend = controller.isValid && !isExceeded;
+
+                    if (isExceeded) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          "Cannot send: Quantity exceeds available stock",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: canSend
+                            ? () async {
+                          final qty = controller.quantityStr.value;
+                          final company = controller.selectedCompany;
+                          // 🔥 Pass context to reqPayment
+                          await reqPayment(qty, company["uid"], context);
+                          // No Get.back() here – reqPayment closes the sheet on success
+                        }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          disabledBackgroundColor: Colors.grey.shade300,
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.grey.shade500,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: canSend ? Colors.white : Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    ).then((_) {
+      controller.reset();
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // 5. GET COMPANY DATA
+  // ------------------------------------------------------------------
+  Future<void> getCompData(String optionCase, String name) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(color: Colors.orange),
+      ),
+      barrierDismissible: false,
+    );
+    final stockQueryController = Get.isRegistered<StockQuery>()
+        ? Get.find<StockQuery>()
+        : Get.put(StockQuery());
+    try {
+
+      final resultData = await myStockQuery.searchAdminUser(
+        User(uid: "", name: searchName, phone: phoneNumber, platform: "3000", status: "offNotPick"),
+        Topups(optionCase: "true", startlimit: limitData, searchOption: searchValOption, sortOrder: "ASC"),
+      );
+      if (resultData != null && resultData["status"] == true) {
+        final rawResult = resultData["result"];
+        if (rawResult is List && rawResult.isNotEmpty) {
+          stockQueryController.updatecompPick(
+            List<Map<String, dynamic>>.from(rawResult),
+          );
+        } else {
+          stockQueryController.updatecompPick([]);
+        }
+      } else {
+        stockQueryController.updatecompPick([]);
+      }
+    } catch (e) {
+      debugPrint("Error fetching company data: $e");
+      stockQueryController.updatecompPick([]);
+    } finally {
+      if (Get.isDialogOpen ?? false) Get.back();
+    }
+  }
 
   void _showFeatureSnackbar(String title, String message) {
     Get.snackbar(
@@ -57,6 +817,134 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // ------------------------------------------------------------------
+  // 6. DETAILS BOTTOM SHEET
+  // ------------------------------------------------------------------
+  void _showRequestDetailsBottomSheet({
+    required String uid,
+    required String receiver,
+    required String clientName,
+    required String status,
+    required String amount,
+    required String purpose,
+    required String date,
+  }) {
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(
+          maxHeight: Get.height * 0.6,
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        purpose,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A315E),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Status: ${status.toUpperCase()} • UID: $uid • Receiver: $receiver',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'AMOUNT',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      '\$$amount',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 1),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Payer:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                ),
+                Text(
+                  clientName,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Date:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                ),
+                Text(
+                  date,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 7. BUILD UI
+  // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +956,13 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           SafeArea(
             child: RefreshIndicator(
-              onRefresh: () => controller.fetchCompanyRecord(), // Drag to refresh capability
+              onRefresh: () async {
+                // Refresh both transactions and balance on pull-down
+                await Future.wait([
+                  _fetchRecentTransactions(),
+                  controller.fetchCompanyRecord(),
+                ]);
+              },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
@@ -80,8 +974,6 @@ class _AccountScreenState extends State<AccountScreen> {
                     _buildBalanceCard(),
                     const SizedBox(height: 16),
                     _buildFeatureGrid(),
-                    const SizedBox(height: 16),
-                    _buildQuickStatsSection(),
                     const SizedBox(height: 16),
                     _buildRecentTransactionsSection(),
                     const SizedBox(height: 30),
@@ -130,7 +1022,6 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  // Reactive Total Balance Card
   Widget _buildBalanceCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -147,32 +1038,36 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
       padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Text(
-            'TOTAL BALANCE',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+      child: InkWell(
+        onTap: () {
+          sendStockAmount(context, controller.amount.value, controller.totalBalance.value);
+        },
+        child: Column(
+          children: [
+            const Text(
+              'TOTAL BALANCE',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Obx(() => Text(
-            controller.totalBalance.value,
-            style: const TextStyle(
-              color: Color(0xFF1A315E),
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          )),
-        ],
+            const SizedBox(height: 8),
+            Obx(() => Text(
+              controller.totalBalance.value,
+              style: const TextStyle(
+                color: Color(0xFF1A315E),
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            )),
+          ],
+        ),
       ),
     );
   }
 
-  // Reactive Feature Grid
   Widget _buildFeatureGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -312,56 +1207,9 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildQuickStatsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Quick Stats',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A315E),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildBar(15, Colors.grey.shade300),
-              _buildBar(30, Colors.blue),
-              _buildBar(10, Colors.grey.shade300),
-              _buildBar(45, const Color(0xFF1A315E)),
-              _buildBar(20, Colors.grey.shade300),
-              _buildBar(35, Colors.teal),
-              _buildBar(15, Colors.grey.shade300),
-              _buildBar(25, Colors.grey.shade300),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBar(double height, Color color) {
-    return Container(
-      height: height,
-      width: 10,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(4),
-      ),
-    );
-  }
-
+  // ------------------------------------------------------------------
+  // 8. RECENT TRANSACTIONS SECTION
+  // ------------------------------------------------------------------
   Widget _buildRecentTransactionsSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -373,88 +1221,294 @@ class _AccountScreenState extends State<AccountScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Recent Transactions',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A315E),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent Request Transactions',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A315E),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await _fetchRecentTransactions();
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Refresh',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
-          _buildTransactionItem(
-            icon: Icons.home,
-            iconBg: Colors.blue.shade50,
-            iconColor: Colors.blue,
-            title: 'Rent Payment',
-            date: 'Oct 13, 2023',
-            amount: '-\$1,280.50',
-          ),
-          const Divider(),
-          _buildTransactionItem(
-            icon: Icons.shopping_basket,
-            iconBg: Colors.teal.shade50,
-            iconColor: Colors.teal,
-            title: 'Grocery Store',
-            date: 'Oct 11, 2023',
-            amount: '-\$20.00',
-          ),
-          const Divider(),
-          _buildTransactionItem(
-            icon: Icons.coffee,
-            iconBg: Colors.orange.shade50,
-            iconColor: Colors.orange,
-            title: 'Coffee Shop',
-            date: 'Oct 10, 2023',
-            amount: '-\$5.30',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionItem({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required String date,
-    required String amount,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: iconBg,
-            radius: 18,
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          if (_isLoadingRecent)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: CircularProgressIndicator(color: Color(0xFF1A315E)),
+              ),
+            )
+          else if (_recentTransactions.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No recent transactions.',
+                  style: TextStyle(color: Colors.grey),
                 ),
-                Text(
-                  date,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentTransactions.length > 5 ? 5 : _recentTransactions.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = _recentTransactions[index];
+                return _buildRequestCard(item);
+              },
             ),
-          ),
-          Text(
-            amount,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-          ),
+          if (_recentTransactions.length > 5)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Get.to(() => const SalesPage()),
+                  child: const Text('View All →'),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
+  // ------------------------------------------------------------------
+  // 9. SALESPAGE-STYLE REQUEST CARD
+  // ------------------------------------------------------------------
+  Widget _buildRequestCard(dynamic item) {
+    final String uid = item['uid'] ?? 'N/A';
+    final String receiver = item['OwnerAmount'] ?? 'N/A';
+    final String amount = item['amount'] ?? '0';
+    final String purpose = item['purpose'] ?? 'Stock Transfer';
+    final String createdAt = item['created_at'] ?? 'N/A';
+    final String payer = item['payer'] ?? 'Unknown Payer';
+    // final String status = item['status'] ?? item['payment_status'] ?? 'Pending';
+    String status = "Pending"; // Adjust if your API has a status field
+
+    // Get a distinct color per card based on UID
+    final Color accentColor = _accentColors[uid.hashCode.abs() % _accentColors.length];
+
+    // Determine status badge colors
+    final String cleanStatus = status.toUpperCase();
+    Color statusBgColor;
+    Color statusTextColor;
+    if (cleanStatus == 'PAID' || cleanStatus == 'COMPLETED' || cleanStatus == 'SUCCESS') {
+      statusBgColor = Colors.green.shade50;
+      statusTextColor = Colors.green.shade700;
+    } else if (cleanStatus == 'FAILED' || cleanStatus == 'CANCELLED') {
+      statusBgColor = Colors.red.shade50;
+      statusTextColor = Colors.red.shade700;
+    } else {
+      statusBgColor = Colors.orange.shade100;
+      statusTextColor = Colors.deepOrange.shade800;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Dynamic accent stripe
+              Container(
+                width: 4,
+                color: accentColor,
+              ),
+              // Main content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Status Badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusBgColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    cleanStatus,
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusTextColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // UID
+                                Text(
+                                  'UID: $uid',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                // Purpose
+                                Text(
+                                  purpose,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Amount
+                          Text(
+                            '\$$amount',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A315E),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Footer: Payer and Date
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Payer: $payer',
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          ),
+                          Text(
+                            createdAt,
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Vertical separator
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: Colors.grey.shade200,
+              ),
+              // Right side: Receiver badge + View icon
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Receiver badge
+                  Container(
+                    margin: const EdgeInsets.only(top: 6, left: 4, right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A315E).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Receiver: $receiver',
+                      style: const TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A315E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // View action
+                  Tooltip(
+                    message: 'View Details',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showRequestDetailsBottomSheet(
+                          uid: uid,
+                          receiver: receiver,
+                          clientName: payer,
+                          status: status,
+                          amount: amount,
+                          purpose: purpose,
+                          date: createdAt,
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                          child: Icon(
+                            Icons.visibility_outlined,
+                            size: 18,
+                            color: Color(0xFF1A315E),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 10. BOTTOM NAVIGATION
+  // ------------------------------------------------------------------
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,

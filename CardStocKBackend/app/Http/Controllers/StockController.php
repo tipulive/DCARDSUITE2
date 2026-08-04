@@ -30,6 +30,73 @@ class StockController extends Controller
         $this->platform1=env('PLATFORM3');
     }
 
+
+    /*Locker on sales */
+    public function lockerSales(){
+
+    }
+    public function Locker($input){
+        try {
+
+
+            $check=DB::transaction(function () use ($input) {
+               // $orderId=$input['orderIdFromEdit']??'none';
+
+
+                $this->LockerWholeSaleProcess($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Sucess",
+
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    public function checkLocked($input){
+        return DB::select("select clientid orders where clientid!='none' and uid=:uid",[
+            "uid"=>$input["uid"]
+        ]);
+    }
+    public function checkUnLocked($input){
+        return DB::select("select clientid orders where clientid=:clientid and permission=:permission and uid=:uid",[
+            "uid"=>$input["uid"],
+            "permission"=>$input["permission"],
+            "uid"=>$input["uid"]
+        ]);
+    }
+    public function unlockedSales($input){
+if($this->checkUnLocked($input)){
+    return $this->LockedUnlockWholeSale($input);
+}else{
+    throw new \Exception("unable to UnLock this Order please contact system Admin" . $input["uid"]);
+}
+    }
+    public function LockerWholeSaleProcess($input){
+        if($this->checkLocked($input))
+        {
+            return $this->LockedUnlockWholeSale($input);
+        }else{
+            throw new \Exception("unable to Lock this Order please contact system Admin" . $input["uid"]);
+        }
+    }
+    public function LockedUnlockWholeSale($input){ //lock and unlocker using lockStatus
+      return DB::update("update orders set clientid=:clientid and permission=:permission where uid=:uid",[
+        "clientid"=>Auth::user()->uid,
+        "permission"=>$input["permissionG"]??Str::random(3)
+      ]);
+
+    }
+    /*Locker on sales */
+
 /*Subscriber or Company Account Code */
 public function SubscriberAccount($input){
     $Account=$this->SubAccounts($input);
@@ -309,6 +376,10 @@ public function reqStockView($input)
                  r.uidReceiver,
                  r.recSubscriber,
                  r.productCode,
+                 b.productName,
+                 b.pcs,
+                 b.price,
+
                  r.qty,
                  r.commentData,
                  r.status,
@@ -316,7 +387,8 @@ public function reqStockView($input)
 
              FROM req_stocks r
              INNER JOIN admins a ON r.uidSender = a.uid
-             WHERE r.recSubscriber = :recSubscriber
+             INNER JOIN products b on r.productCode=b.productCode
+             WHERE r.recSubscriber = :recSubscriber and b.subscriber=r.subscriber
              AND r.status = :status
              ORDER BY r.id DESC
              LIMIT 10
@@ -704,7 +776,8 @@ public function StockPayAdmin($input){//this is when Admin Received Payment from
         DB::transaction(function () use ($input) {
 
 
-           $this->stockSellerPayAdmin($input);
+           //$this->stockSellerPayAdmin($input);
+           $this->stockPaymentProcessing($input);
         });
 
         return response([
@@ -720,6 +793,50 @@ public function StockPayAdmin($input){//this is when Admin Received Payment from
         ], 500);
     }
 }
+public function stockPaymentProcessing($input){
+    $check=DB::select("select *from repaid_admins where uid=:uid  and subscriber=:subscriber and status='0' limit 1",[
+        "uid"=>$input["uid"],
+        "subscriber"=>Auth::user()->subscriber
+    ]);
+    if($check)
+    {
+        if($check[0]->uidReceiver==Auth::user()->uid)
+        {
+
+           // return true;
+            $intM=$check[0]->intermediary_id;
+           $input["uidReceiverSub"]=Auth::user()->uid;
+           $input["intermediary_id"]=($intM=='none')?Auth::user()->uid:$intM;
+           if($this->stockSellerPayAdmin($input))
+           {
+                   return true;
+           }else{
+            throw new \Exception("something wrong ");
+           }
+        }else{
+            if($check[0]->intermediary_id=="none")
+            {
+                $input["intermediary_id"]=Auth::user()->uid;
+                $input["uidReceiverSub"]="none";
+                $input["status"]="0";
+                if($this->updatePaymentRequest($input))
+                {
+                    return true;
+                }else{
+                    throw new \Exception("Unable to update this paymentUid");
+                }
+
+            }else{
+                throw new \Exception("something wrong you can not replace this messengerUser contact system Admin");
+            }
+
+        }
+    }else{
+        throw new \Exception("Something wrong please contact System Admin");
+    }
+
+}
+
 public function stockSellerPayAdmin($input){//paid Admin
     //SomeInputFieldMissing
     //$input["receivedSub"]= amount to be received
@@ -793,11 +910,14 @@ public function reqPaymentStock($input){
 public function updatePaymentRequest($input)
 {
     //status 1 approval and 0 request
-    return DB::update("update repaid_admins set status=:status,uidReceiver=:uidReceiver,updated_at=:updated_at where uid=:uid and subscriber=:subscriber and amount=:amount and status='0' limit 1",[
+    return DB::update("update repaid_admins set status=:status,intermediary_id=:intermediary_id,interDate=:interDate,uidReceiver=:uidReceiver,updated_at=:updated_at where uid=:uid and uidReceiver!=:uidSender and subscriber=:subscriber and amount=:amount and status='0' limit 1",[
         "status"=>$input["status"]??'1',
+        "intermediary_id"=>$input["intermediary_id"],
+        "interDate"=>$this->today,
         "uid"=>$input["uid"],
+        "uidSender"=>$input["uidUserSub"],//uidSender
         "amount"=>$input["receivedSub"],
-        "uidReceiver"=>Auth::user()->uid,
+        "uidReceiver"=>$input["uidReceiverSub"],
         "subscriber"=>Auth::user()->subscriber,
         "updated_at"=>$this->today
     ]);
@@ -808,8 +928,9 @@ public function paymentRequest($input){
             ->insert([
                 "uid"=>$this->CreateUid($input),//uid of paid
                 "uidPaid"=>Auth::user()->uid,//who paid borrower(ni Admin uri kwishyura ideni)
-                //"uidReceiver"=>$input['uidReceiver'],//Receiver Debt
+                "uidReceiver"=>$input['uidReceiver'],//Receiver Debt
                 "subscriber"=>Auth::user()->subscriber,
+                "uidReceiver"=>$input["uidReceiver"],
                 "amount"=>$input['amount'],
                 "systemUid"=>$input['systemUid']??'PointSales1',
                 "status"=>'0',//request,1 Approval 2 Cancel
@@ -825,14 +946,18 @@ public function ViewReqStockPayment($input)
 {
     return DB::select("
         SELECT
+            r.uid,
             r.amount,
             r.uidReceiver,
+            r.intermediary_id,
             r.status,
             r.purpose,
             r.created_at,
-            a.name
+            a.name AS payer,
+            b.name AS OwnerAmount
         FROM repaid_admins r
         INNER JOIN admins a ON r.uidPaid = a.uid
+        INNER JOIN admins b ON r.uidReceiver = b.uid
         WHERE r.uidPaid = :uidPaid
         AND r.status = :status
         ORDER BY r.id DESC
@@ -847,16 +972,21 @@ public function ViewReqStockPaymentHistory($input)
 {
     return DB::select("
         SELECT
+            r.uid,
             r.amount,
             r.uidReceiver,
             r.status,
             r.purpose,
             r.created_at,
+            r.updated_at,
+            r.interDate,
             a.name AS payer,
-            b.name AS deptOwner
+            b.name As messenger,
+            c.name AS receiver
         FROM repaid_admins r
         INNER JOIN admins a ON r.uidPaid = a.uid
-        INNER JOIN admins b ON r.uidReceiver = b.uid
+        INNER JOIN admins b ON r.intermediary_id = b.uid
+        INNER JOIN admins c ON r.uidReceiver = c.uid
         WHERE r.uidPaid = :uidPaid
         AND r.status =:status
         ORDER BY r.id DESC
@@ -1277,7 +1407,7 @@ public function CreateOrder($input){
         "paidStatus"=>$input["paidStatus"],
         "promotionUid"=>$input['uid']??'none',
         "reach"=>$input['reach']??'none',
-        "gain"=>$input['gain']??'none',
+        "gain"=>$input['outPromoAmountSub']??'none',
         "systemUid"=>$input['systemUid']??'none',
         "uidUser"=>($input['uidUser']??$uidCreator),
        // "uidCreator"=>$uidCreator,
@@ -5384,6 +5514,9 @@ public function SubmitOrder($input){
           "mysales"=>array(
              "TopQuery"=>"Max(admnin_records.balance) AS saleBalance,
               MAX(orders.total) AS totalPaid,
+              MAX(orders.paid) AS paid,
+              MAX(orders.debt) AS debt,
+              MAX(orders.gain) AS gain,
               MAX(orders.created_at) AS created_at,
               MAX(orders.paidStatus) as paidStatus",
               "DownQuery"=>"WHERE orders.subscriber = :subscriber
@@ -5405,6 +5538,9 @@ public function SubmitOrder($input){
           "today"=>array(
               "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
               MAX(orders.total) AS totalPaid,
+              MAX(orders.paid) AS paid,
+              MAX(orders.debt) AS debt,
+              MAX(orders.gain) AS gain,
               MAX(orders.created_at) AS created_at,
               MAX(orders.paidStatus) as paidStatus",
               "DownQuery"=>"
@@ -5435,6 +5571,9 @@ public function SubmitOrder($input){
           "week"=>array(
               "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
               MAX(orders.total) AS totalPaid,
+              MAX(orders.paid) AS paid,
+              MAX(orders.debt) AS debt,
+              MAX(orders.gain) AS gain,
               MAX(orders.created_at) AS created_at,
               MAX(orders.paidStatus) as paidStatus",
 
@@ -5468,6 +5607,9 @@ public function SubmitOrder($input){
           "month"=>array(
                           "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                            MAX(orders.total) AS totalPaid,
+                           MAX(orders.paid) AS paid,
+                           MAX(orders.debt) AS debt,
+                           MAX(orders.gain) AS gain,
                            MAX(orders.created_at) AS created_at,
                            MAX(orders.paidStatus) as paidStatus",
                            "DownQuery"=>"
@@ -5498,6 +5640,9 @@ public function SubmitOrder($input){
           "year"=>array(
               "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
               MAX(orders.total) AS totalPaid,
+              MAX(orders.paid) AS paid,
+              MAX(orders.debt) AS debt,
+              MAX(orders.gain) AS gain,
               MAX(orders.created_at) AS created_at,
               MAX(orders.paidStatus) as paidStatus",
               "DownQuery"=>"
@@ -5528,6 +5673,9 @@ public function SubmitOrder($input){
                "choosedate"=>array(
                   "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                   MAX(orders.total) AS totalPaid,
+                  MAX(orders.paid) AS paid,
+                  MAX(orders.debt) AS debt,
+                  MAX(orders.gain) AS gain,
                   MAX(orders.created_at) AS created_at,
                   MAX(orders.paidStatus) as paidStatus",
                   "DownQuery"=>"
@@ -5561,6 +5709,9 @@ public function SubmitOrder($input){
                    "choosedaterange"=>array(
                       "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                       MAX(orders.total) AS totalPaid,
+                      MAX(orders.paid) AS paid,
+                      MAX(orders.debt) AS debt,
+                      MAX(orders.gain) AS gain,
                       MAX(orders.created_at) AS created_at,
                       MAX(orders.paidStatus) as paidStatus",
                       "DownQuery"=>"
@@ -5711,6 +5862,9 @@ public function SubmitOrder($input){
         "mysales"=>array(
            "TopQuery"=>"Max(admnin_records.balance) AS saleBalance,
             MAX(orders.total) AS totalPaid,
+            MAX(orders.paid) AS paid,
+            MAX(orders.debt) AS debt,
+            MAX(orders.gain) AS gain,
             MAX(orders.created_at) AS created_at,
             MAX(orders.paidStatus) as paidStatus",
             "DownQuery"=>"WHERE orders.subscriber = :subscriber
@@ -5732,6 +5886,9 @@ public function SubmitOrder($input){
         "today"=>array(
             "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
             MAX(orders.total) AS totalPaid,
+            MAX(orders.paid) AS paid,
+            MAX(orders.debt) AS debt,
+            MAX(orders.gain) AS gain,
             MAX(orders.created_at) AS created_at,
             MAX(orders.paidStatus) as paidStatus",
             "DownQuery"=>"
@@ -5762,6 +5919,9 @@ public function SubmitOrder($input){
         "week"=>array(
             "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
             MAX(orders.total) AS totalPaid,
+            MAX(orders.paid) AS paid,
+            MAX(orders.debt) AS debt,
+            MAX(orders.gain) AS gain,
             MAX(orders.created_at) AS created_at,
             MAX(orders.paidStatus) as paidStatus",
 
@@ -5795,6 +5955,9 @@ public function SubmitOrder($input){
         "month"=>array(
                         "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                          MAX(orders.total) AS totalPaid,
+                         MAX(orders.paid) AS paid,
+                         MAX(orders.debt) AS debt,
+                         MAX(orders.gain) AS gain,
                          MAX(orders.created_at) AS created_at,
                          MAX(orders.paidStatus) as paidStatus",
                          "DownQuery"=>"
@@ -5825,6 +5988,9 @@ public function SubmitOrder($input){
         "year"=>array(
             "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
             MAX(orders.total) AS totalPaid,
+            MAX(orders.paid) AS paid,
+            MAX(orders.debt) AS debt,
+            MAX(orders.gain) AS gain,
             MAX(orders.created_at) AS created_at,
             MAX(orders.paidStatus) as paidStatus",
             "DownQuery"=>"
@@ -5855,6 +6021,9 @@ public function SubmitOrder($input){
              "choosedate"=>array(
                 "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                 MAX(orders.total) AS totalPaid,
+                MAX(orders.paid) AS paid,
+                MAX(orders.debt) AS debt,
+                MAX(orders.gain) AS gain,
                 MAX(orders.created_at) AS created_at,
                 MAX(orders.paidStatus) as paidStatus",
                 "DownQuery"=>"
@@ -5887,6 +6056,9 @@ public function SubmitOrder($input){
                  "choosedaterange"=>array(
                     "TopQuery"=>"Max(total_orders.saleBalance) as saleBalance,
                     MAX(orders.total) AS totalPaid,
+                    MAX(orders.paid) AS paid,
+                    MAX(orders.debt) AS debt,
+                    MAX(orders.gain) AS gain,
                     MAX(orders.created_at) AS created_at,
                     MAX(orders.paidStatus) as paidStatus",
                     "DownQuery"=>"
@@ -6036,6 +6208,8 @@ public function SubmitOrder($input){
                 SELECT
 
                     MAX(orderhistories.uid) AS uid,
+                    MAX(orderhistories.promotionUid) AS promotionUid,
+                    MAX(orderhistories.permission) AS permission,
                     MAX(1) AS hideAddCart,
                     MAX(1) AS currentQty,
                     orderhistories.productCode,
@@ -7456,6 +7630,8 @@ public function SubmitOrder($input){
 
                     MAX(orderhistories.uid) AS uid,
                     MAX(orderhistories.description) AS commentData,
+                    MAX(orderhistories.promotionUid) AS promotionUid,
+                    MAX(orderhistories.permission) AS permission,
                     MAX(1) AS hideAddCart,
                     MAX(1) AS currentQty,
                     orderhistories.productCode,

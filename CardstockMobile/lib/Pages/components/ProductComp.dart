@@ -13,12 +13,16 @@ import '../../../models/User.dart';
 import 'package:get/get.dart';
 import '../../../Query/AdminQuery.dart';
 import '../../../Utilconfig/ConstantClassUtil.dart';
+import '../../Query/SendStockController.dart';
 import '../../Query/StockQuery.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../Utilconfig/image_card_widget.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../../models/Participated.dart';
 
 
 
@@ -54,7 +58,7 @@ class _ProductCompState extends State<ProductComp> {
   num inputData=0;
   bool cameraValue=false;
   bool flashValue=false;
-
+  bool showOver=false;
   String clientOrder="";
   String orderId="";
   String viewOption="false";
@@ -68,7 +72,7 @@ class _ProductCompState extends State<ProductComp> {
   String pcs="";
   String actionStatus="updatePrice";
   String withTotal="true";
-
+  var box=Hive.box("myBox");
   final List<String> _dropdownOptions = ['Name', 'Code'];
   String selectOption="Code";
 String versionN="172363500";
@@ -77,13 +81,40 @@ String versionN="172363500";
 
   bool showOveray=false;
 
-
+  final StockQuery myStockQuery = Get.find<StockQuery>();
 
 
   /* picture upload*/
 
 final fontSizeData=13.0;
 
+  String _selectedAction = 'Stocks';
+  String sTitle='Products In Stocks';
+  // Config data for action items
+  final List<Map<String, dynamic>> _actions = [
+    {'sTitle':'Products In Stocks','label': 'Stocks', 'icon': Icons.swap_horiz, 'color': Colors.blue,'status': 'Stocks'},
+    {'sTitle':'Pending Products','label': 'Pending', 'icon': Icons.receipt_long, 'color': Colors.orange,'status': 'Pending'},
+    {'sTitle':'Received Products','label': 'Received', 'icon': Icons.phone_android, 'color': Colors.purple,'status': 'Received'},
+    {'sTitle':'Cancelled Products','label': 'Cancelled', 'icon': Icons.qr_code_scanner, 'color': Colors.teal,'status': 'Cancelled'},
+  ];
+
+  // State Management Variables
+  bool _isLoading = true;
+  List<dynamic> _rawStockPayList = [];
+  List<dynamic> _filteredStockPayList = [];
+  // Place this inside your _SalesPageState class or as a helper list
+  final List<Color> _accentColors = [
+    const Color(0xFF1A315E), // Deep Navy
+    Colors.teal.shade500,
+    Colors.purple.shade500,
+    Colors.amber.shade700,
+    Colors.indigo.shade500,
+    Colors.pink.shade400,    // Standard Flutter alternative to Rose
+    Colors.green.shade600,   // Standard Flutter alternative to Emerald
+    Colors.cyan.shade600,
+    Colors.deepOrange.shade400,
+    Colors.blue.shade600,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -134,194 +165,68 @@ final fontSizeData=13.0;
         //ProfilePic().profile(),
 
         Padding(
-          padding:const EdgeInsets.fromLTRB(8,10,8,0),
-          child: Card(
-            elevation:0,
-            margin: const EdgeInsets.symmetric(vertical:1,horizontal:5),
-            //color:Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15.0),
-              //side: BorderSide(color:_data[0]["color_var"]??true?Colors.white:Colors.green, width: 2),
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Quick Actions',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A315E),
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _actions.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  childAspectRatio: 0.8,
+                  crossAxisSpacing: 8,
+                ),
+                itemBuilder: (context, index) {
+                  final item = _actions[index];
+                  final isSelected = _selectedAction == item['status'];
+                  final Color color = item['color'];
 
-            child: ListTile(
-              leading: GestureDetector(
-                onTap: (){
-                  getDebtWidget();
+                  return _buildActionButton(
+                    label: item['label'],
+                    icon: item['icon'],
+                    color: color,
+                    isSelected: isSelected,
+                    onTap: () {
+                     // setState(() => _selectedAction = item['status']);
+                      setState(() {
+                        _selectedAction = item['status'];
+                        sTitle=item['sTitle'];
+                      });
+                     // print('${item['label']} selected');
+                      if(_selectedAction=='Stocks')
+                        {
+
+                        }else{
+                        _fetchStockPayData();
+                        }
+
+
+
+                    },
+                  );
                 },
-                child: CircleAvatar(
-                  backgroundColor:getRandomColor(),
-                  child: Icon(_getRandomIcon()),
-                ),
               ),
-              title:Row(
-                children: [
-
-
-                  Expanded(
-                    flex: 1,
-                    child: Stack(
-                      children: [
-
-                        Column(
-                          children: [
-
-                            Center(
-                              child: RichText(
-                                text: TextSpan(
-                                  text: "Total:",
-                                  style: DefaultTextStyle.of(context).style,
-                                  children: const <TextSpan>[
-
-
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              subtitle: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Column(
-
-                    children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-
-                          const Icon(Icons.segment,color:Colors.orange,size:13,),
-                         // Text("${(_data.isNotEmpty)?ConstantClassUtil().truncateToDecimalPlaces(_data[0]['totalStock'], 2):0}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.orange,fontWeight: FontWeight.w700)),
-
-
-
-                        ],
-                      ),
-
-
-
-
-
-
-                    ],
-                  ),
-
-                ],
-              ),
-              trailing:PopupMenuButton(
-                itemBuilder:(container)=>[
-                  PopupMenuItem(
-                      child: GestureDetector(
-                        onTap: (){
-                          setState(() {
-                            viewOption="false";
-                          });
-                          viewData('test',false);
-                        },
-                        child: const Column(
-                          children: [
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person,
-                                  color: Colors.blue,
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.only(left:10.0),
-                                  child: Text("View"),
-                                ),
-
-                              ],
-                            ),
-                            Divider(
-                              height: 20, // Adjust the height as needed
-                              thickness: 0.2, // Adjust the thickness as needed
-                              color: Colors.grey,
-                            ),
-
-                          ],
-                        ),
-                      )
-                  ),
-                  PopupMenuItem(
-                      child: GestureDetector(
-                        onTap: (){
-                          //print("type All");
-                          setState(() {
-                            viewOption="true";
-                          });
-                          viewData('test',false);
-
-                        },
-                        child: const Column(
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.apartment,
-                                  color: Colors.orange,
-                                ),
-
-                                Padding(
-                                  padding: EdgeInsets.only(left:10.0),
-                                  child: Text("Company"),
-                                ),
-
-                              ],
-                            ),
-                            Divider(
-                              height: 20, // Adjust the height as needed
-                              thickness: 0.2, // Adjust the thickness as needed
-                              color: Colors.grey,
-                            ),
-
-                          ],
-                        ),
-                      )
-                  ),
-
-                ],
-                offset: const Offset(0, 40),
-                child:InkWell(
-
-                  child: Ink(
-                    decoration: ShapeDecoration(
-                      color: Colors.grey.withOpacity(0.2),
-                      shape: const CircleBorder(),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(5.0),
-                      child: Icon(
-
-                        Icons.visibility, // Replace with your desired icon
-                        color: Colors.pink,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              //trailing: Text()
-            ),
+            ],
           ),
         ),
+//mycode
 
 
         Container(
-          height: 55,
+          height: 50,
           //padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-          margin: const EdgeInsets.fromLTRB(10, 20, 10, 10),
+          margin: const EdgeInsets.fromLTRB(10, 10, 10, 5),
           child: TextField(
 
             decoration: InputDecoration(
@@ -360,9 +265,23 @@ final fontSizeData=13.0;
             },
           ),
         ),
+         Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              sTitle,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A315E),
+              ),
+            ),
+          ],
+        ),
 
 
-        Expanded(
+
+        (_selectedAction=='Stocks')?Expanded(
           child: ListView.builder(
 
             controller: _scrollController,
@@ -637,7 +556,11 @@ final fontSizeData=13.0;
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             InkWell(
-                              onTap: () {},
+                              onTap: () {
+                                
+
+                                sendStockQuantity(context,_data[index]["productCode"],_data[index]["qty"]);
+                              },
                               child: const Padding(
                                 padding: EdgeInsets.all(8.0),
                                 child: Icon(Icons.send, color: Colors.blue),
@@ -710,8 +633,572 @@ final fontSizeData=13.0;
 
             },
           ),
-        ),
+        ):Expanded(child: _buildSalesListSection()),
+
       ],
+    );
+  }
+  // Quick Action Utilities
+
+// Sales List Section Powered by StockQuery API
+  Widget _buildSalesListSection() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recent Request Transfer',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A315E),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _fetchStockPayData,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Refresh',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Loading & Data State Handling
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30),
+                  child: CircularProgressIndicator(color: Color(0xFF1A315E)),
+                ),
+              )
+            else if (_filteredStockPayList.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Text(
+                    'No stock transfers found.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _filteredStockPayList.length,
+                itemBuilder: (context, index) {
+                  final item = _filteredStockPayList[index];
+
+                  // Populated from dynamic payload keys
+                  final String uid = item['uid'] ?? 'N/A';
+                  final String name = item['name'] ?? 'N/A';
+                  final String productCode = item['productCode'] ?? 'N/A';
+                  final String qty = item['qty']?.toString() ?? '0';
+                  final String payer = item['subscriber'] ?? item['uidSender'] ?? 'Unknown Payer';
+                  final String receiver = item['recSubscriber'] ?? item['uidReceiver'] ?? 'N/A';
+                  final String commentData = item['commentData'] ?? 'Stock Transfer';
+                  final String createdAt = item['created_at'] ?? 'N/A';
+
+                  // Map raw status ("1") to friendly display string
+                  final String rawStatus = item['status']?.toString() ?? '0';
+                  final String status = (rawStatus == '1') ? 'COMPLETED' : 'PENDING';
+
+                  final Color itemColor = _accentColors[uid.hashCode.abs() % _accentColors.length];
+
+                  return _buildSalesItemCard(
+                    salesName: '$name ($payer)',
+                    uid: uid,
+                    receiver: receiver,
+                    paymentStatus: status,
+                    amount: 'Qty: $qty',
+                    byName: productCode,
+                    dateCaptured: createdAt,
+                    commentData: commentData,
+                    accentColor: itemColor,
+                    products: (item['products'] as List<dynamic>?)
+                        ?.map((e) => Map<String, dynamic>.from(e))
+                        .toList() ??
+                        [
+                          {
+                            'productCode': productCode,
+                            'name': name,
+                            'qty': qty,
+                          }
+                        ],
+                    onPrintPayment: () {},
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Modernized Individual Sales Card Widget
+  Widget _buildSalesItemCard({
+    required String salesName,
+    required String uid,
+    required String receiver,
+    required String paymentStatus,
+    required String amount,
+    required String byName,
+    required String dateCaptured,
+    required String commentData,
+    required Color accentColor,
+    required List<Map<String, dynamic>> products,
+    bool isHighValue = false,
+    VoidCallback? onPrintPayment,
+  }) {
+    // Dynamic Status Color Switch
+    final String cleanStatus = paymentStatus.toUpperCase();
+
+    Color statusBgColor;
+    Color statusTextColor;
+
+    if (cleanStatus == 'PAID' || cleanStatus == 'COMPLETED' || cleanStatus == 'SUCCESS' || cleanStatus == '1') {
+      statusBgColor = Colors.green.shade50;
+      statusTextColor = Colors.green.shade700;
+    } else if (cleanStatus == 'FAILED' || cleanStatus == 'CANCELLED') {
+      statusBgColor = Colors.red.shade50;
+      statusTextColor = Colors.red.shade700;
+    } else {
+      // Default / PENDING -> High contrast Orange Badge
+      statusBgColor = Colors.orange.shade100;
+      statusTextColor = Colors.deepOrange.shade800;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Dynamic Visual Accent Stripe
+              Container(
+                width: 4,
+                color: accentColor,
+              ),
+
+              // Core Information Fields
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left Side: Status, UID, & Item Name
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Payment Status Badge (Top-Left)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusBgColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    cleanStatus,
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusTextColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+
+                                // UID Directly Below Status
+                                Text(
+                                  'UID: $uid',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+
+                                // Product/Item Title
+                                Text(
+                                  ConstantClassUtil().capitalizeFirstLetter(byName),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Quantity / Amount Display
+                          Text(
+                            amount,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A315E),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Secondary Metadata Footer (Payer & Comments)
+                      Text(
+                        'Payer: $salesName',
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Vertical Separator
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: Colors.grey.shade200,
+              ),
+
+              // Right-Side Action Icons Column with Receiver Right On Top
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Receiver badge positioned directly above right icons
+                  Container(
+                    margin: const EdgeInsets.only(top: 6, left: 4, right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A315E).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Rec: $receiver',
+                      style: const TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A315E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  // Actions Group
+                  Column(
+                    children: [
+                      // Print Action
+                      Tooltip(
+                        message: 'Confirm Payment & Print',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onPrintPayment,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              child: Icon(
+                                Icons.print_outlined,
+                                size: 18,
+                                color: Colors.teal.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Horizontal separator between action icons
+                      Container(
+                        width: 20,
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+
+                      // View Details Action
+                      Tooltip(
+                        message: 'View Details',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showRequestDetailsBottomSheet(
+                              uid: uid,
+                              receiver: receiver,
+                              status: paymentStatus,
+                              clientName: byName,
+                              amount: amount,
+                              purpose: commentData,
+                              date: dateCaptured,
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              child: Icon(
+                                Icons.visibility_outlined,
+                                size: 18,
+                                color: Color(0xFF1A315E),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Created Date directly under View Details
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0, left: 4.0, right: 4.0),
+                        child: Text(
+                          dateCaptured,
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+// ------------------------------------------------------------------
+// 6. DETAILS BOTTOM SHEET
+// ------------------------------------------------------------------
+  void _showRequestDetailsBottomSheet({
+    required String uid,
+    required String receiver,
+    required String clientName,
+    required String status,
+    required String amount,
+    required String purpose,
+    required String date,
+  }) {
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(
+          maxHeight: Get.height * 0.6,
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        purpose,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A315E),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Status: ${status.toUpperCase()} • UID: $uid • Receiver: $receiver',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'AMOUNT',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      '\$$amount',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 1),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Payer:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                ),
+                Text(
+                  clientName,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Date:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                ),
+                Text(
+                  date,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? color : Colors.transparent,
+          width: 1.5,
+        ),
+        boxShadow: isSelected
+            ? [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 0),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? color : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
   @override
@@ -744,6 +1231,212 @@ final fontSizeData=13.0;
     super.dispose();
   }
 
+  // ------------------------------------------------------------------
+  // 2. REQUEST PAYMENT (FIXED: no conflicting Get.back() calls)
+  // ------------------------------------------------------------------
+  Future<void> reqSendProduct(String qty,String productCode, String subscriber,String company, BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // Show loading dialog
+    ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
+
+    bool success = false;
+
+    try {
+
+      int qtyData=int.parse(qty);
+
+      final resultData = await myStockQuery.reqStock(
+        QuickBonus(
+          productName: productCode,
+          reqQty: qtyData,
+          subscriber: subscriber,
+          description: "req to receive Amount",
+
+        ),
+      );
+
+      if (resultData != null && resultData["status"] == true) {
+        // Refresh transactions (and optionally balance)
+        // await _fetchRecentTransactions();
+        _showFeatureSnackbar('Transfer Products', 'you Have send ${qty} to ${company}');
+        ConstantClassUtil().hideLoadingDialog();
+        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
+        success = true;
+      }
+    } catch (e) {
+      debugPrint("Error Sending Products: $e");
+    } finally {
+      // 1. Close loading dialog if still open
+
+
+      // 2. Show snackbar based on result
+      if (success) {
+        ConstantClassUtil().hideLoadingDialog();
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        // 3. Close the bottom sheet only on success
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to send request. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+  Future<void> viewReqProduct(String qty, String uid, BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // Show loading dialog
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(color: Colors.orange),
+      ),
+      barrierDismissible: false,
+    );
+
+    bool success = false;
+
+    try {
+      final ownerData = box.get('owner');
+      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
+          ? ownerData[0]["uid"] ?? ""
+          : "";
+
+      ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
+      final resultData = await myStockQuery.reqPaymentStock(
+        Participated(
+          inputData: qty,
+          uidCreator: uidCreator,
+          status: "Req Payment",
+          promotion_msg: "req to receive Amount",
+        ),
+      );
+
+      if (resultData != null && resultData["status"] == true) {
+        // Refresh transactions (and optionally balance)
+        // await _fetchRecentTransactions();
+        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
+        success = true;
+      }
+    } catch (e) {
+      debugPrint("Error Sending Products: $e");
+    } finally {
+      // 1. Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      // 2. Show snackbar based on result
+      if (success) {
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        // 3. Close the bottom sheet only on success
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to send request. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+  Future<void> receiveStock(String qty, String uid, BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // Show loading dialog
+    ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
+
+    bool success = false;
+
+    try {
+      final ownerData = box.get('owner');
+      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
+          ? ownerData[0]["uid"] ?? ""
+          : "";
+
+
+      final resultData = await myStockQuery.reqPaymentStock(
+        Participated(
+          inputData: qty,
+          uidCreator: uidCreator,
+          status: "Req Payment",
+          promotion_msg: "req to receive Amount",
+        ),
+      );
+
+      if (resultData != null && resultData["status"] == true) {
+        // Refresh transactions (and optionally balance)
+        // await _fetchRecentTransactions();
+        ConstantClassUtil().hideLoadingDialog();
+        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
+        success = true;
+      }
+    } catch (e) {
+      debugPrint("Error Sending Products: $e");
+    } finally {
+      // 1. Close loading dialog if still open
+
+
+      // 2. Show snackbar based on result
+      if (success) {
+        ConstantClassUtil().hideLoadingDialog();
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        // 3. Close the bottom sheet only on success
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to send request. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  void _showFeatureSnackbar(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color(0xFF1A315E).withOpacity(0.9),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      duration: const Duration(seconds: 2),
+      icon: const Icon(Icons.info_outline, color: Colors.white),
+    );
+  }
   void _onQRViewCreated(QRViewController controller)
   {
     this.controller=controller;
@@ -969,6 +1662,33 @@ final fontSizeData=13.0;
   {
     viewData('test',"ViewProduct");
 
+  }
+  // Fetch API Data from StockQuery Controller
+  Future<void> _fetchStockPayData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Topups parameter passed as needed by your controller
+      final response = await myStockQuery.viewRecReqStock(Topups());
+
+      if (response != null && response.data != null) {
+        // Adjust key according to API response wrapper (e.g., response.data["result"] or response.data)
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : (response.data["result"] ?? response.data["data"] ?? []);
+
+        setState(() {
+          _rawStockPayList = data;
+          _filteredStockPayList = data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint("Error fetching stock pay details: $e");
+      setState(() => _isLoading = false);
+    }
   }
   viewData(nameVal,isProductAction) async{
     if(isLoading) return;
@@ -1364,7 +2084,704 @@ final fontSizeData=13.0;
 
 
   }
+  Future<void> getCompData(String optionCase, String name) async {
+    FocusManager.instance.primaryFocus?.unfocus();
 
+    // 1. Show immediate loading dialog
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(
+          color: Colors.orange,
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    final stockQueryController = Get.isRegistered<StockQuery>()
+        ? Get.find<StockQuery>()
+        : Get.put(StockQuery());
+
+    try {
+      final ownerData = box.get('owner');
+      final String uid = (ownerData != null && ownerData.isNotEmpty)
+          ? ownerData[0]["uid"] ?? ""
+          : "";
+
+      final resultData = await myStockQuery.miniAccount(
+        Topups(
+          optionCase: optionCase,
+          name: name,
+          uid: uid,
+        ),
+      );
+
+      if (resultData != null && resultData["status"] == true) {
+        final rawResult = resultData["result"];
+
+        if (rawResult is List && rawResult.isNotEmpty) {
+          stockQueryController.updatecompPick(
+            List<Map<String, dynamic>>.from(rawResult),
+          );
+        } else {
+          stockQueryController.updatecompPick([]);
+        }
+      } else {
+        stockQueryController.updatecompPick([]);
+      }
+    } catch (e) {
+      debugPrint("Error fetching company data: $e");
+      stockQueryController.updatecompPick([]);
+    } finally {
+      // 2. Dismiss the loading dialog when finished
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+    }
+  }
+  /// 1. MAIN BOTTOM SHEET: SEND STOCK QUANTITY
+  void sendStockQuantity(
+      BuildContext context,
+      dynamic productCode,
+      dynamic qtyData, {
+        String initialQuantity = "1",
+      }) {
+    // Safe registration: Find existing or instantiate new controller
+    final SendStockController controller = Get.isRegistered<SendStockController>()
+        ? Get.find<SendStockController>()
+        : Get.put(SendStockController());
+
+    // Parse total available stock safely
+    final double totalAvailable = double.tryParse(qtyData.toString()) ?? 0.0;
+
+    // Initialize fresh state for this session
+    controller.initData(initialQty: initialQuantity);
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xffF8F9FB),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // <--- Add 'MainAxisSize.' prefix here
+              children: [
+                const SizedBox(height: 12),
+
+                /// Drag Handle
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Header Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    "Specify quantity and recipient company below.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// LIVE CURRENT & REMAINING STOCK TILE
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Obx(() {
+                    final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
+                    final remaining = totalAvailable - enteredQty;
+                    final isExceeded = enteredQty > totalAvailable;
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isExceeded ? Colors.red.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isExceeded ? Colors.red.shade300 : Colors.orange.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isExceeded ? Colors.red.shade100 : Colors.orange.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              isExceeded ? '⚠️' : '🥭',
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Current Stock",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isExceeded
+                                            ? Colors.red.shade900
+                                            : Colors.orange.shade900,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      "$qtyData Available",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: isExceeded
+                                            ? Colors.red.shade700
+                                            : Colors.orange.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isExceeded
+                                      ? "Exceeds available stock!"
+                                      : "${remaining % 1 == 0 ? remaining.toInt() : remaining.toStringAsFixed(1)} Remaining after send",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isExceeded
+                                        ? Colors.red.shade700
+                                        : Colors.green.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// INLINE EDITABLE QUANTITY FIELD
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: 18,
+                            color: Colors.orange.shade800,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "TAP TO ENTER QUANTITY",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      SizedBox(
+                        width: 170,
+                        child: Material(
+                          elevation: 2,
+                          borderRadius: BorderRadius.circular(18),
+                          shadowColor: Colors.black12,
+                          child: TextField(
+                            controller: controller.quantityController,
+                            textAlign: TextAlign.center,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            autofocus: false,
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade900,
+                            ),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              hintText: "0",
+                              suffixIcon: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                  color: Colors.orange.shade400,
+                                ),
+                              ),
+                              suffixIconConstraints: const BoxConstraints(
+                                minWidth: 24,
+                                minHeight: 24,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: Colors.orange.shade200,
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: Colors.orange.shade700,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// SELECT COMPANY CARD (UPDATES DYNAMICALLY)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Obx(() {
+                    final hasCompany = controller.selectedCompany.isNotEmpty;
+                    final compName = controller.selectedCompany["companyName"] ??
+                        controller.selectedCompany["name"] ??
+                        "Select Company";
+                    final subTitle = hasCompany
+                        ? (controller.selectedCompany["name"] ?? "Selected Recipient")
+                        : "Tap to choose recipient";
+
+                    return Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      elevation: 1,
+                      shadowColor: Colors.black12,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          await getCompData("view", "");
+                          if (!context.mounted) return;
+                          searchCompany(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: hasCompany
+                                      ? Colors.green.shade50
+                                      : Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  hasCompany
+                                      ? Icons.check_circle_rounded
+                                      : Icons.business_rounded,
+                                  color: hasCompany
+                                      ? Colors.green.shade700
+                                      : Colors.blue.shade700,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      compName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: hasCompany
+                                            ? Colors.black
+                                            : Colors.grey.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subTitle,
+                                      style: TextStyle(
+                                        color: hasCompany
+                                            ? Colors.green.shade800
+                                            : Colors.grey.shade600,
+                                        fontSize: 13,
+                                        fontWeight: hasCompany
+                                            ? FontWeight.w500
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 24),
+
+                /// CONFIRM ACTION BUTTON (DISABLES & HIDES WHEN ENTERED QTY > AVAILABLE)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Obx(() {
+                    final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
+                    final isExceeded = enteredQty > totalAvailable;
+
+                    // Must be valid (has recipient & quantity > 0) AND within stock limit
+                    final canSend = controller.isValid && !isExceeded;
+
+                    // Hides or disables the button when stock limit is exceeded
+                    if (isExceeded) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          "Cannot send: Quantity exceeds available stock",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: canSend
+                            ? () async{
+                          final qty = controller.quantityStr.value;
+                          final company = controller.selectedCompany;
+
+                          //print(company);
+
+                          await reqSendProduct(qty,productCode,company["subscriber"],company["companyName"],context);
+                          //await reqPayment(qty, company["uid"], context);
+
+                          debugPrint("=================================");
+                          debugPrint("DISPATCH SUBMITTED");
+                          debugPrint("Product: $productCode");
+                          debugPrint("Quantity Sent: $qty");
+                          debugPrint(
+                            "Recipient: ${company['companyName'] ?? company['name']}",
+                          );
+                          debugPrint("=================================");
+
+                          Get.back(); // Close sheet
+                        }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          disabledBackgroundColor: Colors.grey.shade300,
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.grey.shade500,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: canSend ? Colors.white : Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    ).then((_) {
+      controller.reset();
+    });
+  }
+  /// 2. SECONDARY BOTTOM SHEET: SEARCH & SELECT COMPANY
+  void searchCompany(BuildContext context) {
+    final SendStockController controller = Get.find<SendStockController>();
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          height: Get.height * 0.82,
+          decoration: const BoxDecoration(
+            color: Color(0xffF8F9FB),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30),
+            ),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+
+              /// Drag Handle
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// Title
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  "Choose recipient Company",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  "Select a company to send your stock to.",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              /// Search Input Field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(18),
+                  shadowColor: Colors.black12,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search company or phone...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (text) {
+                      // Implement search filtering logic here
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// Section Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Text(
+                      "Available Accounts",
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Expanded(
+                child: GetBuilder<StockQuery>(
+                  builder: (stockController) {
+                    if (stockController.compPick.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No accounts found",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: stockController.compPick.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = stockController.compPick[index];
+
+                        return Material(
+                          color: Colors.white,
+                          elevation: .5,
+                          borderRadius: BorderRadius.circular(18),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () {
+                              // Assign selected company map to SendStockController
+                              controller.selectCompany(
+                                Map<String, dynamic>.from(item),
+                              );
+
+                              // Close search modal and return to main bottom sheet
+                              Get.back();
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(.08),
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: Icon(
+                                      Icons.business,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item["companyName"] ?? "",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item["name"] ?? "",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 16,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
   void attachPicture(productCode,imgUrl){
     imgUrl=(imgUrl=='none')?'{}':imgUrl;
     Map<String, dynamic> imgVersion = jsonDecode(imgUrl);
@@ -1710,5 +3127,7 @@ final fontSizeData=13.0;
 
 //
 }
+
+
 
 

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../Query/StockQuery.dart';
+import '../../models/Topups.dart';
 import '../Homepage.dart';
+// Ensure you import your StockQuery controller path properly here
+// import 'path_to_your_stock_query.dart';
 
 class SalesPage extends StatefulWidget {
   const SalesPage({super.key});
@@ -15,16 +19,99 @@ class _SalesPageState extends State<SalesPage> {
   int _selectedIndex = 3;
   final TextEditingController _searchController = TextEditingController();
 
+  // GetX Controller instance
+  final StockQuery _stockQuery = Get.find<StockQuery>();
+
+  // State Management Variables
+  bool _isLoading = true;
+  List<dynamic> _rawStockPayList = [];
+  List<dynamic> _filteredStockPayList = [];
+  // Place this inside your _SalesPageState class or as a helper list
+  final List<Color> _accentColors = [
+    const Color(0xFF1A315E), // Deep Navy
+    Colors.teal.shade500,
+    Colors.purple.shade500,
+    Colors.amber.shade700,
+    Colors.indigo.shade500,
+    Colors.pink.shade400,    // Standard Flutter alternative to Rose
+    Colors.green.shade600,   // Standard Flutter alternative to Emerald
+    Colors.cyan.shade600,
+    Colors.deepOrange.shade400,
+    Colors.blue.shade600,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStockPayData();
+    _searchController.addListener(_onSearchChanged);
+  }
+
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
+
+  // Fetch API Data from StockQuery Controller
+  Future<void> _fetchStockPayData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Topups parameter passed as needed by your controller
+      final response = await _stockQuery.viewReqStockPay(Topups());
+
+      if (response != null && response.data != null) {
+        // Adjust key according to API response wrapper (e.g., response.data["result"] or response.data)
+        final List<dynamic> data = response.data is List
+            ? response.data
+            : (response.data["result"] ?? response.data["data"] ?? []);
+
+        setState(() {
+          _rawStockPayList = data;
+          _filteredStockPayList = data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint("Error fetching stock pay details: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Live Client-Side Search Filter
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase().trim();
+    if (query.isEmpty) {
+      setState(() => _filteredStockPayList = _rawStockPayList);
+    } else {
+      setState(() {
+        _filteredStockPayList = _rawStockPayList.where((item) {
+          final uid = (item['uid'] ?? '').toString().toLowerCase();
+          final payer = (item['payer'] ?? '').toString().toLowerCase();
+          final receiver = (item['OwnerAmount'] ?? '').toString().toLowerCase();
+          final purpose = (item['purpose'] ?? '').toString().toLowerCase();
+          final status = (item['status'] ?? item['payment_status'] ?? '').toString().toLowerCase();
+          return uid.contains(query) ||
+              payer.contains(query) ||
+              receiver.contains(query) ||
+              purpose.contains(query) ||
+              status.contains(query);
+        }).toList();
+      });
+    }
+  }
+
   // Opens the improved multi-product breakdown bottom sheet
   void _showSalesDetailsBottomSheet({
     required String orderNumber,
     required String uid,
+    required String receiver,
     required String clientName,
+    required String status,
     required List<Map<String, dynamic>> products,
     required String shippingFee,
     required String totalAmount,
@@ -80,7 +167,7 @@ class _SalesPageState extends State<SalesPage> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Order $orderNumber • UID: $uid',
+                        'Status: ${status.toUpperCase()} • UID: $uid • Receiver: $receiver',
                         style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
                     ],
@@ -99,7 +186,7 @@ class _SalesPageState extends State<SalesPage> {
                       ),
                     ),
                     Text(
-                      totalAmount,
+                      '\$$totalAmount',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -114,7 +201,17 @@ class _SalesPageState extends State<SalesPage> {
 
             // Scrollable List of Multiple Products
             Flexible(
-              child: ListView.separated(
+              child: products.isEmpty
+                  ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    "No product items listed.",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                ),
+              )
+                  : ListView.separated(
                 shrinkWrap: true,
                 physics: const BouncingScrollPhysics(),
                 itemCount: products.length,
@@ -334,12 +431,12 @@ class _SalesPageState extends State<SalesPage> {
         ),
         child: TextField(
           controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Search by sales name, UID, or agent...',
-            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-            prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+          decoration: const InputDecoration(
+            hintText: 'Search by status, name, UID, receiver, or payer...',
+            hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+            prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: EdgeInsets.symmetric(vertical: 14),
           ),
           style: const TextStyle(fontSize: 14),
         ),
@@ -347,7 +444,7 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  // Cleaned Up Sales List Section
+  // Sales List Section Powered by StockQuery API
   Widget _buildSalesListSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -358,94 +455,95 @@ class _SalesPageState extends State<SalesPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Recent Sales Records',
+                'Recent Request Transfer',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A315E),
                 ),
               ),
-              Text(
-                'See All',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade700,
+              TextButton(
+                onPressed: _fetchStockPayData,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Refresh',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade700,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _buildSalesItemCard(
-            salesName: 'Enterprise Server Migration License',
-            uid: 'SLS-98421-X',
-            amount: '\$12,500.00',
-            byName: 'Sarah Jenkins',
-            dateCaptured: 'July 01, 2026 • 14:32',
-            isHighValue: true,
-            products: [
-              {
-                'name': 'Enterprise Server License Upgrade',
-                'price': '\$2,500.00',
-                'qty': '5',
-                'delivered': '5', // Fully delivered
-                'itemTotal': '\$12,500.00',
+
+          // Loading & Data State Handling
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 30),
+                child: CircularProgressIndicator(color: Color(0xFF1A315E)),
+              ),
+            )
+          else if (_filteredStockPayList.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No stock transfers found.',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _filteredStockPayList.length,
+              itemBuilder: (context, index) {
+                final item = _filteredStockPayList[index];
+
+                final String uid = item['uid'] ?? 'N/A';
+                final String receiver = item['OwnerAmount'] ?? 'N/A';
+                final String amount = item['amount'] ?? '0';
+                final String purpose = item['purpose'] ?? 'Stock Transfer';
+                final String createdAt = item['created_at'] ?? 'N/A';
+                final String payer = item['payer'] ?? 'Unknown Payer';
+               // final String status = item['status'] ?? item['payment_status'] ?? 'Pending';
+                String status ="Pending";
+
+                // 🎨 Get a distinct color per card based on its UID or index
+                final Color itemColor = _accentColors[uid.hashCode.abs() % _accentColors.length];
+                return _buildSalesItemCard(
+                  salesName: purpose,
+                  uid: uid,
+                  receiver: receiver,
+                  paymentStatus: status,
+                  amount: '\$$amount',
+                  byName: payer,
+                  dateCaptured: createdAt,
+                  accentColor: itemColor, // Pass color here
+                  isHighValue: (double.tryParse(amount) ?? 0) >= 500,
+                  products: (item['products'] as List<dynamic>?)
+                      ?.map((e) => Map<String, dynamic>.from(e))
+                      .toList() ??
+                      [],
+                  onPrintPayment: () {
+                    // TODO: Add confirm & print action handler here
+                  },
+                );
               },
-              {
-                'name': 'SaaS Cloud Architecture Seats',
-                'price': '\$616.66',
-                'qty': '3',
-                'delivered': '1', // Partially delivered
-                'itemTotal': '\$1,850.00',
-              }
-            ],
-          ),
-          _buildSalesItemCard(
-            salesName: 'SaaS Business Premium Package',
-            uid: 'SLS-23841-A',
-            amount: '\$1,850.00',
-            byName: 'Alex Rivera',
-            dateCaptured: 'June 29, 2026 • 09:15',
-            products: [
-              {
-                'name': 'Enterprise Server License Upgrade',
-                'price': '\$2,500.00',
-                'qty': '5',
-                'delivered': '5', // Fully delivered
-                'itemTotal': '\$12,500.00',
-              },
-              {
-                'name': 'SaaS Cloud Architecture Seats',
-                'price': '\$616.66',
-                'qty': '3',
-                'delivered': '1', // Partially delivered
-                'itemTotal': '\$1,850.00',
-              }
-            ],
-          ),
-          _buildSalesItemCard(
-            salesName: 'Hardware Fleet Upgrade (Tier 2)',
-            uid: 'SLS-77412-B',
-            amount: '\$6,420.00',
-            byName: 'Sarah Jenkins',
-            dateCaptured: 'June 28, 2026 • 16:45',
-            products: [
-              {
-                'name': 'Enterprise Server License Upgrade',
-                'price': '\$2,500.00',
-                'qty': '5',
-                'delivered': '5', // Fully delivered
-                'itemTotal': '\$12,500.00',
-              },
-              {
-                'name': 'SaaS Cloud Architecture Seats',
-                'price': '\$616.66',
-                'qty': '3',
-                'delivered': '1', // Partially delivered
-                'itemTotal': '\$1,850.00',
-              }
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -455,22 +553,44 @@ class _SalesPageState extends State<SalesPage> {
   Widget _buildSalesItemCard({
     required String salesName,
     required String uid,
+    required String receiver,
+    required String paymentStatus,
     required String amount,
     required String byName,
     required String dateCaptured,
+    required Color accentColor,
     required List<Map<String, dynamic>> products,
     bool isHighValue = false,
+    VoidCallback? onPrintPayment,
   }) {
+    // Dynamic Status Color Switch (PENDING = Orange)
+    final String cleanStatus = paymentStatus.toUpperCase();
+
+    Color statusBgColor;
+    Color statusTextColor;
+
+    if (cleanStatus == 'PAID' || cleanStatus == 'COMPLETED' || cleanStatus == 'SUCCESS') {
+      statusBgColor = Colors.green.shade50;
+      statusTextColor = Colors.green.shade700;
+    } else if (cleanStatus == 'FAILED' || cleanStatus == 'CANCELLED') {
+      statusBgColor = Colors.red.shade50;
+      statusTextColor = Colors.red.shade700;
+    } else {
+      // Default / PENDING -> High contrast Orange Badge
+      statusBgColor = Colors.orange.shade100;
+      statusTextColor = Colors.deepOrange.shade800;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -482,34 +602,59 @@ class _SalesPageState extends State<SalesPage> {
               // Dynamic Visual Accent Stripe
               Container(
                 width: 4,
-                color: isHighValue ? const Color(0xFF1A315E) : Colors.teal.shade400,
+                color:accentColor,
               ),
 
               // Core Information Fields
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Left Side: Orange PENDING Status (on top of UID) & Sales Name
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Payment Status Badge (Top-Left)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusBgColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    cleanStatus,
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusTextColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+
+                                // UID Directly Below Status
                                 Text(
-                                  uid,
+                                  'UID: $uid',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue.shade800,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.3,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
+
+                                // Sales Name Purpose
                                 Text(
                                   salesName,
                                   style: const TextStyle(
@@ -523,7 +668,9 @@ class _SalesPageState extends State<SalesPage> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
+
+                          // Amount
                           Text(
                             amount,
                             style: const TextStyle(
@@ -534,19 +681,19 @@ class _SalesPageState extends State<SalesPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
 
                       // Secondary Metadata Footer
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Agent: $byName',
-                            style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            'Payer: $byName',
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                           ),
                           Text(
                             dateCaptured,
-                            style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                           ),
                         ],
                       ),
@@ -555,31 +702,97 @@ class _SalesPageState extends State<SalesPage> {
                 ),
               ),
 
-              // Minimalist Tap Target to View Details
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                    onTap: () => _showSalesDetailsBottomSheet(
-                      //orderNumber: orderNumber,
-                      orderNumber: "test",
-                      uid: uid,
-                      //clientName: clientName,
-                      clientName: "ClientName",
-                      //products: products,
-                      products: products,
-                      //shippingFee: shippingFee,
-                      shippingFee: "400",
-                      totalAmount: amount,
+              // Vertical Separator
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: Colors.grey.shade200,
+              ),
+
+              // Right-Side Action Icons Column with Receiver Right On Top
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Receiver badge positioned directly above right icons
+                  Container(
+                    margin: const EdgeInsets.only(top: 6, left: 4, right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A315E).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: Colors.grey,
+                    child: Text(
+                      'Receiver: $receiver',
+                      style: const TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A315E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
+
+                  // Actions Group
+                  Column(
+                    children: [
+                      // Print Action
+                      Tooltip(
+                        message: 'Confirm Payment & Print',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onPrintPayment,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              child: Icon(
+                                Icons.print_outlined,
+                                size: 18,
+                                color: Colors.teal.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Horizontal separator between action icons
+                      Container(
+                        width: 20,
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+
+                      // View Details Action
+                      Tooltip(
+                        message: 'View Details',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showSalesDetailsBottomSheet(
+                              orderNumber: uid,
+                              uid: uid,
+                              receiver: receiver,
+                              status: paymentStatus,
+                              clientName: byName,
+                              products: products,
+                              shippingFee: "0",
+                              totalAmount: amount.replaceAll('\$', ''),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              child: Icon(
+                                Icons.visibility_outlined,
+                                size: 18,
+                                color: Color(0xFF1A315E),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

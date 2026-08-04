@@ -145,6 +145,13 @@ class _SettingCompState extends State<SettingComp> {
             const SizedBox(height:5,),
             GestureDetector(
                 onTap: (){
+                  product();
+                },
+                child: detailsProfile("Stocks",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,product)),
+
+            const SizedBox(height:5,),
+            GestureDetector(
+                onTap: (){
                   spending();
                 },
 
@@ -167,7 +174,7 @@ class _SettingCompState extends State<SettingComp> {
                 onTap: (){
                   dept();
                 },
-                child: detailsProfile("Dept",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,dept)),//Last Time Purchase
+                child: detailsProfile("Dettes",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,dept)),//Last Time Purchase
        //Last Time Purchase
             const SizedBox(height:5,),
             GestureDetector(
@@ -175,12 +182,7 @@ class _SettingCompState extends State<SettingComp> {
                   adminPayment();
                 },
                 child: detailsProfile("Admin Payment",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,adminPayment)),
-            const SizedBox(height:5,),
-            GestureDetector(
-                onTap: (){
-                  product();
-                },
-                child: detailsProfile("Products",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,product)),//Last Time Purchase
+  //Last Time Purchase
             const SizedBox(height:5,),
             GestureDetector(
                 onTap: (){

@@ -1,11 +1,10 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as Math;
-import '../Query/AdminQuery.dart';
-import '../Query/StockQuery.dart';
 
 class ConstantClassUtil extends GetxController
 {
@@ -20,9 +19,9 @@ class ConstantClassUtil extends GetxController
   static const urlApp="https://sanboxstock.appdev.live";*/
   /*static const String urlApp =
       "https://stockapi.appdev.live";*/
-  static const String urlApp =
-  "https://seekers-similarly-milwaukee-selected.trycloudflare.com";
-     // "https://stockapi.appdev.live";
+  static const String urlApp ="https://volt-gbp-kijiji-hampshire.trycloudflare.com";
+      //"https://stockapi.appdev.live";
+  //"https://volt-gbp-kijiji-hampshire.trycloudflare.com";
 
   static const String urlLink="$urlApp/api";
 
@@ -162,6 +161,73 @@ class ConstantClassUtil extends GetxController
     buffer.writeln('====================');
 
     return buffer.toString();
+  }
+  // Clean, reusable loading dialog
+  void showLoadingDialog({String message = "Loading..."}) {
+    //if (Get.isDialogOpen == true) return; // Prevent duplicate dialogs
+
+    Get.dialog(
+      PopScope(
+        canPop: false, // Prevents Android hardware back button from closing it
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            constraints: const BoxConstraints(minWidth: 140, maxWidth: 220),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Hug content instead of hardcoded height
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5, // Thinner strokes feel far more refined
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                    strokeCap: StrokeCap.round, // Rounded edges on the indicator arc
+                  ),
+                ),
+                if (message.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF2D3748), // Dark, slate-grey tone
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                      height: 1.2,
+                      decoration: TextDecoration.none, // Removes yellow debug underline
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.25), // Softened backdrop overlay
+      transitionDuration: const Duration(milliseconds: 200),
+      transitionCurve: Curves.easeOutCubic,
+    );
+  }
+
+  void hideLoadingDialog() {
+    if (Get.isDialogOpen == true) {
+      Get.back(); // close the loading dialog
+    }
   }
   Future<void> shareToWhatsApp(String phone, String message) async {
     // 1. Prepare the URI

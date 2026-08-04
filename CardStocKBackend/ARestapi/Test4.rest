@@ -2,12 +2,12 @@
 ##@email=company@gmail.com
 ##@PhoneNumber=+250782389359
 @app_vers=1.0.0
-@email=ceke@gmail.com
+@email=ange@gmail.com
 ##@PhoneNumber=+243464646
 ##@password=1
-@PhoneNumber=+2507888889
+@PhoneNumber=+250790954158
 @password=1
-@Auth_token=1227|ITjLKw47tyfl2iYyrooYzsc5vMHnlVYZlBMvGKxI
+@Auth_token=1476|EmkaZpQUP73ucCsLGu6RqGj09D6rp0KwzMl6mL7q
 ## Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
@@ -28,6 +28,15 @@ Authorization: Bearer {{Auth_token}}
 
 
 }
+### payment Admin View no Approval
+GET  {{baseUrl}}/viewReqStockPay
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidReqPay":"kebineericMuna_1668935525",
+ "app_vers":"{{app_vers}}"
+}
 ### reqPayment
 #### Mini AccountViewRecReqStock
 POST  {{baseUrl}}/reqPaymentStock
@@ -36,11 +45,24 @@ Authorization: Bearer {{Auth_token}}
 
 {
 "amount":"200",
+"uidReceiver":"uidReceiver",
 "purpose":"kwishyura Stock",
 "commentData":"Nishyuye Theo",
  "app_vers":"{{app_vers}}"
 
 
+
+}
+###received Stock, subscriberSub here is The receiver done
+POST  {{baseUrl}}/StockPayAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_ws_1785481069",
+"uidUserSub":"kebineericMuna_1668935525",
+"receivedSub":"17500",
+ "app_vers":"{{app_vers}}"
 
 }
 ### reqPayment
