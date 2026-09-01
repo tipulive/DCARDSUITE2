@@ -32,7 +32,7 @@ class SetDeptPage extends StatelessWidget {
 
 
       body:SetDeptComp(),
-      bottomNavigationBar:HomeNavigator(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

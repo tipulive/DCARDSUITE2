@@ -16,7 +16,7 @@ class SetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
    // String argument = Get.arguments as String;
-    Map<String, dynamic> arguments = Get.arguments as Map<String, dynamic>;
+   // Map<String, dynamic> arguments = Get.arguments as Map<String, dynamic>;
 
 
 
@@ -34,14 +34,14 @@ class SetPage extends StatelessWidget {
               //Get.toNamed('settings');
             },
           ),
-          title: Center(child:  Text("${arguments["title"]}",style:GoogleFonts.pacifico(fontSize:15,color: Colors.teal,fontWeight: FontWeight.w700)),
+          title: Center(child:  Text("All Sales",style:GoogleFonts.pacifico(fontSize:15,color: Colors.teal,fontWeight: FontWeight.w700)),
           ),
         ),
       ),
 
 
       body:dynamicMethod(),
-      bottomNavigationBar:const HomeNavigator(),
+        bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

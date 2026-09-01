@@ -28,7 +28,7 @@ class SetPartPage extends StatelessWidget {
       //backgroundColor: Color(0xff010a0e),
 
       body:const SetPartComp(),
-      bottomNavigationBar:const HomeNavigator(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

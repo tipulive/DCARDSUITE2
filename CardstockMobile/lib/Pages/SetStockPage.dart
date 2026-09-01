@@ -29,7 +29,7 @@ class SetStockPage extends StatelessWidget {
 
 
       body:SetStockComp(),
-      bottomNavigationBar:HomeNavigator(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

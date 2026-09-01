@@ -29,7 +29,7 @@ class SetOrderPage extends StatelessWidget {
 
 
       body:SetOrderComp(),
-      bottomNavigationBar:HomeNavigator(),
+        bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

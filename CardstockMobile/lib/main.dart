@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 import 'Pages/routes.dart';
+import 'Query/cart_controller.dart';
 import 'Query/StockQuery.dart';
 import 'Utilconfig/PromotionQData.dart';
 import 'Utilconfig/ConstantClassUtil.dart';
@@ -46,6 +47,7 @@ void main() async{
   //i may add  Wakelock.disable(); // to make apps to go on sleep mode
   /*this will make apps not going to sleep Mode*/
   runApp(const MyApp());
+  Get.put(CartController(), permanent: true);
   Get.put(StockQuery(), permanent: true);
   Get.put(PromotionQData(), permanent: true);
 
@@ -134,7 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child:Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(ConstantClassUtil.appVers),
+               Text("V${AppInfo.version}"),
               const Text("Welcome TO Our Shop"),
               Container(
                 decoration: BoxDecoration(

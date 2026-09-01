@@ -101,7 +101,7 @@ class _SettingCompState extends State<SettingComp> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(width:25),
-                          Text(Get.put(AdminQuery()).obj["result"][0]["subscriber"]),
+                          Text((Get.put(AdminQuery()).obj["result"][0]["subscriber"]).split('_').first),
                           const SizedBox(width: 5),
                           const Icon(Icons.arrow_drop_down),
                         ],
@@ -150,19 +150,14 @@ class _SettingCompState extends State<SettingComp> {
                 child: detailsProfile("Stocks",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,product)),
 
             const SizedBox(height:5,),
-            GestureDetector(
+            /*GestureDetector(
                 onTap: (){
                   spending();
                 },
 
     child: detailsProfile("Account",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,account)),//Last Time Purchase
-    const SizedBox(height:5,),
-    GestureDetector(
-    onTap: (){
-    account();
-    },
-                child: detailsProfile("Spendings",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,spending)),//Last Time Purchase
-            const SizedBox(height:5,),
+    const SizedBox(height:5,),*/
+
             GestureDetector(
                 onTap: (){
                   contactFunc();
@@ -177,7 +172,7 @@ class _SettingCompState extends State<SettingComp> {
                 child: detailsProfile("Dettes",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,dept)),//Last Time Purchase
        //Last Time Purchase
             const SizedBox(height:5,),
-            GestureDetector(
+         /*   GestureDetector(
                 onTap: (){
                   adminPayment();
                 },
@@ -224,7 +219,9 @@ class _SettingCompState extends State<SettingComp> {
                   quickBoHistfunc();
                 },
                 child: detailsProfile("QuickBonus",Icons.paid,"",0xbfebf1ef,"textright",Icons.arrow_forward,"200\$",0xffffffff,quickBoHistfunc)),
+
             const SizedBox(height:5,),
+          */
 
             GestureDetector(
                 onTap: (){
@@ -237,14 +234,22 @@ class _SettingCompState extends State<SettingComp> {
               onTap: (){
                 withdrawBalanceFunc();
               },
-                child: detailsProfile('WithDraw Balance',Icons.payments_rounded,"$balance\$",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,withdrawBalanceFunc)),
+                child: detailsProfile('Balance',Icons.payments_rounded,"$balance\$",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,withdrawBalanceFunc)),
+
+
             const SizedBox(height:5,),
             GestureDetector(
+                onTap: (){
+                  spending();
+                },
+                child: detailsProfile("Spendings",Icons.calendar_month_outlined,"",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,spending)),//Last Time Purchase
+            const SizedBox(height:5,),
+         /*   GestureDetector(
                 onTap: (){
                   withdrawBonusFunc();
                 },
                 child: detailsProfile("Bonus History",Icons.redeem,"$bonus\$",0xffffffff,"textright",Icons.arrow_forward,"200\$",0xffffffff,withdrawBonusFunc)),
-            const SizedBox(height:5,),
+            const SizedBox(height:5,),*/
             GestureDetector(
                 onTap: () {
                   Get.dialog(
@@ -256,6 +261,7 @@ class _SettingCompState extends State<SettingComp> {
                           style: ElevatedButton.styleFrom(
 
                             //primary: Colors.grey[300],
+                            foregroundColor:const Color(0xffffffff),
                             backgroundColor: const Color(0xff9a1c55),
                             elevation:0,
                           ),
@@ -590,7 +596,7 @@ repay() async{
 }
 employe() async{
 
-  Get.to(() =>const employePage());
+  //Get.to(() =>const employePage());
 
 }
 product() async{

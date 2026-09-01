@@ -106,7 +106,32 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
     return  Column(
       children: [
         //ProfilePic().profile(),
-        Center(child: Text(viewTitle)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+
+            Center(child: Text(viewTitle)),
+(advancedSearch=='today' || advancedSearch=='choosedate')?
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.share, color: Colors.blue),
+              onPressed: () async {
+                final salesData=await reportSales();
+
+                if(salesData!="0")
+                  {
+                    //print(mydata);
+
+
+                    final shareMsg = ConstantClassUtil().buildReportSalesWhatsAppMessage(salesData["result"],salesData["reportDate"]);
+
+                    await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+                  }
+
+              },
+            ):SizedBox.shrink(),
+          ],
+        ),
 
         Padding(
           padding:const EdgeInsets.fromLTRB(8,10,8,0),
@@ -851,6 +876,19 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
     viewData('test',"false");
 
   }
+  reportSales() async{
+
+//print(advancedSearch);
+
+    var resultData=(await StockQuery().reportSales(Topups(startlimit:limit,endlimit:_page,advancedSearch:advancedSearch,optionCase:"allSales",created_at:thisDate,updated_at:toDate))).data;
+
+   // print(resultData);
+    if(resultData["status"])
+    {
+       return resultData;
+    }
+    return "0";
+  }
   viewData(nameVal,searchVal) async{
     if(isLoading) return;
     isLoading=true;
@@ -859,7 +897,7 @@ class _SetSaleCompState extends State<SetAllSaleComp> {
 
     var resultData=(await StockQuery().viewAnySales(Topups(startlimit:limit,endlimit:_page,name:nameVal,optionCase:"$searchVal",advancedSearch:advancedSearch,created_at:thisDate,updated_at:toDate))).data;
 
-   // print(resultData);
+    print(resultData);
     if(resultData["status"])
     {
 

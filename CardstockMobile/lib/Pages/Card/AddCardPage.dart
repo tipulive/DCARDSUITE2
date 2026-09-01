@@ -202,7 +202,7 @@ class _AddCardPageState extends State<AddCardPage> {
             ),
         ],
       ),
-      bottomNavigationBar:HomeNavigator(),
+      bottomNavigationBar:HomeNavigator(currentIndex: 3),
 
     );
 

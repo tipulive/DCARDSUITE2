@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../Query/AdminQuery.dart';
@@ -461,6 +462,50 @@ class StockQuery extends GetxController{
       return null;
     }
   }
+
+  //display and search Account
+  Future<dynamic> sharing(Topups topData) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+//view,search
+    final params = {
+      "optionCase":topData.optionCase,
+      "uidOwner":topData.uid,
+      "name":topData.name,
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/sharing", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+
   //display and search Account
   Future<dynamic> miniAccount(Topups topData) async {
     final adminData = Get.find<AdminQuery>().obj;
@@ -563,6 +608,7 @@ class StockQuery extends GetxController{
         "phoneNumber":user.phone,
         "platform":user.platform,
         "isStatus":user.status,//offNotPick means gonna pick any
+        //"isStatus":"none",
         "isAdmin":topData.optionCase,
         "limitData":topData.startlimit,
         "searchOption":topData.searchOption,
@@ -898,6 +944,46 @@ class StockQuery extends GetxController{
       //return false;
     }
   }
+  reportSales(Topups topupData) async{//balance and Bonus Widthdraw History
+    try {
+
+      var params =  {
+
+        "LimitStart":topupData.endlimit,  //page
+        "LimitEnd":topupData.startlimit,//limit
+
+        "optionCase":topupData.optionCase,
+        "advancedSearch":topupData.advancedSearch,
+        "thisDate":topupData.created_at,
+        "toDate":topupData.updated_at??'none'
+
+      };
+      //print(params);
+      String authToken =(Get.put(AdminQuery()).obj)["result"][0]["AuthToken"];
+      var url="${ConstantClassUtil.urlLink}/reportSales";
+      var response = await Dio().get(url,
+        options: Options(headers: {
+          HttpHeaders.contentTypeHeader: "application/json",
+          HttpHeaders.authorizationHeader:"Bearer $authToken"
+        }),
+        queryParameters: params,
+      );
+      if (response.statusCode == 200) {
+
+
+
+        return response;
+
+
+      } else {
+        return false;
+        //print(false);
+      }
+    } catch (e) {
+      //return false;
+
+    }
+  }
   viewAnySales(Topups topupData) async{//balance and Bonus Widthdraw History
     try {
 
@@ -1044,6 +1130,7 @@ class StockQuery extends GetxController{
 
     http.StreamedResponse response = await request.send();
 
+    print("sending Data");
     if (response.statusCode == 200) {
       String responseBody = await response.stream.bytesToString();
       dynamic jsonResponse = jsonDecode(responseBody); // Parse JSON response
@@ -1085,6 +1172,7 @@ class StockQuery extends GetxController{
         //print(false);
       }
     } catch (e) {
+
       //return false;
     }
   }
@@ -1605,7 +1693,7 @@ class StockQuery extends GetxController{
 
     }
   }
-  Future<dio.Response?> viewRecReqStock(Topups topupData) async {
+  Future<dio.Response?> viewRecReqStock(Participated part) async {
     try {
       final dioClient = dio.Dio();
 
@@ -1615,7 +1703,7 @@ class StockQuery extends GetxController{
       final response = await dioClient.get(
         "${ConstantClassUtil.urlLink}/ViewRecReqStock",
         queryParameters: {
-          "status":"1",
+          "status":part.status,
           "app_vers": AppInfo.version,
         },
         options: dio.Options(
@@ -1650,7 +1738,11 @@ class StockQuery extends GetxController{
     ApiClient.setAuthToken(authToken);
 
     final params = {
-      "productCode":product.productName,
+      "productCode":product.uid,
+      "productName":product.productName,
+      "pcs":product.giftPcs,
+      "img_url":product.giftName,//as
+      "price":product.price,
       "recSubscriber":product.subscriber,
       "commentData":product.description,
       "req_qty":product.reqQty,
@@ -1679,6 +1771,56 @@ class StockQuery extends GetxController{
       return null;
     }
   }
+  Future<dynamic> stockCancelStock(Participated participate) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "uid":participate.uid,//uid of reqPayment
+      "status":participate.status,
+
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/stockCancelStock", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+
+      ConstantClassUtil().hideLoadingDialog();
+      Get.snackbar(
+        'Error',
+        'Failed to send request. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
   Future<dynamic> receiveStock(QuickBonus product) async {
     final adminData = Get.find<AdminQuery>().obj;
     final String? authToken = adminData["result"]?[0]?["AuthToken"];
@@ -1694,7 +1836,7 @@ class StockQuery extends GetxController{
     final params = {
       "uid":product.uid,
       "productCodeSub":product.productName,
-      "subscriberSub":product.subscriber,
+      "subscriberSub":product.subscriber,//sendersubscriber
       "req_qtySub":product.reqQty,
       "app_vers":AppInfo.version
     };
@@ -1728,7 +1870,7 @@ class StockQuery extends GetxController{
   //Request Stock and Send Stock
 
   //payAdmin and Withdraw
-  Future<dio.Response?> viewReqStockPay(Topups topupData) async {
+  Future<dio.Response?> viewReqStockPay(Participated part) async {
     try {
       final dioClient = dio.Dio();
 
@@ -1738,7 +1880,7 @@ class StockQuery extends GetxController{
       final response = await dioClient.get(
         "${ConstantClassUtil.urlLink}/viewReqStockPay",
         queryParameters: {
-         // "uidReqPay":"kebineericMuna_1668935525",
+         "status":part.status,
           "app_vers": AppInfo.version,
         },
         options: dio.Options(
@@ -1762,7 +1904,7 @@ class StockQuery extends GetxController{
   }
 
 
-  Future<dio.Response?> viewReqStockPayHist(Topups topupData) async {
+  Future<dio.Response?> viewReqStockPayHist(Participated part) async {
     try {
       final dioClient = dio.Dio();
 
@@ -1772,7 +1914,7 @@ class StockQuery extends GetxController{
       final response = await dioClient.get(
         "${ConstantClassUtil.urlLink}/viewReqStockPayHist",
         queryParameters: {
-
+          "status":part.status,
           "app_vers": AppInfo.version,
         },
         options: dio.Options(
@@ -1870,6 +2012,67 @@ class StockQuery extends GetxController{
         return null;
       }
     } on DioException catch (e) {
+
+      ConstantClassUtil().hideLoadingDialog();
+      Get.snackbar(
+        'Error',
+        'Failed to send request. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      debugPrint(
+        "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
+      );
+      return null;
+    } catch (e) {
+      debugPrint("Unexpected Error: $e");
+      return null;
+    }
+  }
+
+  Future<dynamic> cancelReqPayment(Participated participate) async {
+    final adminData = Get.find<AdminQuery>().obj;
+    final String? authToken = adminData["result"]?[0]?["AuthToken"];
+
+    if (authToken == null) {
+      debugPrint("AuthToken missing");
+      return null;
+    }
+
+    // ✅ Set token once (applies globally to Dio)
+    ApiClient.setAuthToken(authToken);
+
+    final params = {
+      "uid":participate.uid,//uid of reqPayment
+      "uidUserSub":participate.uidUser,
+      "status":participate.status,
+
+      "app_vers":AppInfo.version
+    };
+
+    try {
+      final response = await ApiClient.dio.post(
+        "/stockPayemtCancel", // ✅ baseUrl already handled
+        data: params,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data; // ✅ clean result
+      } else {
+        debugPrint("Unexpected status: ${response.statusCode}");
+        return null;
+      }
+    } on DioException catch (e) {
+
+      ConstantClassUtil().hideLoadingDialog();
+      Get.snackbar(
+        'Error',
+        'Failed to send request. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       debugPrint(
         "Dio Error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}",
       );

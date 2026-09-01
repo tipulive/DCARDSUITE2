@@ -31,7 +31,7 @@ class SetPaidDeptPage extends StatelessWidget {
 
 
       body:SetPaidDeptComp(),
-      bottomNavigationBar:HomeNavigator(),
+        bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

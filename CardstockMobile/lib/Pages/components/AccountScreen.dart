@@ -1,8 +1,10 @@
+import 'package:dstockapp/Pages/components/BottomNavigator/HomeNavigator.dart';
 import 'package:dstockapp/Pages/components/PaymentsPage.dart';
 import 'package:dstockapp/Pages/components/SalesPage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../Query/AdminQuery.dart';
 import '../../Query/SendStockController.dart';
 import '../../Query/StockQuery.dart';
 import '../../Query/account_controller.dart';
@@ -74,6 +76,47 @@ class _AccountScreenState extends State<AccountScreen> {
   int limitData = 10;
   bool searchValOption = false;
 
+
+  String _selectedAction = 'Pending';
+  String sStatus = "";
+  String sTitle = 'Recent Pending Request Transfer';
+  // Config data for action items
+  final List<Map<String, dynamic>> _actions = [
+
+    {
+      'statusC': '0',
+      'sTitle': 'Recent Pending Request Transfer',
+      'label': 'Pending',
+      'icon': Icons.receipt_long,
+      'color': Colors.orange,
+      'status': 'Pending'
+    },
+    {
+      'statusC': '1',
+      'sTitle': 'Recent Loading Transfer',
+      'label': 'Loading',
+      'icon': Icons.swap_horiz,
+      'color': Colors.blue,
+      'status': 'Loading'
+    },
+    {
+      'statusC': '2',
+      'sTitle': 'Recent Received Transfer',
+      'label': 'Received',
+      'icon': Icons.phone_android,
+      'color': Colors.purple,
+      'status': 'Received'
+    },
+    {
+      'statusC': '3',
+      'sTitle': 'Recent Cancelled Transfer',
+      'label': 'Cancelled',
+      'icon': Icons.qr_code_scanner,
+      'color': Colors.teal,
+      'status': 'Cancelled'
+    },
+  ];
+
   // ✅ Load both balance and transactions automatically on screen open
   @override
   void initState() {
@@ -88,7 +131,9 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _fetchRecentTransactions() async {
     setState(() => _isLoadingRecent = true);
     try {
-      final response = await myStockQuery.viewReqStockPay(Topups());
+      final response = await myStockQuery.viewReqStockPay(Participated(
+        status: "0"
+      ));
       if (response != null && response.data != null) {
         final List<dynamic> data = response.data is List
             ? response.data
@@ -123,15 +168,12 @@ class _AccountScreenState extends State<AccountScreen> {
     bool success = false;
 
     try {
-      final ownerData = box.get('owner');
-      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
-          ? ownerData[0]["uid"] ?? ""
-          : "";
+
 
       final resultData = await myStockQuery.reqPaymentStock(
         Participated(
           inputData: qty,
-          uidCreator: uidCreator,
+          uidCreator: uid,
           status: "Req Payment",
           promotion_msg: "req to receive Amount",
         ),
@@ -433,12 +475,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                // ----- Stock info box (no exceeding check) -----
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Obx(() {
                     final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
                     final remaining = totalAvailable - enteredQty;
-                    final isExceeded = enteredQty > totalAvailable;
 
                     return Container(
                       padding: const EdgeInsets.symmetric(
@@ -446,10 +488,10 @@ class _AccountScreenState extends State<AccountScreen> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: isExceeded ? Colors.red.shade50 : Colors.orange.shade50,
+                        color: Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isExceeded ? Colors.red.shade300 : Colors.orange.shade200,
+                          color: Colors.orange.shade200,
                           width: 1,
                         ),
                       ),
@@ -458,13 +500,10 @@ class _AccountScreenState extends State<AccountScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isExceeded ? Colors.red.shade100 : Colors.orange.shade100,
+                              color: Colors.orange.shade100,
                               shape: BoxShape.circle,
                             ),
-                            child: Text(
-                              isExceeded ? '⚠️' : '🥭',
-                              style: const TextStyle(fontSize: 20),
-                            ),
+                            child: const Text('🥭', style: TextStyle(fontSize: 20)),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -478,9 +517,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                       "Current Stock",
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: isExceeded
-                                            ? Colors.red.shade900
-                                            : Colors.orange.shade900,
+                                        color: Colors.orange.shade900,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -489,24 +526,18 @@ class _AccountScreenState extends State<AccountScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: isExceeded
-                                            ? Colors.red.shade700
-                                            : Colors.orange.shade800,
+                                        color: Colors.orange.shade800,
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  isExceeded
-                                      ? "Exceeds available stock!"
-                                      : "${remaining % 1 == 0 ? remaining.toInt() : remaining.toStringAsFixed(1)} Remaining after send",
+                                  "${remaining % 1 == 0 ? remaining.toInt() : remaining.toStringAsFixed(1)} Remaining after send",
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: isExceeded
-                                        ? Colors.red.shade700
-                                        : Colors.green.shade800,
+                                    color: Colors.green.shade800,
                                   ),
                                 ),
                               ],
@@ -601,6 +632,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                // ----- Company selection (unchanged) -----
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Obx(() {
@@ -690,33 +722,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   }),
                 ),
                 const SizedBox(height: 24),
+                // ----- Send button (exceeding check removed) -----
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: Obx(() {
-                    final enteredQty = double.tryParse(controller.quantityStr.value) ?? 0.0;
-                    final isExceeded = enteredQty > totalAvailable;
-
-                    final canSend = controller.isValid && !isExceeded;
-
-                    if (isExceeded) {
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Text(
-                          "Cannot send: Quantity exceeds available stock",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.red.shade900,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      );
-                    }
+                    // Only check if the form is valid (company selected + quantity > 0)
+                    final canSend = controller.isValid;
 
                     return SizedBox(
                       width: double.infinity,
@@ -725,9 +736,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             ? () async {
                           final qty = controller.quantityStr.value;
                           final company = controller.selectedCompany;
-                          // 🔥 Pass context to reqPayment
                           await reqPayment(qty, company["uid"], context);
-                          // No Get.back() here – reqPayment closes the sheet on success
                         }
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -973,6 +982,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     const SizedBox(height: 15),
                     _buildBalanceCard(),
                     const SizedBox(height: 16),
+
                     _buildFeatureGrid(),
                     const SizedBox(height: 16),
                     _buildRecentTransactionsSection(),
@@ -984,13 +994,14 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      //bottomNavigationBar: _buildBottomNavigationBar(),
+        bottomNavigationBar:const HomeNavigator(currentIndex: 2),
     );
   }
 
   Widget _buildHeaderProfile() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.0),
+    return  Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -998,11 +1009,11 @@ class _AccountScreenState extends State<AccountScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hey Sarah!',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+          Get.put(AdminQuery()).obj["result"][0]["name"],
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'My Account',
                 style: TextStyle(
                   color: Colors.white,
@@ -1012,7 +1023,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ],
           ),
-          CircleAvatar(
+          const CircleAvatar(
             radius: 20,
             backgroundColor: Colors.white24,
             child: Icon(Icons.person, color: Colors.white),
@@ -1045,7 +1056,7 @@ class _AccountScreenState extends State<AccountScreen> {
         child: Column(
           children: [
             const Text(
-              'TOTAL BALANCE',
+              'TOTAL GROSS SALES',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 12,
@@ -1055,10 +1066,10 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             const SizedBox(height: 8),
             Obx(() => Text(
-              controller.totalBalance.value,
+              '${controller.totalBalance.value}~${controller.amount.value}',
               style: const TextStyle(
                 color: Color(0xFF1A315E),
-                fontSize: 32,
+                fontSize: 30,
                 fontWeight: FontWeight.bold,
               ),
             )),
@@ -1068,71 +1079,387 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+
   Widget _buildFeatureGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Obx(() => GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.8,
+      child: Obx(() => Column(
         children: [
-          _buildGridCard(
-            icon: Icons.account_balance_wallet,
-            iconColor: Colors.blue,
-            title: 'AMOUNT',
-            subtitle: 'Available Funds',
-            value: controller.amount.value,
-            onTap: () => _showFeatureSnackbar('Available Funds', 'Your current spendable amount is ${controller.amount.value}'),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.8,
+            children: [
+              _buildGridCard(
+                icon: Icons.arrow_forward,
+                iconColor: Colors.blue,
+                title: 'TRANSFER',
+                subtitle: 'Sent Money',
+                value: controller.transfer.value,
+
+                onTap: () => _showFeatureSnackbar('Transfer Funds', 'Opening money transfer portal setup against total account valuation: ${controller.transfer.value}'),
+              ),
+              _buildGridCard(
+                icon: Icons.account_balance_wallet,
+                iconColor: Colors.blue,
+                title: 'AMOUNT',
+                subtitle: 'Received Funds',
+                value: controller.received.value,
+                onTap: () => _showFeatureSnackbar('Available Funds', 'Your current spendable amount is ${controller.received.value}'),
+              ),
+
+              _buildGridCard(
+                icon: Icons.card_giftcard,
+                iconColor: Colors.teal,
+                title: 'DETTES',
+                subtitle: 'Rewards Balance',
+                value: controller.dept.value,
+                onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.dept.value}!'),
+              ),
+              _buildGridCard(
+                icon: Icons.pie_chart,
+                iconColor: Colors.blue,
+                title: 'SPENDING',
+                subtitle: 'view Spending',
+                value: controller.spending.value,
+                onTap: () => showCustomBottomSheet(),
+              ),
+              _buildGridCard(
+                icon: Icons.card_giftcard,
+                iconColor: Colors.teal,
+                title: 'BONUS',
+                subtitle: 'Rewards Balance',
+                value: "${controller.bonus.value}  | qty:${controller.qtySpent.value}",
+                onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.bonus.value}!'),
+              ),
+              _buildGridCard(
+                icon: Icons.atm,
+                iconColor: Colors.teal,
+                title: 'WITHDRAW',
+                subtitle: 'Rewards Withdraw',
+                value: controller.withdraw.value,
+                onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.withdraw.value}!'),
+              ),
+
+            ],
           ),
-          _buildGridCard(
-            icon: Icons.card_giftcard,
-            iconColor: Colors.teal,
-            title: 'BONUS',
-            subtitle: 'Rewards Balance',
-            value: controller.bonus.value,
-            onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.bonus.value}!'),
+          const SizedBox(height: 4),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Quick Withdraw Details ',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A315E),
+                ),
+              ),
+              Text(
+                'Long Withdraw Details',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A315E),
+                ),
+              ),
+
+            ],
           ),
-          _buildGridCard(
-            icon: Icons.pie_chart,
-            iconColor: Colors.blue,
-            title: 'SPENDING',
-            subtitle: 'Monthly Summary',
-            value: controller.spending.value,
-            onTap: () => _showFeatureSnackbar('Monthly Spending', 'Total spent this month: ${controller.spending.value}'),
-          ),
-          _buildGridCard(
-            icon: Icons.arrow_forward,
-            iconColor: Colors.blue,
-            title: 'TRANSFER',
-            subtitle: 'Move Money',
-            value: '',
-            isActionOnly: true,
-            onTap: () => _showFeatureSnackbar('Transfer Funds', 'Opening money transfer portal setup against total account valuation: ${controller.totalBalance.value}'),
-          ),
-          _buildGridCard(
-            icon: Icons.atm,
-            iconColor: Colors.blue,
-            title: 'WITHDRAW',
-            subtitle: 'Cash Out',
-            value: controller.withdraw.value,
-            onTap: () => _showFeatureSnackbar('Withdrawal Limit', 'Remaining withdrawal room: ${controller.withdraw.value}'),
-          ),
-          _buildGridCard(
-            icon: Icons.local_offer,
-            iconColor: Colors.green,
-            title: 'QTY SPENT',
-            subtitle: 'Total Items This Month',
-            value: controller.qtySpent.value,
-            onTap: () => _showFeatureSnackbar('Items Count', 'You made ${controller.qtySpent.value} purchases this cycle.'),
+          const SizedBox(height: 4),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.8,
+            children: [
+              _buildGridCard(
+                icon: Icons.arrow_forward,
+                iconColor: Colors.deepOrange,
+                title: 'OUT',
+                subtitle: 'Qty Value',
+                value: controller.outPromoAssetQty.value,
+
+                onTap: () => _showFeatureSnackbar('Transfer Funds', 'Opening money transfer portal setup against total account valuation: ${controller.transfer.value}'),
+              ),
+              _buildGridCard(
+                icon: Icons.arrow_forward,
+                iconColor: Colors.blue,
+                title: 'OUT',
+                subtitle: 'Qty Value',
+                value: controller.promoAsset.value,
+
+                onTap: () => _showFeatureSnackbar('Transfer Funds', 'Opening money transfer portal setup against total account valuation: ${controller.transfer.value}'),
+              ),
+              _buildGridCard(
+                icon: Icons.account_balance_wallet,
+                iconColor: Colors.deepOrange,
+                title: 'AMOUNT',
+                subtitle: 'Promo Amount',
+                value: controller.outPromoAmount.value,
+                onTap: () => _showFeatureSnackbar('Available Funds', 'Your current spendable amount is ${controller.received.value}'),
+              ),
+              _buildGridCard(
+                icon: Icons.account_balance_wallet,
+                iconColor: Colors.blue,
+                title: 'AMOUNT',
+                subtitle: 'Promo Amount',
+                value: controller.promoAmount.value,
+                onTap: () => _showFeatureSnackbar('Available Funds', 'Your current spendable amount is ${controller.received.value}'),
+              ),
+
+              _buildGridCard(
+                icon: Icons.card_giftcard,
+                iconColor: Colors.deepOrange,
+                title: 'REWARDS',
+                subtitle: 'Rewards Balance',
+                value: controller.outProAssetQty.value,
+                onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.dept.value}!'),
+              ),
+              _buildGridCard(
+                icon: Icons.card_giftcard,
+                iconColor: Colors.blue,
+                title: 'REWARDS',
+                subtitle: 'Rewards Balance',
+                value: controller.proAssetQty.value,
+                onTap: () => _showFeatureSnackbar('Rewards Balance', 'You have earned ${controller.dept.value}!'),
+              ),
+
+
+            ],
           ),
         ],
       )),
     );
   }
 
+
+  void showCustomBottomSheet() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle Bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+
+            // Sheet Title
+            const Text(
+              'Select Option',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildTopTab(),
+            // Scrollable List of Cards
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: 4,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  return _buildListCard(
+                    title: 'Option ${index + 1}',
+                    subtitle: 'Description for option ${index + 1}',
+                    icon: Icons.layers_outlined,
+                    onTap: () {
+                      Get.back(); // Close bottom sheet
+                      // Add tap handling logic here
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+      isScrollControlled: true, // Allows sheet to height-fit dynamic content
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+// Custom Reusable List Card Widget
+  Widget _buildListCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      color: Colors.grey[100],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.blue),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+  Widget _buildTopTab(){
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A315E),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _actions.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              childAspectRatio: 0.8,
+              crossAxisSpacing: 8,
+            ),
+            itemBuilder: (context, index) {
+              final item = _actions[index];
+              final isSelected = _selectedAction == item['status'];
+              final Color color = item['color'];
+
+              return _buildActionButton(
+                label: item['label'],
+                icon: item['icon'],
+                color: color,
+                isSelected: isSelected,
+                onTap: () {
+                  // setState(() => _selectedAction = item['status']);
+                  setState(() {
+                    _selectedAction = item['status'];
+                    sStatus=item["statusC"];
+                    sTitle=item['sTitle'];
+                  });
+                  // print('${item['label']} selected');
+                  if(sStatus!="")
+                  {
+                    //_fetchStockPayData();
+
+
+                  }
+
+
+
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  //button navigator
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? color : Colors.transparent,
+          width: 1.5,
+        ),
+        boxShadow: isSelected
+            ? [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 0),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? color : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildGridCard({
     required IconData icon,
     required Color iconColor,
@@ -1431,6 +1758,14 @@ class _AccountScreenState extends State<AccountScreen> {
                             'Payer: $payer',
                             style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                           ),
+
+                        ],
+                      ),
+                      Row(
+
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+
                           Text(
                             createdAt,
                             style: TextStyle(fontSize: 10, color: Colors.grey.shade600),

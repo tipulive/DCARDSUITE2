@@ -105,7 +105,32 @@ class _SetSaleCompState extends State<SetSaleComp> {
     return  Column(
       children: [
         //ProfilePic().profile(),
+      Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+
         Center(child: Text(viewTitle)),
+        (advancedSearch=='today' || advancedSearch=='choosedate')?
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.share, color: Colors.blue),
+          onPressed: () async {
+            final salesData=await reportSales();
+
+            if(salesData!="0")
+            {
+              //print(mydata);
+
+
+              final shareMsg = ConstantClassUtil().buildReportSalesWhatsAppMessage(salesData["result"],salesData["reportDate"]);
+
+              await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+            }
+
+          },
+        ):SizedBox.shrink(),
+      ],
+    ) ,
 
         Padding(
           padding:const EdgeInsets.fromLTRB(8,10,8,0),
@@ -860,6 +885,19 @@ class _SetSaleCompState extends State<SetSaleComp> {
   {
     viewData('test',"false");
 
+  }
+  reportSales() async{
+
+//print(advancedSearch);
+
+    var resultData=(await StockQuery().reportSales(Topups(startlimit:limit,endlimit:_page,advancedSearch:advancedSearch,optionCase:"mySales",created_at:thisDate,updated_at:toDate))).data;
+
+    // print(resultData);
+    if(resultData["status"])
+    {
+      return resultData;
+    }
+    return "0";
   }
   viewData(nameVal,searchVal) async{
     if(isLoading) return;

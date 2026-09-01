@@ -18,7 +18,11 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 //import 'package:wakelock/wakelock.dart';
 import 'package:get/get.dart';
+import '../Query/FloatingCartBar.dart';
+import '../Query/cart_controller.dart';
+import '../Query/PricingBottomSheet.dart';
 import '../Utilconfig/ConstantClassUtil.dart';
+import '../Utilconfig/PageLoaderWrapper.dart';
 import '../Utilconfig/language/language.dart';
 import '../Pages/components/checkAppVersion.dart';
 
@@ -43,6 +47,7 @@ import '../Utilconfig/PromotionQData.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 
+import 'components/Promobadge.dart';
 import 'components/promo_badge.dart';
 
 
@@ -66,7 +71,7 @@ class _HomepageState extends State<Homepage> {
 
   List<dynamic> users=[];
   List<dynamic>qrSearch = [];
-  bool buyBtn=false;
+  bool buyBtn=true;
   bool expenseBtn=true;
 
   PromotionQuery promotionState=Get.put(PromotionQuery());
@@ -120,13 +125,13 @@ class _HomepageState extends State<Homepage> {
   var box=Hive.box("myBox");
   String selectedCurrency = "FRC";
   final products = [
-    PromoProduct(
+    const PromoProduct(
       id: '1',
       icon: Icons.wallet_giftcard,
       name: 'Wireless Earbuds',
       oldPrice: '\$19.99',
     ),
-    PromoProduct(
+    const PromoProduct(
       id: '2',
       icon: Icons.phone_iphone,
       name: 'Premium Phone Case',
@@ -134,7 +139,26 @@ class _HomepageState extends State<Homepage> {
     ),
     // ... up to 5 items (they scroll)
   ];
-
+  final Map<String, dynamic> rawPromoJson = {
+    "quick": [
+      {
+        "id": "promo_tH_1786160055",
+        "inStock": [
+          { "productName": "bombo", "qtyBonus": 4 }
+        ],
+        "BonusTotal": 200,
+      }
+    ],
+    "long": [
+      {
+        "id": "promo_Ml_1786153059",
+        "inStock": [
+          { "productName": "ifi", "qtyBonus": 1 }
+        ],
+        "BonusTotal": 100,
+      }
+    ]
+  };
 
   void showConfirmBottomSheet() async{
     String userProfile=(myStockQuery.userProfile)["uid"];
@@ -428,7 +452,7 @@ class _HomepageState extends State<Homepage> {
 
       var myPromo=myStockQuery.promo;
       Map<String, dynamic> data = jsonDecode(myPromo);
-     // print("hello");
+      // print("hello");
       var promo=(data["success"])?myPromo:'none';
 
       var resultData=(await StockQuery().submitOrder(Participated(uid:"Nyota_1672353378"
@@ -525,15 +549,16 @@ class _HomepageState extends State<Homepage> {
       resizeToAvoidBottomInset:myStockQuery.resizable,
 
 
-      body:Stack(
-        children: [
-
-          Column(
+      body:PageLoaderWrapper(
+          child:Stack(
             children: [
-              //Qr Code
-              //    const SizedBox(height: 40,),
 
-              /* ImageCardWidget(
+              Column(
+                children: [
+                  //Qr Code
+                  //    const SizedBox(height: 40,),
+
+                  /* ImageCardWidget(
                 mainImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
                 smallImageUrls: [
                   '${ConstantClassUtil.urlApp}/images/bg_10g6.jpg',
@@ -542,550 +567,550 @@ class _HomepageState extends State<Homepage> {
 
                 ], initialImageUrl: '${ConstantClassUtil.urlApp}/images/bg_1og2.jpg',
               ),*/
-              const SizedBox(height: 30,),
+                  const SizedBox(height: 30,),
 
-              InkWell(
-                onTap: (){
-                  getCompData("view","");
-                  searchCompany(context);
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-
-                    Text(
-                      Get.put(AdminQuery()).obj["result"] != null &&
-                          Get.put(AdminQuery()).obj["result"] is List &&
-                          Get.put(AdminQuery()).obj["result"].isNotEmpty
-                          ? Get.put(AdminQuery()).obj["result"][0]["name"].toString()
-                          : "",
-                      style: GoogleFonts.bebasNeue(
-                        fontSize: 20,
-                        color: Colors.red,
-                      ),
-                    ),
-
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                  InkWell(
+                    onTap: (){
+                      getCompData("view","");
+                      searchCompany(context);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(width:30),
+
                         Text(
-                            Get.put(AdminQuery()).obj["result"] != null &&
-                                Get.put(AdminQuery()).obj["result"] is List &&
-                                Get.put(AdminQuery()).obj["result"].isNotEmpty
-                                ? Get.put(AdminQuery()).obj["result"][0]["CompanyName"].toString()
-                                : "", style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.black)),
-                        const SizedBox(width: 5),
-                        const Icon(Icons.arrow_drop_down),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                          Get.put(AdminQuery()).obj["result"] != null &&
+                              Get.put(AdminQuery()).obj["result"] is List &&
+                              Get.put(AdminQuery()).obj["result"].isNotEmpty
+                              ? Get.put(AdminQuery()).obj["result"][0]["name"].toString()
+                              : "",
+                          style: GoogleFonts.bebasNeue(
+                            fontSize: 20,
+                            color: Colors.red,
+                          ),
+                        ),
 
-              GetBuilder<StockQuery>(
-                builder: (hideShowcontroller) {
-                  //return Text('Data: ${_controller.data}');
-                  return
-                    // (hideShowcontroller.userProfile["uid"]!='none')?
-                    (hideShowcontroller.hidePickClick)?
-                    InkWell(
-                      onTap: (){
-                        if(((Get.put(StockQuery()).order)["resultData"][0]["uid"])=="none") {
-                          pickDefaultUser(true,true);
-                        }
-                        else{
-                          pickDefaultUser(true,false);
-                        }
-                        //pick Default Account;
-                        //then Default Account Has set
-                        //if sales has edit Status,please you can not set default account
-                        //or you can not choose any Other Account,
-                      },
-
-                      child:  Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star, color: Colors.yellow), // Replace with your desired icon
-                          const SizedBox(width: 8.0), // Adjust the space between icon and text
-                          Text("${langV.languageV[(Get.put(StockQuery()).lang)][pageName]["pickDft"]}", style: const TextStyle(fontSize: 16.0)),
-                        ],
-                      ),
-
-                    ):
-                    const Visibility(
-                        visible:false,
-                        child: Text(""));
-                },
-              ),
-
-              // SearchBarField(search: _data,searchController:searchContro,PerformSearch:,),
-              SearchBarField(
-                searchBy:(text) async{
-                  setState(() {
-                    (Get.put(StockQuery()).updateSelected(text));
-
-                  });
-                  //(Get.put(StockQuery()).selectedOption),
-                } ,
-                // Correct: explicitly assigning null
-                searchMethod:(text) async{
-                  if (text!= searchText) {
-
-                    performSearch(text,"none");//note i must figure out how to avoid
-                    searchText=text;
-                  }else{
-
-
-
-                  }
-
-                },
-
-
-                scanProductMethod: (){
-
-                  scanProduct();
-                },
-                searchController: searchContro,
-              ),
-              if (Get.put(StockQuery()).dataSearch.isNotEmpty)
-                Expanded(
-                  child: ProductSearchList(
-                    addCartMethod: (dynamicData) {
-                     // print(dynamicData);
-                      addCartPlus(dynamicData);
-                    },
-                    viewPictureMethod: (productCode, imgUrl) {
-                      viewPicture(productCode, imgUrl);
-                    },
-                    searchResult: Get.put(StockQuery()).dataSearch,
-                  ),
-                ),
-
-              // Center(child: Text("${(Get.put(StockQuery()).userProfile)["name"]}")),
-
-              GetBuilder<StockQuery>(
-                builder: (hideShowcontroller) {
-                  //return Text('Data: ${_controller.data}');
-                  return
-                    //(hideShowcontroller.userProfile["uid"]!='none')?
-                    (hideShowcontroller.hidePickClick)?
-                    //code With Click Events
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children:  [
-                        IconButton(
-                            icon: const Icon(Icons.contact_phone),
-                            iconSize: 23.0,
-                            color: Colors.blue,
-                            onPressed: () async{
-                              final uid=(myStockQuery.userProfile)["uid"];
-                              var response=await PromotionQData().getMyPromotion(User(uid: uid));
-                              if (response != null && response.data != null) {
-                                viewPromo(response.data);
-                              }
-                            }
-
-                        ), // Replace with your desired icon
-                        const SizedBox(width: 8.0), // Adjust the space between icon and text
-                        InkWell(
-                            onTap: () async {
-                              setState(() {
-                                phoneNumber="none";
-                                searchValOption=false;
-                              });
-
-
-                              await getUserData();
-                              searchUser(context);
-                            },
-                            child: Text('${(Get.put(StockQuery()).order)["resultData"][0]["name"]}', style: const TextStyle(fontSize: 16.0))),
-                        const SizedBox(width: 8.0),
-                        IconButton(
-                            icon: const Icon(Icons.qr_code),
-                            iconSize: 23.0,
-                            color: Colors.pink,
-                            onPressed: () {
-                              scanUser();
-
-                            }
-
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(width:30),
+                            Text(
+                                Get.put(AdminQuery()).obj["result"] != null &&
+                                    Get.put(AdminQuery()).obj["result"] is List &&
+                                    Get.put(AdminQuery()).obj["result"].isNotEmpty
+                                    ? Get.put(AdminQuery()).obj["result"][0]["CompanyName"].toString()
+                                    : "", style: GoogleFonts.bebasNeue(fontSize: 20,color: Colors.black)),
+                            const SizedBox(width: 5),
+                            const Icon(Icons.arrow_drop_down),
+                          ],
                         ),
                       ],
-                    ):
-                    //code without Click event
+                    ),
+                  ),
+
+                  GetBuilder<StockQuery>(
+                    builder: (hideShowcontroller) {
+                      //return Text('Data: ${_controller.data}');
+                      return
+                        // (hideShowcontroller.userProfile["uid"]!='none')?
+                        (hideShowcontroller.hidePickClick)?
+                        InkWell(
+                          onTap: (){
+                            if(((Get.put(StockQuery()).order)["resultData"][0]["uid"])=="none") {
+                              pickDefaultUser(true,true);
+                            }
+                            else{
+                              pickDefaultUser(true,false);
+                            }
+                            //pick Default Account;
+                            //then Default Account Has set
+                            //if sales has edit Status,please you can not set default account
+                            //or you can not choose any Other Account,
+                          },
+
+                          child:  Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, color: Colors.yellow), // Replace with your desired icon
+                              const SizedBox(width: 8.0), // Adjust the space between icon and text
+                              Text("${langV.languageV[(Get.put(StockQuery()).lang)][pageName]["pickDft"]}", style: const TextStyle(fontSize: 16.0)),
+                            ],
+                          ),
+
+                        ):
+                        const SizedBox.shrink();
+                    },
+                  ),
+
+                  // SearchBarField(search: _data,searchController:searchContro,PerformSearch:,),
+                  SearchBarField(
+                    searchBy:(text) async{
+                      setState(() {
+                        (Get.put(StockQuery()).updateSelected(text));
+
+                      });
+                      //(Get.put(StockQuery()).selectedOption),
+                    } ,
+                    // Correct: explicitly assigning null
+                    searchMethod:(text) async{
+                      if (text!= searchText) {
+
+                        performSearch(text,"none");//note i must figure out how to avoid
+                        searchText=text;
+                      }else{
+
+
+
+                      }
+
+                    },
+
+
+                    scanProductMethod: (){
+
+                      scanProduct();
+                    },
+                    searchController: searchContro,
+                  ),
+                  if (Get.put(StockQuery()).dataSearch.isNotEmpty)
+                    Expanded(
+                      child: ProductSearchList(
+                        addCartMethod: (dynamicData) {
+                          // print(dynamicData);
+                          addCartPlus(dynamicData);
+                        },
+                        viewPictureMethod: (productCode, imgUrl) {
+                          viewPicture(productCode, imgUrl);
+                        },
+                        searchResult: Get.put(StockQuery()).dataSearch,
+                      ),
+                    ),
+
+                  // Center(child: Text("${(Get.put(StockQuery()).userProfile)["name"]}")),
+
+                  GetBuilder<StockQuery>(
+                    builder: (hideShowcontroller) {
+                      //return Text('Data: ${_controller.data}');
+                      return
+                        //(hideShowcontroller.userProfile["uid"]!='none')?
+                        (hideShowcontroller.hidePickClick)?
+                        //code With Click Events
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children:  [
+                            IconButton(
+                                icon: const Icon(Icons.wallet_giftcard),
+                                iconSize: 28.0,
+                                color: Colors.deepOrange,
+                                onPressed: () async{
+                                  final uid=(myStockQuery.userProfile)["uid"];
+                                  var response=await PromotionQData().getMyPromotion(User(uid: uid));
+                                  if (response != null && response.data != null) {
+                                    viewPromo(response.data);
+                                  }
+                                }
+
+                            ), // Replace with your desired icon
+                            const SizedBox(width: 8.0), // Adjust the space between icon and text
+                            InkWell(
+                                onTap: () async {
+                                  setState(() {
+                                    phoneNumber="none";
+                                    searchValOption=false;
+                                  });
+
+
+                                  await getUserData();
+                                  searchUser(context);
+                                },
+                                child: Text('${(Get.put(StockQuery()).order)["resultData"][0]["name"]}', style: const TextStyle(fontSize: 16.0))),
+                            const SizedBox(width: 8.0),
+                            IconButton(
+                                icon: const Icon(Icons.qr_code),
+                                iconSize: 28.0,
+                                color: Colors.pink,
+                                onPressed: () {
+                                  scanUser();
+
+                                }
+
+                            ),
+                          ],
+                        ):
+                        //code without Click event
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children:  [
+                            // Adjust the space between icon and text
+                            Text('${(Get.put(StockQuery()).order)["resultData"][0]["name"]}', style: const TextStyle(fontSize: 16.0)),
+
+                          ],
+                        );
+                    },
+                  ),
+
+                  if(((Get.put(StockQuery()).order)["resultData"][0]["uid"])!="none")
+
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children:  [
                         // Adjust the space between icon and text
-                        Text('${(Get.put(StockQuery()).order)["resultData"][0]["name"]}', style: const TextStyle(fontSize: 16.0)),
+                        /*InkWell(
+                            onTap: () async{
+                              //print((myStockQuery.userProfile)["carduid"]);
+                              print(myStockQuery.promo);
+                              //print(await (Get.put(PromotionQData()).promotions));
+                            },
+                            child: const Text("promo")
 
-                      ],
-                    );
-                },
-              ),
+                        ),*/
+                        Text("OrderId:${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}", style: const TextStyle(fontSize: 16.0)),
+                        const SizedBox(width: 8.0),
+                        IconButton(
+                            icon: const Icon(Icons.delete),
+                            iconSize: 23.0,
+                            color: Colors.red,
+                            onPressed: () {
+                              Get.dialog(
+                                AlertDialog(
+                                  title: const Text('Confirmation'),
+                                  content: Text('Do you want to Delete ${(Get.put(StockQuery()).order)["resultData"][0]["uid"]} ?'),
+                                  actions: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
 
-              if(((Get.put(StockQuery()).order)["resultData"][0]["uid"])!="none")
+                                        //primary: Colors.grey[300],
+                                        backgroundColor: Colors.red,
+                                        elevation:0,
+                                      ),
+                                      onPressed: () async{
+                                        Get.back(canPop: false);
+                                        setState(() {
+                                          showOver=true;
+                                        });
 
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children:  [
-                    // Adjust the space between icon and text
-                    InkWell(
-                        onTap: () async{
-                          //print((myStockQuery.userProfile)["carduid"]);
-                          print(myStockQuery.promo);
-                          //print(await (Get.put(PromotionQData()).promotions));
-                          //print(myStockQuery.userProfile);
-                        },
-                        child: Text("promo")
+                                        (Get.put(StockQuery()).updateHideLoader(false));
 
-                    ),
-                    Text("OrderId:${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}", style: const TextStyle(fontSize: 16.0)),
-                    const SizedBox(width: 8.0),
-                    IconButton(
-                        icon: const Icon(Icons.delete),
-                        iconSize: 23.0,
-                        color: Colors.red,
-                        onPressed: () {
-                          Get.dialog(
-                            AlertDialog(
-                              title: const Text('Confirmation'),
-                              content: Text('Do you want to Delete ${(Get.put(StockQuery()).order)["resultData"][0]["uid"]} ?'),
-                              actions: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
+                                        var resultData=(await StockQuery().deleteTOrder(Topups(uid:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"))).data;
 
-                                    //primary: Colors.grey[300],
-                                    backgroundColor: Colors.red,
-                                    elevation:0,
-                                  ),
-                                  onPressed: () async{
-                                    Get.back(canPop: false);
-                                    setState(() {
-                                      showOver=true;
-                                    });
-
-                                    (Get.put(StockQuery()).updateHideLoader(false));
-
-                                    var resultData=(await StockQuery().deleteTOrder(Topups(uid:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"))).data;
-
-                                    if(resultData["status"])
-                                    {
-                                      (Get.put(StockQuery()).updateHideLoader(true));
+                                        if(resultData["status"])
+                                        {
+                                          (Get.put(StockQuery()).updateHideLoader(true));
 
 
-                                      /*List<dynamic> orderVal=[
+                                          /*List<dynamic> orderVal=[
                                         {
                                           "name":"Unknown",
                                           "uid":""
                                         }
                                       ];*/
-                                      num totalVal=0;
+                                          num totalVal=0;
 
-                                      (Get.put(StockQuery()).updateSumOrder(totalVal));
-                                      (Get.put(StockQuery()).updateHidePickClick(true));
+                                          (Get.put(StockQuery()).updateSumOrder(totalVal));
+                                          (Get.put(StockQuery()).updateHidePickClick(true));
 
-                                      setState(() {
+                                          setState(() {
 
-                                        cartData.clear();
-                                        ///(Get.put(StockQuery()).updateOrder(orderVal));
-                                        (Get.put(StockQuery()).updateDeptOrder(0));
-                                        inputDataDept.text="";
+                                            cartData.clear();
+                                            ///(Get.put(StockQuery()).updateOrder(orderVal));
+                                            (Get.put(StockQuery()).updateDeptOrder(0));
+                                            inputDataDept.text="";
 
-                                        // dataSearch.clear();
+                                            // dataSearch.clear();
 
-                                      });
-                                      await pickDefaultUser(true,true);
+                                          });
+                                          await pickDefaultUser(true,true);
 
-                                      setState(() {
-                                        showOver=false;
-                                      });
-
-
+                                          setState(() {
+                                            showOver=false;
+                                          });
 
 
-                                    }
-                                    else{
-                                      (Get.put(StockQuery()).updateHideLoader(true));
-                                    }
 
 
-                                  },
-                                  child: const Text('Yes',style:TextStyle(
-                                      color: Colors.white
-                                  ),),
+                                        }
+                                        else{
+                                          (Get.put(StockQuery()).updateHideLoader(true));
+                                        }
+
+
+                                      },
+                                      child: const Text('Yes',style:TextStyle(
+                                          color: Colors.white
+                                      ),),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Get.back(); // close the alert dialog
+                                      },
+                                      child: const Text('Close'),
+                                    ),
+                                  ],
                                 ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Get.back(); // close the alert dialog
-                                  },
-                                  child: const Text('Close'),
-                                ),
-                              ],
-                            ),
-                          );
+                              );
 
-                        }
+                            }
 
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              //Text("id ${(Get.put(StockQuery()).order["resultData"][0]["uid"])}"),
-              // Text("Total:${(Get.put(StockQuery()).orderSum)}"),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 16),
-                  Text(
-                    "Total: ${(Get.put(StockQuery()).orderSum)}",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8), // spacing between text and icon
-                  InkWell(
-                    onTap: ()async{
-                      final List<Map<String, dynamic>> orderMap =
-                      List<Map<String, dynamic>>.from(cartData);
+                  //Text("id ${(Get.put(StockQuery()).order["resultData"][0]["uid"])}"),
+                  // Text("Total:${(Get.put(StockQuery()).orderSum)}"),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(width: 16),
+                      Text(
+                        "Total: ${(Get.put(StockQuery()).orderSum)}",
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8), // spacing between text and icon
+                      InkWell(
+                        onTap: ()async{
+                          final List<Map<String, dynamic>> orderMap =
+                          List<Map<String, dynamic>>.from(cartData);
 
-                      Map<String, dynamic> users = {
-                        "name":(Get.put(StockQuery()).order)["resultData"][0]["name"],
+                          Map<String, dynamic> users = {
+                            "name":(Get.put(StockQuery()).order)["resultData"][0]["name"],
 
-                        "title": "Temporary Order"
-                      };
+                            "title": "Temporary Order"
+                          };
 
-                      final shareMsg =ConstantClassUtil().buildWhatsAppMessage(orderMap,users);
-                      await ConstantClassUtil().shareToWhatsApp("", shareMsg);
+                          final shareMsg =ConstantClassUtil().buildWhatsAppMessage(orderMap,users);
+                          await ConstantClassUtil().shareToWhatsApp("", shareMsg);
 
-                    },
-                    child: const Icon(
-                      Icons.share, // choose any icon you want
-                      size: 20,
-                      color: Colors.blue,
+                        },
+                        child: const Icon(
+                          Icons.share, // choose any icon you want
+                          size: 20,
+                          color: Colors.blue,
 
-                    ),
-                  ),
-
-                ],
-              ),
-              Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10.0),
-                        border: Border.all(
-                          color: Colors.grey,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          // Debt
-                          InkWell(
-                            onTap: () {},
-                            child: Visibility(
-                              visible: true,
-                              child: Container(
-                                padding: const EdgeInsets.all(10.0),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                ),
-                                child: Text(
-                                  'dettes ${(Get.put(StockQuery()).dept)}',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
+
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 0, 40, 0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.0),
+                            border: Border.all(
+                              color: Colors.grey,
                             ),
                           ),
-
-                          // Ayo Yishyuye (Original functionality preserved)
-                          Expanded(
-                            child: Padding(
-                              padding:
-                              const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: TextField(
-                                keyboardType: TextInputType.number,
-
-                                decoration: const InputDecoration(
-                                  hintText: 'Ayo Yishyuye...',
-                                  border: InputBorder.none,
-                                  //isDense: true,
-
+                          child: Row(
+                            children: [
+                              // Debt
+                              InkWell(
+                                onTap: () {},
+                                child: Visibility(
+                                  visible: true,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10.0),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                    ),
+                                    child: Text(
+                                      'dettes ${(Get.put(StockQuery()).dept)}',
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  ),
                                 ),
+                              ),
 
-                                controller: inputDataDept,
-                                focusNode: getFocusNode("qty_1"),
-                                onChanged: (value) {
-                                  final myValue = double.tryParse(value);
-                                  if (myValue != null && myValue >= 0) {
-                                    num deptVal =
-                                        (Get.put(StockQuery()).orderSum) -
-                                            num.parse(value);
+                              // Ayo Yishyuye (Original functionality preserved)
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: TextField(
+                                    keyboardType: TextInputType.number,
 
-                                    double valueData =
-                                    (deptVal).toDouble();
+                                    decoration: const InputDecoration(
+                                      hintText: 'Ayo Yishyuye...',
+                                      border: InputBorder.none,
+                                      //isDense: true,
 
-                                    double deptValAmount =
-                                    ConstantClassUtil()
-                                        .truncateToDecimalPlaces(
-                                      valueData,
-                                      2,
-                                    );
+                                    ),
 
-                                    if (deptValAmount < 0) {
-                                      num deptVal = 0;
+                                    controller: inputDataDept,
+                                    focusNode: getFocusNode("qty_1"),
+                                    onChanged: (value) {
+                                      final myValue = double.tryParse(value);
+                                      if (myValue != null && myValue >= 0) {
+                                        num deptVal =
+                                            (Get.put(StockQuery()).orderSum) -
+                                                num.parse(value);
 
-                                      setState(() {
-                                        buyBtn = true;
-                                        expenseBtn= buyBtn;
-                                        Get.put(StockQuery())
-                                            .updateDeptOrder(deptVal);
-                                      });
-                                    } else {
+                                        double valueData =
+                                        (deptVal).toDouble();
 
-                                      setState(() {
-                                        buyBtn = false;
-                                        expenseBtn= buyBtn;
-                                        Get.put(StockQuery())
-                                            .updateDeptOrder(
-                                          deptValAmount,
+                                        double deptValAmount =
+                                        ConstantClassUtil()
+                                            .truncateToDecimalPlaces(
+                                          valueData,
+                                          2,
                                         );
-                                      });
-                                    }
-                                  } else {
-                                    num deptVal = 0;
 
-                                    setState(() {
-                                      buyBtn = true;
-                                      expenseBtn= buyBtn;
-                                      Get.put(StockQuery())
-                                          .updateDeptOrder(deptVal);
-                                    });
+                                        if (deptValAmount < 0) {
+                                          num deptVal = 0;
+
+                                          setState(() {
+                                            buyBtn = true;
+                                            expenseBtn= buyBtn;
+                                            Get.put(StockQuery())
+                                                .updateDeptOrder(deptVal);
+                                          });
+                                        } else {
+
+                                          setState(() {
+                                            buyBtn = false;
+                                            expenseBtn= buyBtn;
+                                            Get.put(StockQuery())
+                                                .updateDeptOrder(
+                                              deptValAmount,
+                                            );
+                                          });
+                                        }
+                                      } else {
+                                        num deptVal = 0;
+
+                                        setState(() {
+                                          buyBtn = true;
+                                          expenseBtn= buyBtn;
+                                          Get.put(StockQuery())
+                                              .updateDeptOrder(deptVal);
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+
+                              // Buy Button (Original functionality preserved)
+                              buyBtn
+                                  ? const Padding(
+                                padding: EdgeInsets.all(10),
+                                child: Icon(
+                                  Icons.warning,
+                                  color: Colors.orange,
+                                  size: 28,
+                                ),
+                              )
+                                  : InkWell(
+                                onTap: () async {
+
+
+
+                                  double dept =
+                                      double.tryParse(
+                                        (Get.put(
+                                          StockQuery(),
+                                        ).dept)
+                                            .toString(),
+                                      ) ??
+                                          0;
+
+                                  if (dept > 0) {
+                                    showConfirmBottomSheet();
+                                  } else {
+                                    await myOrderSubmit();
                                   }
                                 },
-                              ),
-                            ),
-                          ),
-
-                          // Buy Button (Original functionality preserved)
-                          buyBtn
-                              ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Icon(
-                              Icons.warning,
-                              color: Colors.orange,
-                              size: 28,
-                            ),
-                          )
-                              : InkWell(
-                            onTap: () async {
-                              double dept =
-                                  double.tryParse(
-                                    (Get.put(
-                                      StockQuery(),
-                                    ).dept)
-                                        .toString(),
-                                  ) ??
-                                      0;
-
-                              if (dept > 0) {
-                                showConfirmBottomSheet();
-                              } else {
-                                await myOrderSubmit();
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(10.0),
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.only(
-                                  topRight:
-                                  Radius.circular(10.0),
-                                  bottomRight:
-                                  Radius.circular(10.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10.0),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.only(
+                                      topRight:
+                                      Radius.circular(10.0),
+                                      bottomRight:
+                                      Radius.circular(10.0),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Buy',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: const Text(
-                                'Buy',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Expense Field aligned under Ayo Yishyuye
-                  (expenseBtn)?const SizedBox.shrink():Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      110,
-                      1,
-                      80,
-                      0,
-                    ),
-                    child: Container(
-
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(8),
-                          bottomRight: Radius.circular(8),
                         ),
                       ),
-                      child: TextField(
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.start,
-                        decoration: InputDecoration(
-                          hintText: 'Expense...',
-                          border: InputBorder.none,
-                          /* prefixIcon: const Icon(
+
+                      // Expense Field aligned under Ayo Yishyuye
+                      (expenseBtn)?const SizedBox.shrink():Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          110,
+                          1,
+                          80,
+                          0,
+                        ),
+                        child: Container(
+
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(8),
+                              bottomRight: Radius.circular(8),
+                            ),
+                          ),
+                          child: TextField(
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.start,
+                            decoration: InputDecoration(
+                              hintText: 'Expense...',
+                              border: InputBorder.none,
+                              /* prefixIcon: const Icon(
                             Icons.receipt_long_outlined,
                           ),*/
 
-                          // Currency dropdown on right
-                          suffixIcon: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedCurrency,
-                              items: const [
-                                DropdownMenuItem(
-                                  value: "FRC",
-                                  child: Text("FRC"),
+                              // Currency dropdown on right
+                              suffixIcon: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedCurrency,
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: "FRC",
+                                      child: Text("FRC"),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: "USD",
+                                      child: Text("USD"),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: "GBP",
+                                      child: Text("GBP"),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        selectedCurrency = value;
+                                      });
+                                    }
+                                  },
                                 ),
-                                DropdownMenuItem(
-                                  value: "USD",
-                                  child: Text("USD"),
-                                ),
-                                DropdownMenuItem(
-                                  value: "GBP",
-                                  child: Text("GBP"),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    selectedCurrency = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
+                              ),
 
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              /*Padding(
+                  /*Padding(
                 padding: const EdgeInsets.fromLTRB(40,0,40,0),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(5,0,5,0),
@@ -1214,81 +1239,100 @@ class _HomepageState extends State<Homepage> {
                 ),
               ),*/
 
-              Expanded(child: CheckoutPage(chekoutResult:cartData,changeQtyCheckout:(index,price,valueData,checkHide,thisQty){
-                /*setState(() {
+                  Expanded(child: CheckoutPage(chekoutResult:cartData,changeQtyCheckout:(index,price,valueData,checkHide,thisQty){
+                    /*setState(() {
                   editQty=thisQty;
                 });*/
 
-                changeQtyMethod(index,price,valueData,checkHide);
+                    changeQtyMethod(index,price,valueData,checkHide);
 
-              },viewPictureM:(productCode,imgUrl){
-                viewPicture(productCode,imgUrl);
+                  },viewPictureM:(productCode,imgUrl){
+                    viewPicture(productCode,imgUrl);
 
-              },saveChangeQtyCheckout:(productCode,indexData,currentEditQty){
-                saveChangeQtyMethod(productCode,indexData,currentEditQty);
-              },deleteCheckout:(productCode) async{
+                  },saveChangeQtyCheckout:(productCode,indexData,currentEditQty){
+                    saveChangeQtyMethod(productCode,indexData,currentEditQty);
+                  },deleteCheckout:(productCode) async{
 
-                if(await getPromotion())
-                {
-                  try {
-
-                    setState(() {
-                      showOver=true;
-                    });
-
-
-                    var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
-                    if(resultData["status"])
+                    if(await getPromotion())
                     {
-                      //print(resultData);
-                      /* List<dynamic> orderVal=[
+                      try {
+
+                        setState(() {
+                          buyBtn = true;
+                          showOver=true;
+                        });
+
+
+                        var resultData=(await StockQuery().deleteTSingleOrder(QuickBonus(productName:productCode,uid:await (Get.put(StockQuery()).order)["resultData"][0]["uid"] ))).data;
+
+                        if(resultData["status"])
+                        {
+                          print(resultData);
+                          //print(resultData);
+                          /* List<dynamic> orderVal=[
                       {
                         "name":"Unknown",
                         "uid":""
                       }
                     ];*/
-                      setState(() {
-                        showOver=false;
-                        setState(() {
-                          cartData.removeWhere((item) => item['productCode'] == productCode);
-                          num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
-                          (Get.put(StockQuery()).updateSumOrder(totalVal));
-
-                          //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
-
-                          if(cartData.isEmpty)
-                          {
-                            (Get.put(StockQuery()).updateHidePickClick(true));
-                            // (Get.put(StockQuery()).updateOrder(orderVal));
-                            pickDefaultUser(true,true);
-                            (Get.put(StockQuery()).updateDeptOrder(0));
-                            inputDataDept.text="";
-                          }
-                        });
-                        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-                        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
-                        //print(promo1);
-                        (myStockQuery.updatePromo(promo1));
 
 
+                          setState(() {
+                            //showOver=false;
+                            cartData.removeWhere((item) => item['productCode'] == productCode);
+                            /*print("cartData: $cartData");
+                          print("cartData type: ${cartData.runtimeType}");
+                          print("cartData length: ${cartData.length}");*/
+                            // num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
 
-                      });
-                      Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-                      applyPromotion(cartD);
+                            num totalVal = cartData.fold<num>(
+                              0,
+                                  (sum, element) {
+                                final amount = num.tryParse(
+                                  element['totalAmount']?.toString() ?? '0',
+                                ) ?? 0;
 
-                    }
-                    else{
+                                return sum + amount;
+                              },
+                            );
 
-                      setState(() {
+                            print("TOTAL = $totalVal");
+                            (Get.put(StockQuery()).updateSumOrder(totalVal));
 
-                        showOver=false;
-                        dataSearch.clear();
+                            //inputDataDept.text="${(Get.put(StockQuery()).dept)==0?'':(Get.put(StockQuery()).orderSum)-(Get.put(StockQuery()).dept)}";
+
+                            if(cartData.isEmpty)
+                            {
+                              (Get.put(StockQuery()).updateHidePickClick(true));
+                              // (Get.put(StockQuery()).updateOrder(orderVal));
+                              pickDefaultUser(true,true);
+                              (Get.put(StockQuery()).updateDeptOrder(0));
+                              inputDataDept.text="";
+                            }
+
+                            showOver=false;
+                          });
 
 
-                      });
-                    }
-                  } catch (e) {
-                    /* showDialog(
+
+
+
+
+                          //applyPromotion();
+
+                        }
+                        else{
+
+                          setState(() {
+
+                            showOver=false;
+                            dataSearch.clear();
+
+
+                          });
+                        }
+                      } catch (e) {
+                        /* showDialog(
                    context: context,
                    builder: (context) => AlertDialog(
                      title: const Text("Error"),
@@ -1296,70 +1340,89 @@ class _HomepageState extends State<Homepage> {
                    ),
                  );*/
 
-                  }
-                }
+                      }
+                    }
 
 
 
-              },addcomentCheckout:(productCode,commentData){
-                addComment(productCode,commentData);
-              },focusNodes: focusNodes,getFocusCheckout:getFocusNode)),
+                  },addcomentCheckout:(productCode,commentData){
+                    addComment(productCode,commentData);
+                  },focusNodes: focusNodes,getFocusCheckout:getFocusNode)),
 
-              // CheckoutPage(),
-
-
-
-
-              Visibility(
-                visible: true,
-                child: Expanded(
-                  flex: 0,
-                  child: SingleChildScrollView(
-
-                    child: Center(
-                        child:Column(
-                          children: [
-                            (result!=null)?Text("barcode Type ${describeEnum(result!.format)} Data ${result!.code}"): const Text("Scan Code"),
+                  // CheckoutPage(),
 
 
 
 
+                  Visibility(
+                    visible: true,
+                    child: Expanded(
+                      flex: 0,
+                      child: SingleChildScrollView(
+
+                        child: Center(
+                            child:Column(
+                              children: [
+                                (result!=null)?Text("barcode Type ${describeEnum(result!.format)} Data ${result!.code}"):SizedBox.shrink(),
 
 
 
 
 
 
-                          ],
-                        )
 
+
+
+
+                              ],
+                            )
+
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-          /* Positioned(
+              /* Positioned(
             top: MediaQuery.of(context).size.height * 0.4,
             right: 0,
             child: PromoBadge(
               products: products,
             ),
           ),*/
-          if(showOver)
-            Positioned.fill(
-              child: Center(
-                child: Container(
-                  alignment: Alignment.center,
-                  color: Colors.white70,
-                  child: const CircularProgressIndicator(),
-                ),
-              ),
-            ),
+              // Middle-Right Offer Badge
+              // Floating Middle-Right Badge
+              // Middle-Right Multi-Level Badge Position
+              // Floating, Draggable Badge
+              Obx(() {
+                final promoData = Get.find<PromotionQData>().promoResult.value;
 
-        ],
-      ) ,
-      bottomNavigationBar:const HomeNavigator(),
+                // Debug print (optional)
+
+                // Check if there is at least one promotion
+                final hasPromos = (promoData['quick'] as List? ?? []).isNotEmpty ||
+                    (promoData['long'] as List? ?? []).isNotEmpty;
+
+                if (!hasPromos) {
+                  return const SizedBox.shrink(); // hide when empty
+                }
+
+                return DynamicPromoBadge(promoJson: promoData);
+              }),
+              if(showOver)
+                Positioned.fill(
+                  child: Center(
+                    child: Container(
+                      alignment: Alignment.center,
+                      color: Colors.white70,
+                      child: const CircularProgressIndicator(),
+                    ),
+                  ),
+                ),
+              const FloatingCartBar(currencySymbol: "\$"),
+            ],
+          ) ),
+      bottomNavigationBar:HomeNavigator(currentIndex: 0),
 
       // This trailing comma makes auto-formatting nicer for build methods.
 
@@ -1555,6 +1618,15 @@ class _HomepageState extends State<Homepage> {
   void initState()
   {
     super.initState();
+
+
+    /*final mockData = [
+      {"productCode": "P1", "totalAmount": "12.50", "totalQty": 2, "price": "6.25"},
+      {"productCode": "P2", "totalAmount": null, "totalQty": "3", "price": 10},
+    ];
+    final result = ConstantClassUtil().convertCart(mockData);
+    print(result);*/
+
     //getapi();
     /*focusNode.addListener(() {
       if (focusNode.hasFocus) {
@@ -1568,11 +1640,18 @@ class _HomepageState extends State<Homepage> {
         print("EVENT: Focus lost (user left TextField)");
       }
     });*/
-    cartDisplay();
+    _initialize();
+    // cartDisplay();
     setState(() {
       showOver=false;
     });
 
+  }
+
+  Future<void> _initialize() async {
+    // Load promotions from cache or network (first call = fetch)
+    // await getPromotion();
+    await cartDisplay();   // now promotions are available
   }
   FocusNode getFocusNode(String key) {
     return focusNodes.putIfAbsent(key, () {
@@ -1609,95 +1688,103 @@ class _HomepageState extends State<Homepage> {
 
 
     });*/
-    //print(cartData);
 
-    try {
-
-      var resultData=(await StockQuery().viewUserTempOrder(QuickBonus(uid:"nyota"))).data;
-      if(resultData["status"])
-      {
+    // print(await getPromotion());
+    if(await getPromotion()) {
 
 
+      try {
+        ConstantClassUtil().showPageLoadingDialog(message: "");
+        var resultData = (await StockQuery().viewUserTempOrder(
+            QuickBonus(uid: "nyota"))).data;
+        if (resultData["status"]) {
 
-        num totalVal = resultData["result"].fold(0, (previousValue, element) {
-          // Convert 'totalAmount' to a num using double.parse
-          num totalAmount = num.parse(element['totalAmount'].toString());
+          num totalVal = resultData["result"].fold(0, (previousValue, element) {
+            // Convert 'totalAmount' to a num using double.parse
+            num totalAmount = num.parse(element['totalAmount'].toString());
 
-          // Add the converted totalAmount to previousValue
-          return previousValue + totalAmount;
-        });
+            // Add the converted totalAmount to previousValue
+            return previousValue + totalAmount;
+          });
 
-        (Get.put(StockQuery()).updateSumOrder(totalVal));
-        var userProfile =
-        {
-          "uid": "${resultData["result"][0]["userid"]}",
-          "name": "${resultData["result"][0]["name"]}",
+          (Get.put(StockQuery()).updateSumOrder(totalVal));
+          var userProfile =
+          {
+            "uid": "${resultData["result"][0]["userid"]}",
+            "name": "${resultData["result"][0]["name"]}",
+            "marital_status": resultData["result"][0]["marital_status"],
+            "email": "on@gmail.com",
+            "phone": "782389359",
+            "Ccode": "+250",
+            "country": "Rwanda",
+            "initCountry": "none",
+            "PhoneNumber": "none",
+            "carduid": "none"
+          };
 
-          "email": "on@gmail.com",
-          "phone": "782389359",
-          "Ccode": "+250",
-          "country": "Rwanda",
-          "initCountry": "none",
-          "PhoneNumber": "none",
-          "carduid": "none"
-        };
-
-        (Get.put(StockQuery()).updateUserProfile(userProfile));
-
-
-
-        (Get.put(StockQuery()).updateOrder(resultData["result"]));
-        String permission=(resultData["result"][0])["permission"];
-        (permission=="false")?(Get.put(StockQuery()).updateHidePickClick(false)):(Get.put(StockQuery()).updateHidePickClick(true));//hidePick false is hide and true show
-        num alldept=num.parse((resultData["result"][0])["orderDebt"]);
-        num inputAll=(Get.put(StockQuery()).orderSum)-alldept;
-        num inputDebtAll=(alldept==0)?alldept:inputAll;
-        (Get.put(StockQuery()).updateDeptOrder(alldept));
-
-        inputDataDept.text="${(inputDebtAll==0)?"":inputDebtAll}";
-        setState(() {
-
-          cartData.clear();
-
-          cartData.addAll(resultData["result"]);
-        });
-        //print(cartData);
-        Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-        var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, promoData.promotions));
-        // print(promoData.promotions);
-        //print(promo1);
-        (myStockQuery.updatePromo(promo1));
-      }
-      else{
-        setState(() {
-          List<dynamic> orderVal=[
-            {
-              "name":Get.put(AdminQuery()).obj["result"][0]["name"],
-              "uid":"none"
-            }
-          ];
-          ((Get.put(StockQuery()).updateDeptOrder(0)));
-          ((Get.put(StockQuery()).updateOrder(orderVal)));
-          inputDataDept.text="";
-          num totalVal=0;
-
-          ((Get.put(StockQuery()).updateSumOrder(totalVal)));
-          cartData.clear();
-        });
-      }
+          //print(resultData["result"][0]["martial_status"]);
+          (Get.put(StockQuery()).updateUserProfile(userProfile));
 
 
-    } catch (e) {
-      /* showDialog(
+          (Get.put(StockQuery()).updateOrder(resultData["result"]));
+          String permission = (resultData["result"][0])["permission"];
+          (permission == "false") ? (Get.put(StockQuery()).updateHidePickClick(
+              false)) : (Get.put(StockQuery()).updateHidePickClick(
+              true)); //hidePick false is hide and true show
+          num alldept = num.parse((resultData["result"][0])["orderDebt"]);
+          num inputAll = (Get
+              .put(StockQuery())
+              .orderSum) - alldept;
+          num inputDebtAll = (alldept == 0) ? alldept : inputAll;
+          (Get.put(StockQuery()).updateDeptOrder(alldept));
+
+          inputDataDept.text = "${(inputDebtAll == 0) ? "" : inputDebtAll}";
+          setState(() {
+            cartData.clear();
+
+            cartData.addAll(resultData["result"]);
+          });
+          //print(cartData);
+          // Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+          //var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, promoData.promotions));
+          // print(promoData.promotions);
+          //print(promo1);
+          //(myStockQuery.updatePromo(promo1));
+          print("app yako");
+          applyPromotion();
+
+          ConstantClassUtil().hidePageLoadingDialog();
+        }
+        else {
+          ConstantClassUtil().hidePageLoadingDialog();
+          setState(() {
+            List<dynamic> orderVal = [
+              {
+                "name": Get
+                    .put(AdminQuery())
+                    .obj["result"][0]["name"],
+                "uid": "none"
+              }
+            ];
+            ((Get.put(StockQuery()).updateDeptOrder(0)));
+            ((Get.put(StockQuery()).updateOrder(orderVal)));
+            inputDataDept.text = "";
+            num totalVal = 0;
+
+            ((Get.put(StockQuery()).updateSumOrder(totalVal)));
+            cartData.clear();
+          });
+        }
+      } catch (e) {
+        /* showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Error"),
           content: Text(e.toString()),
         ),
       );*/
+      }
     }
-
-
 
 
   }
@@ -2037,69 +2124,83 @@ class _HomepageState extends State<Homepage> {
 
     //print("inputqty:${(cartData[indexData]["totalQty"]).runtimeType} ,currentQty:${currentEditQty.runtimeType}  normalQty:${editQty.runtimeType}");
 
-    if(await getPromotion())
-    {
+    if (await getPromotion()) {
       try {
         setState(() {
-
-          showOver=true;
+          buyBtn = true;
+          showOver = true;
         });
 
-        String qtyData=(cartData[indexData]["totalQty"]).toString().replaceAll(' ', '');
+        // --- SAFELY PARSE THE QUANTITY FROM cartData ---
+        // Get the raw value (could be int, double, String, or null)
+        dynamic rawQty = cartData[indexData]["totalQty"];
+        int qtyInt = 0;
 
-        var resultData=(await StockQuery().editTOrder(QuickBonus(productName:"$productCode",reqQty:int.parse(qtyData),currentQtyEdit:cartData[indexData]["old_qty"],uid:(Get.put(StockQuery()).order)["resultData"][0]["uid"]), User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}")));
+        if (rawQty is int) {
+          qtyInt = rawQty;
+        } else if (rawQty is double) {
+          // Use .round() if you want mathematical rounding, or .toInt() to truncate
+          qtyInt = rawQty.round(); // change to .toInt() if you prefer truncation
+        } else if (rawQty is String) {
+          String cleaned = rawQty.replaceAll(' ', '').trim();
+          // Try parsing as integer first
+          qtyInt = int.tryParse(cleaned) ??
+              double.tryParse(cleaned)?.round() ?? 0;
+        } else {
+          // Fallback: if it's null or some other type, treat as 0
+          qtyInt = 0;
+        }
 
-        // print(resultData);
-        if(resultData["status"])
-        {
+        // --- CALL THE API WITH THE PARSED INTEGER ---
+        var resultData = await StockQuery().editTOrder(
+          QuickBonus(
+            productName: "$productCode",
+            reqQty: qtyInt,   // now safely parsed
+            currentQtyEdit: cartData[indexData]["old_qty"],
+            uid: (Get.put(StockQuery()).order)["resultData"][0]["uid"],
+          ),
+          User(uid: "${(Get.put(StockQuery()).userProfile)["uid"]}"),
+        );
 
+        if (resultData["status"]) {
+          print("twese");
           setState(() {
+            showOver = false;
+            // Update old_qty with the safe integer
+            cartData[indexData]["old_qty"] = qtyInt;
+            cartData[indexData]["saveChangeBtn"] = true;
 
-            showOver=false;
-            cartData[indexData]["old_qty"]=int.parse(qtyData);
+            // --- CONVERT CART AND APPLY PROMOTION ---
 
-            cartData[indexData]["saveChangeBtn"]=true;
-
-            //  num totalVal = cartData.fold(0, (previousValue, element) => previousValue + element['totalAmount']);
-            Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
-            /*var promo1=Promotion.applyBestPromotion(cartD, CardTest().promotions);
-          (Get.put(StockQuery()).updatePromo(promo1));*/
-            var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD, PromotionQData().promotions));
-            (myStockQuery.updatePromo(promo1));
-
+            // --- SAFELY SUM TOTAL AMOUNT ---
             num totalVal = 0;
-
-            // Sum the totalAmount from each item
             for (var item in cartData) {
               var amount = item['totalAmount'];
               if (amount is String) {
-                amount = num.tryParse(amount) ?? 0;
+                // Try parsing as num (handles both int and double)
+                amount = num.tryParse(amount.replaceAll(' ', '')) ?? 0;
+              } else if (amount is! num) {
+                // If it's something else (bool, etc.), treat as 0
+                amount = 0;
               }
               totalVal += amount;
             }
 
-
             (Get.put(StockQuery()).updateSumOrder(totalVal));
-
-
-
-
           });
-          Map<String, dynamic> cartDV =ConstantClassUtil().convertCart(cartData);
-          applyPromotion(cartDV);
 
-        }
-        else{
+          applyPromotion(); // your external function
 
+        } else {
+          // --- ERROR DIALOG ---
           Get.dialog(
             AlertDialog(
               title: const Text('Something Wrong'),
               content: const Text('Please put less Qty or Contact System Admin'),
               actions: [
-
                 ElevatedButton(
                   onPressed: () {
-                    Get.back(); // close the alert dialog
+                    Get.back();
                   },
                   child: const Text('Close'),
                 ),
@@ -2107,32 +2208,21 @@ class _HomepageState extends State<Homepage> {
             ),
           );
           setState(() {
-
-            showOver=false;
+            showOver = false;
             dataSearch.clear();
             (Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-
-
           });
         }
+
       } catch (e) {
+        print("twese $e");
         setState(() {
-          showOver=false;
+          showOver = false;
         });
-        /*showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('error'),
-          content: Text(e.toString()),
-        ),
-      );*/
+        // Optionally show a user-friendly error dialog here
+        // Get.snackbar("Error", "An unexpected error occurred: $e");
       }
-
-
-
     }
-
 
 
   }
@@ -2256,55 +2346,69 @@ class _HomepageState extends State<Homepage> {
     (Get.put(StockQuery()).updateHideLoader(false));
     //var resultData=(await StockQuery().searchUser(User(uid:"",name:"anyName",phone:"any",platform:"4000",status:"Default"),Topups(optionCase:"false",startlimit:1,searchOption:false))).data;
     try {
-    var resultData=(await StockQuery().pickDefault());
+      var resultData=(await StockQuery().pickDefault());
 
 //print((myStockQuery.userProfile));
-    //print(resultData);
-    if(resultData["status"])
-    {
-
-
-      (Get.put(StockQuery()).updateHideLoader(true));
-
-      if(resultData["result"]!=0)
+      //print(resultData);
+      if(resultData["status"])
       {
 
+
         (Get.put(StockQuery()).updateHideLoader(true));
-        var userProfile =
+
+        if(resultData["result"]!=0)
         {
-          /* "uid": "${resultData["result"][0]["uid"]}",
+
+          (Get.put(StockQuery()).updateHideLoader(true));
+          var userProfile =
+          {
+            /* "uid": "${resultData["result"][0]["uid"]}",
           "name": "${resultData["result"][0]["name"]}",*/
-          "uid": resultData["uid"],
-          "name":resultData["name"],
-
-          "email": "on@gmail.com",
-          "phone": "782389359",
-          "Ccode": "+250",
-          "default":"true",
-          "country": "Rwanda",
-          "initCountry": "none",
-          "PhoneNumber": "none",
-          "carduid": "none"
-        };
-
-
+            "uid": resultData["uid"],
+            "name":resultData["name"],
+            "marital_status":resultData["marital_status"],
+            "email": "on@gmail.com",
+            "phone": "782389359",
+            "Ccode": "+250",
+            "default":"true",
+            "country": "Rwanda",
+            "initCountry": "none",
+            "PhoneNumber": "none",
+            "carduid": "none"
+          };
 
 
-        if(isOrderNotExist==true){
-          (Get.put(StockQuery()).updateUserProfile(userProfile));
-          List<dynamic> orderVal=[
-            {
-              //"name":"${resultData["result"][0]["name"]}",
-              "name": resultData["name"],
-              "uid":"${(resetOrder==true)?'none':(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"
-            }
-          ];
+
+
+          if(isOrderNotExist==true){
+            (Get.put(StockQuery()).updateUserProfile(userProfile));
+            List<dynamic> orderVal=[
+              {
+                //"name":"${resultData["result"][0]["name"]}",
+                "name": resultData["name"],
+                "uid":"${(resetOrder==true)?'none':(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"
+              }
+            ];
+            setState(() {
+              (Get.put(StockQuery()).updateOrder(orderVal));
+            });
+          }else{
+            // changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
+            changeUserInOrder(resultData["uid"],resultData["name"],"0789");
+          }
+          await cartDisplay();         // now uses the correct order UID
+          applyPromotion();
+
+
+
+        }
+        else{
           setState(() {
-            (Get.put(StockQuery()).updateOrder(orderVal));
+
+
+
+
           });
-        }else{
-          // changeUserInOrder(resultData["result"][0]["uid"],resultData["result"][0]["name"],"0789");
-          changeUserInOrder(resultData["uid"],resultData["name"],"0789");
         }
 
 
@@ -2312,31 +2416,17 @@ class _HomepageState extends State<Homepage> {
 
       }
       else{
+
+        (Get.put(StockQuery()).updateHideLoader(true));
+
         setState(() {
 
-
+          users.clear();
 
 
         });
       }
-
-
-
-
-    }
-    else{
-
-      (Get.put(StockQuery()).updateHideLoader(true));
-
-      setState(() {
-
-        users.clear();
-
-
-      });
-    }
     } catch (e) {
-      print(e);
     }
   }
 
@@ -2368,138 +2458,137 @@ class _HomepageState extends State<Homepage> {
 
   placeOrder(dynamicData) async{
 
-    if(await getPromotion())
+
+
+    setState(() {
+      productSearch=false;
+    });
+    (Get.put(StockQuery()).updateResizable(true));
+    (Get.put(StockQuery()).updateHideLoader(false));
+    bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
+
+    if(containsProductCode)
     {
+      (Get.put(StockQuery()).updateHideLoader(true));
+      (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
+      (Get.put(StockQuery()).updateHideProductList(true));
+
+      Get.snackbar("error", " Product already Added Please increase Qty",backgroundColor: const Color(0xff9a1c55),
+          colorText: const Color(0xffffffff),
+          titleText:Text("${dynamicData['ProductName']}",style:const TextStyle(color:Color(
+              0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
+
+          icon: const Icon(Icons.access_alarm),
+          duration: const Duration(seconds: 4));
+
+
+    }
+    else{
+      // print(containsProductCode);
+
 
       setState(() {
-        productSearch=false;
+
+        showOver=true;
+
+        // productSearchPopup=false;
+        // dataSearch.clear();
+
+
       });
-      (Get.put(StockQuery()).updateResizable(true));
-      (Get.put(StockQuery()).updateHideLoader(false));
-      bool containsProductCode = cartData.any((item) => item['productCode'] == dynamicData["productCode"]);
 
-      if(containsProductCode)
-      {
-        (Get.put(StockQuery()).updateHideLoader(true));
-        (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Product already Added"));
-        (Get.put(StockQuery()).updateHideProductList(true));
-
-        Get.snackbar("error", " Product already Added Please increase Qty",backgroundColor: const Color(0xff9a1c55),
-            colorText: const Color(0xffffffff),
-            titleText:Text("${dynamicData['ProductName']}",style:const TextStyle(color:Color(
-                0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
-
-            icon: const Icon(Icons.access_alarm),
-            duration: const Duration(seconds: 4));
+      try {
+        dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
+        dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
+        dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
+        num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
 
 
-      }
-      else{
-        // print(containsProductCode);
+        //print("${dynamicData["req_qty"]}");
+        var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
 
 
-        setState(() {
-
-          showOver=true;
-
-          // productSearchPopup=false;
-          // dataSearch.clear();
+        if(resultData["status"])
+        {
 
 
-        });
-
-        try {
-          dynamicData["totalQty"]=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalQty"]:1;
-          dynamicData['totalAmount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalAmount']:num.parse(dynamicData['price']);
-          dynamicData['totalCount']=((num.parse(dynamicData["req_qty"]))>1)?dynamicData['totalQty']:1;
-          num totalVal=((num.parse(dynamicData["req_qty"]))>1)?dynamicData["totalAmount"]+((Get.put(StockQuery()).orderSum)):(num.parse(dynamicData["price"]))+((Get.put(StockQuery()).orderSum));
-
-
-          //print("${dynamicData["req_qty"]}");
-          var resultData=(await StockQuery().placeOrder(QuickBonus(uid:dynamicData["productCode"],reqQty:int.parse(dynamicData["req_qty"]),subscriber:"${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}"),User(uid:"${(Get.put(StockQuery()).userProfile)["uid"]}"))).data;
-
-
-          if(resultData["status"])
-          {
-
-
-            // print(cartData.length);
+          // print(cartData.length);
 
 //here i must Add no assign Card Then Unknown else Card ClientName
-            List<dynamic> orderVal=[
-              {
-                "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
-                "uid":resultData["OrderId"]
-              }
-            ];
-            //print(cartData);
+          List<dynamic> orderVal=[
+            {
+              "name":"${(Get.put(StockQuery()).userProfile)["name"]}",
+              "uid":resultData["OrderId"]
+            }
+          ];
+          //print(cartData);
 
-            //print(resultData);
-            setState(() {
-              showOver=false;
+          //print(resultData);
+          setState(() {
+            showOver=false;
 
-              (Get.put(StockQuery()).updateOrder(orderVal));
-              (Get.put(StockQuery()).updateSumOrder(totalVal));
-
-
-              cartData.insertAll(0,[dynamicData]);
-
-              dataSearch.clear();
-              //(Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-              (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
-              (Get.put(StockQuery()).updateHideProductList(true));
-              (Get.put(StockQuery()).updateHideLoader(true));
+            (Get.put(StockQuery()).updateOrder(orderVal));
+            (Get.put(StockQuery()).updateSumOrder(totalVal));
 
 
-              searchContro.text="";
+            cartData.insertAll(0,[dynamicData]);
 
-            });
+            dataSearch.clear();
+            //(Get.put(StockQuery()).updatedataSearch(dataSearch));
 
-            // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
-            // print(cartData);
-            // print(ConstantClassUtil().convertCart(cartData));
-            Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
+            (Get.put(StockQuery()).updateTextMessage("${dynamicData['ProductName']} Added Successfully"));
+            (Get.put(StockQuery()).updateHideProductList(true));
+            (Get.put(StockQuery()).updateHideLoader(true));
+
+
+            searchContro.text="";
+
+          });
+
+          // num prevqt = cartData.fold(0, (previousValue, element) => previousValue + element['req_qty']);
+          // print(cartData);
+          // print(ConstantClassUtil().convertCart(cartData));
+          /*Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
             //
             //print("hello");
 
-            applyPromotion(cartD);
+            applyPromotion(cartD);*/
+          // print(cartData);
+          //applyPromotion();
+
+          cartDisplay();
+        }
+        else{
+
+          setState(() {
+
+            showOver=false;
+            dataSearch.clear();
+            (Get.put(StockQuery()).updatedataSearch(dataSearch));
+
+            (Get.put(StockQuery()).updateHideLoader(true));
 
 
+          });
+          if(resultData["result"]==1){
+            checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
           }
-          else{
-
-            setState(() {
-
-              showOver=false;
-              dataSearch.clear();
-              (Get.put(StockQuery()).updatedataSearch(dataSearch));
-
-              (Get.put(StockQuery()).updateHideLoader(true));
-
-
-            });
-            if(resultData["result"]==1){
-              checkAppVersion(title: "error", message: resultData["error"],primaryButtonText:"Download",primaryButtonUrl: resultData["downNew"]);
-            }
-          }
-        } catch (e) {
-          /* showDialog(
+        }
+      } catch (e) {
+        /* showDialog(
          context: context,
          builder: (context) => AlertDialog(
            title: const Text("Error"),
            content: Text(e.toString()),
          ),
        );*/
-        }
-
-
-
       }
 
-    }else{
-      print("false");
+
+
     }
+
+
 
 
     /*if(await getPromotion())
@@ -2509,40 +2598,35 @@ class _HomepageState extends State<Homepage> {
 
           }*/
   }
-  getPromotion() async{
-    final response = await promoData.getPromoData();
-    if (response != null) {
-      final result = response.data;
-      if (result["status"]) {
-        //data
-        //print(result);
-        //List<Map<String, dynamic>> promot =result['result'];
-        promoData.updatePromotions(result['result']);
-
-        return true;
-      }else{
-        //  print(' promote ${result}');
-        //List<Map<String, dynamic>> promo =[];
-        Map<String, dynamic> promo = {};
-        promoData.updatePromotions(promo);
-        return true;
-      }
-    }else{
-      Get.snackbar("error", "Please check your Internet or Contact System Admin",backgroundColor: const Color(0xff9a1c55),
-          colorText: const Color(0xffffffff),
-          titleText:Text("Something Wrong ",style:const TextStyle(color:Color(
-              0xffffffff),fontSize:18,fontWeight:FontWeight.w500,fontStyle: FontStyle.normal),),
-
-          icon: const Icon(Icons.access_alarm),
-          duration: const Duration(seconds: 15));
-    }
+  // In _HomepageState
+  Future<bool> getPromotion({bool forceRefresh = false}) async {
+    return await promoData.fetchPromotions(forceRefresh: forceRefresh);
   }
-  applyPromotion(cartD){
+  /*applyPromotion(cartD){
     Map<String, dynamic> cartD =ConstantClassUtil().convertCart(cartData);
     //
     // print(cartD);
     var promo1=const JsonEncoder.withIndent('  ').convert(Promotion.applyBestPromotion(cartD,promoData.promotions));
     (myStockQuery.updatePromo(promo1));
+  }*/
+  void applyPromotion() {
+
+    print(cartData);
+    Map<String, dynamic> cartD = ConstantClassUtil().convertCart(cartData);
+
+    final result = Promotion.applyBestPromotion(cartD, promoData.promotions);
+
+    final promoJson = const JsonEncoder.withIndent('  ').convert(result);
+    myStockQuery.updatePromo(promoJson);
+    print(promoJson);
+    // final fullResult = Promotion.applyBestPromotion(cartD, promoData.promotions);
+    final extracted = {
+      'quick': List<Map<String, dynamic>>.from(result['quick'] ?? []),
+      'long': List<Map<String, dynamic>>.from(result['long'] ?? []),
+    };
+
+    // ✅ Use Get.find to update the same instance
+    Get.find<PromotionQData>().promoResult.value = extracted;
   }
   searchUserMethod() async{
 
@@ -2585,7 +2669,7 @@ class _HomepageState extends State<Homepage> {
           "country": "Rwanda",
           "initCountry": "none",
           "PhoneNumber": "+250782389359",
-          "martial_status":"none",
+          "marital_status":"none",
           "carduid": "none"
         }
         ;
@@ -2597,7 +2681,31 @@ class _HomepageState extends State<Homepage> {
         myStockQuery.updatedataSearch([]);
         myStockQuery.updateResizable(true);
         searchContro.text="";
-        await cartDisplay();
+        (Get.put(StockQuery()).updateHideLoader(true));
+
+
+        /*List<dynamic> orderVal=[
+                                        {
+                                          "name":"Unknown",
+                                          "uid":""
+                                        }
+                                      ];*/
+        num totalVal=0;
+
+        (Get.put(StockQuery()).updateSumOrder(totalVal));
+        (Get.put(StockQuery()).updateHidePickClick(true));
+
+        setState(() {
+
+          cartData.clear();
+          ///(Get.put(StockQuery()).updateOrder(orderVal));
+          (Get.put(StockQuery()).updateDeptOrder(0));
+          inputDataDept.text="";
+
+          // dataSearch.clear();
+
+        });
+        await pickDefaultUser(true,true);
 
 
         //Get.toNamed('/sale');
@@ -2738,6 +2846,8 @@ class _HomepageState extends State<Homepage> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(18),
                     onTap: () async {
+                      //Get.back();
+                      Get.back();
                       await switchAccount(
                         box.get('owner')[0]["uid"],
                         box.get('owner')[0]["password"],
@@ -2914,7 +3024,7 @@ class _HomepageState extends State<Homepage> {
                             onTap: () async {
                               Get.put(StockQuery())
                                   .updateHideLoader(false);
-
+                              Get.back();
                               await switchAccount(
                                 item["uid"].toString(),
                                 item["password"].toString(),
@@ -3093,7 +3203,8 @@ class _HomepageState extends State<Homepage> {
                         final String title = promoName.toUpperCase();
                         const String subtitle =
                             'Get special rewards and exclusive discounts when you complete this promo.';
-                        const String buttonText = 'Apply';
+                        // const String buttonText = 'Apply';
+                        const String buttonText = 'Claim';
 
                         return Card(
                           elevation: 0,
@@ -3189,7 +3300,9 @@ class _HomepageState extends State<Homepage> {
                                     ElevatedButton(
                                       onPressed: () {
                                         //debugPrint("Applied Promo UID: $promoUid");
-                                        viewPromotions(apiResponse);
+                                        //
+
+                                        viewPromotions(promos[index]);
                                       },
                                       style: ElevatedButton.styleFrom(
                                         elevation: 0,
@@ -3225,105 +3338,118 @@ class _HomepageState extends State<Homepage> {
       ),
     ).whenComplete(() {});
   }
-  void viewPromotions(Map<String, dynamic> apiResponse) {
-    final List<String> availableIcons = ['✨', '🛍️', '🧴', '🎁', '⭐', '📦', '🎉'];
+  withdraw(String userid,String promoData) async
+  {
+    ConstantClassUtil().showLoadingDialog(message: "Processing Withdraw...");
+    var response= await PromotionQData().withdrawLongPromo(
+        QuickBonus(
+            uid: userid,
+            bonusValue: promoData
+        )
+    );
+    if (response != null && response.data!= null) {
+      if(response.data["status"])
+      {
+        ConstantClassUtil().hideLoadingDialog();
+
+
+      }else{
+
+        ConstantClassUtil().hideLoadingDialog();
+      }
+
+    }else{
+
+      ConstantClassUtil().hideLoadingDialog();
+    }
+  }
+  void viewPromotions(Map<String, dynamic> promoData) {
+    // Use the passed promo directly – no outer 'result' envelope needed.
+    // All fields are taken from this map.
+    final String promoCode =
+        promoData['promoName']?.toString().toUpperCase() ?? "PROMO";
+    final String promoUid = promoData['uid']?.toString() ?? '';
+
+    // Parse thresholds and current input totals
+    final double condCount =
+        double.tryParse(promoData['condCount']?.toString() ?? '0') ?? 0;
+    final double condTotal =
+        double.tryParse(promoData['condTotal']?.toString() ?? '0') ?? 0;
+    final double cCount =
+        double.tryParse(promoData['cCount']?.toString() ?? '0') ?? 0;
+    final double cTotal =
+        double.tryParse(promoData['cTotal']?.toString() ?? '0') ?? 0;
+
+    final String countCondition =
+        promoData['countCondition']?.toString() ?? 'cCount';
+
+    // 1. Calculate Multiplier
+    int multiplier = 0;
+    if (countCondition == 'cCount') {
+      if (condCount > 0) multiplier = (cCount / condCount).floor();
+    } else if (countCondition == 'cTotal') {
+      if (condTotal > 0) multiplier = (cTotal / condTotal).floor();
+    } else if (countCondition == 'both') {
+      if (condCount > 0 && condTotal > 0) {
+        int countMultiplier = (cCount / condCount).floor();
+        int totalMultiplier = (cTotal / condTotal).floor();
+        multiplier = min(countMultiplier, totalMultiplier);
+      }
+    }
+
+    // 2. Calculate remaining balances
+    int remaincCount = 0, remaincTotal = 0;
+    if (countCondition == 'cCount') {
+      remaincCount = (cCount - (multiplier * condCount)).toInt();
+      remaincTotal = cTotal.toInt();
+    } else if (countCondition == 'cTotal') {
+      remaincCount = cCount.toInt();
+      remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
+    } else if (countCondition == 'both') {
+      remaincCount = (cCount - (multiplier * condCount)).toInt();
+      remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
+    }
+
+    // 3. Calculate Total Bonus Amount
+    final double baseBonusAmount =
+        double.tryParse(promoData['bonusAmount']?.toString() ?? '0') ?? 0.0;
+    final double totalBonusAmount = baseBonusAmount * multiplier;
+
+    // 4. Parse bonusStocks
+    final List<Map<String, String>> freeProducts = [];
+    final List<Map<String, dynamic>> itemsBonusPayload = [];
+    const List<String> availableIcons = ['✨', '🛍️', '🧴', '🎁', '⭐', '📦', '🎉'];
     final Random random = Random();
 
-    String promoCode = "PROMO";
-    double totalBonusAmount = 0.0;
-    List<Map<String, String>> freeProducts = [];
+    String? bonusStocksRaw = promoData['bonusStocks'];
+    if (multiplier > 0 && bonusStocksRaw != null && bonusStocksRaw.isNotEmpty) {
+      try {
+        List<dynamic> parsedStocks = jsonDecode(bonusStocksRaw);
+        for (var item in parsedStocks) {
+          int baseQty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+          int finalQty = baseQty * multiplier;
+          String name = item['productName']?.toString() ?? 'Product';
+          String randomIcon = availableIcons[random.nextInt(availableIcons.length)];
 
-    // Variables to build the final output JSON
-    String countCondition = 'cCount';
-    int remaincCount = 0;
-    int remaincTotal = 0;
-    List<Map<String, dynamic>> itemsBonusPayload = [];
+          itemsBonusPayload.add({
+            'productName': name,
+            'qty': finalQty,
+          });
 
-    if (apiResponse['status'] == true &&
-        apiResponse['result'] != null &&
-        (apiResponse['result'] as List).isNotEmpty) {
-
-      final promoData = apiResponse['result'][0];
-
-      promoCode = promoData['promoName']?.toString().toUpperCase() ?? "PROMO";
-
-      // Parse thresholds and current input totals
-      final double condCount = double.tryParse(promoData['condCount']?.toString() ?? '0') ?? 0;
-      final double condTotal = double.tryParse(promoData['condTotal']?.toString() ?? '0') ?? 0;
-
-      final double cCount = double.tryParse(promoData['cCount']?.toString() ?? '0') ?? 0;
-      final double cTotal = double.tryParse(promoData['cTotal']?.toString() ?? '0') ?? 0;
-
-      countCondition = promoData['countCondition']?.toString() ?? 'cCount';
-
-      // 1. Calculate Multiplier
-      int multiplier = 0;
-
-      if (countCondition == 'cCount') {
-        if (condCount > 0) {
-          multiplier = (cCount / condCount).floor();
+          freeProducts.add({
+            'productName': name,
+            'qty': finalQty.toString(),
+            'icon': randomIcon,
+          });
         }
-      } else if (countCondition == 'cTotal') {
-        if (condTotal > 0) {
-          multiplier = (cTotal / condTotal).floor();
-        }
-      } else if (countCondition == 'both') {
-        if (condCount > 0 && condTotal > 0) {
-          int countMultiplier = (cCount / condCount).floor();
-          int totalMultiplier = (cTotal / condTotal).floor();
-          multiplier = min(countMultiplier, totalMultiplier);
-        }
-      }
-
-      // 2. Calculate remaining balances
-      if (countCondition == 'cCount') {
-        remaincCount = (cCount - (multiplier * condCount)).toInt();
-        remaincTotal = cTotal.toInt(); // Untouched
-      } else if (countCondition == 'cTotal') {
-        remaincCount = cCount.toInt(); // Untouched
-        remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
-      } else if (countCondition == 'both') {
-        remaincCount = (cCount - (multiplier * condCount)).toInt();
-        remaincTotal = (cTotal - (multiplier * condTotal)).toInt();
-      }
-
-      // 3. Calculate Total Bonus Amount
-      final double baseBonusAmount = double.tryParse(promoData['bonusAmount']?.toString() ?? '0') ?? 0.0;
-      totalBonusAmount = baseBonusAmount * multiplier;
-
-      // 4. Parse bonusStocks and prepare UI list & output payload
-      String? bonusStocksRaw = promoData['bonusStocks'];
-      if (multiplier > 0 && bonusStocksRaw != null && bonusStocksRaw.isNotEmpty) {
-        try {
-          List<dynamic> parsedStocks = jsonDecode(bonusStocksRaw);
-
-          freeProducts = parsedStocks.map<Map<String, String>>((item) {
-            int baseQty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
-            int finalQty = baseQty * multiplier;
-
-            String name = item['productName']?.toString() ?? 'Product';
-            String randomIcon = availableIcons[random.nextInt(availableIcons.length)];
-
-            // Populate JSON result items
-            itemsBonusPayload.add({
-              'productName': name,
-              'qty': finalQty,
-            });
-
-            return {
-              'productName': name,
-              'qty': finalQty.toString(),
-              'icon': randomIcon,
-            };
-          }).toList();
-        } catch (e) {
-          debugPrint("Error parsing bonusStocks: $e");
-        }
+      } catch (e) {
+        debugPrint("Error parsing bonusStocks: $e");
       }
     }
 
     // Create output payload object
     final Map<String, dynamic> resultPayload = {
+      "uid": promoUid,
       "countCondition": countCondition,
       "remaincCount": remaincCount.toString(),
       "remaincTotal": remaincTotal.toString(),
@@ -3331,11 +3457,11 @@ class _HomepageState extends State<Homepage> {
       "itemsBonus": itemsBonusPayload,
     };
 
+    // ---------- Bottom Sheet UI (unchanged except for using local variables) ----------
     Get.bottomSheet(
       StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           final theme = Theme.of(context);
-
           return Container(
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
@@ -3566,17 +3692,17 @@ class _HomepageState extends State<Homepage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      // Print formatted JSON payload on click
+                    onPressed: () async{
                       const JsonEncoder encoder = JsonEncoder.withIndent('  ');
                       final String formattedJson = encoder.convert(resultPayload);
-
-                      debugPrint(formattedJson); // Or print(formattedJson);
-
-                      Get.back();
+                      //debugPrint(formattedJson);
+                      final String userid=promoData['uidUser'];
+                      await withdraw(userid,formattedJson);
+                      //Get.back();
                     },
                     child: const Text(
-                      'Got It',
+                      //'Got It',
+                      'Withdraw',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -3638,6 +3764,7 @@ class _HomepageState extends State<Homepage> {
                       },
                     ),
                   ),
+
                   GetBuilder<StockQuery>(
                       builder: (myController) {
                         return   Expanded(
@@ -3651,61 +3778,16 @@ class _HomepageState extends State<Homepage> {
                                   margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                                   child: InkWell(
                                     onTap: () async{
-                                      //copy of Add contact because it is one which is Og;
-                                      (Get.put(StockQuery()).updateHideLoader(false));
-                                      if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
-                                        var userProfile = {
-                                          "uid": "${myController.usersPick[index]["uid"]}",
-                                          "name": "${myController.usersPick[index]["name"]}",
-                                          "email": "on@gmail.com",
-                                          "phone": "782389359",
-                                          "Ccode": "+250",
-                                          "country": "Rwanda",
-                                          "initCountry": "none",
-                                          "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                          "carduid": "none"
-                                        };
-                                        setState(() {
-                                          (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                          (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                          (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                        });
-                                        Future.microtask(() {
-                                          Navigator.of(context).pop();
-                                        });
-                                      } else {
-
-                                        var resultData = (await StockQuery().updateInOrder(
-                                            QuickBonus(
-                                                uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
-                                                productName: "productCode",
-                                                description: "comment",
-                                                status: "UpdateUserInOrder"),
-                                            Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
-                                            .data;
-                                        if (resultData["status"]) {
-                                          var userProfile = {
-                                            "uid": "${myController.usersPick[index]["uid"]}",
-                                            "name": "${myController.usersPick[index]["name"]}",
-                                            "email": "on@gmail.com",
-                                            "phone": "782389359",
-                                            "Ccode": "+250",
-                                            "country": "Rwanda",
-                                            "initCountry": "none",
-                                            "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                            "carduid": "none"
-                                          };
-                                          setState(() {
-                                            (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                            (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                            (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                          });
-                                          Future.microtask(() {
-                                            Navigator.of(context).pop();
-                                          });
-                                        } else {
-                                          // Handle error
+                                      bool isSuccess = await updatePickedUser(myController.usersPick[index]);
+                                      if(isSuccess)
+                                      {
+                                        if(cartData.length>0) {
+                                          cartDisplay();
+                                        }else{
+                                          //Get.back();
                                         }
+                                      }else{
+                                        print("something wrong and fish");
                                       }
                                     },
                                     child: ListTile(
@@ -3714,68 +3796,19 @@ class _HomepageState extends State<Homepage> {
                                         child: Icon(_getRandomIcon()),
                                       ),
                                       title: Text(myController.usersPick[index]["name"]),
-                                      subtitle: Text(myController.usersPick[index]["PhoneNumber"]),
+                                      subtitle: Text((myController.usersPick[index]["PhoneNumber"]).split('_').first),
                                       trailing: IconButton(
                                         icon: const Icon(Icons.add),
                                         iconSize: 23.0,
                                         color: Colors.blue,
                                         onPressed: () async {
 
-                                          //print("search");
-                                          (Get.put(StockQuery()).updateHideLoader(false));
-                                          if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
-                                            var userProfile = {
-                                              "uid": "${myController.usersPick[index]["uid"]}",
-                                              "name": "${myController.usersPick[index]["name"]}",
-                                              "email": "on@gmail.com",
-                                              "phone": "782389359",
-                                              "Ccode": "+250",
-                                              "country": "Rwanda",
-                                              "initCountry": "none",
-                                              "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                              "carduid": "none"
-                                            };
-                                            setState(() {
-                                              (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                              (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                              (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                            });
-                                            Future.microtask(() {
-                                              Navigator.of(context).pop();
-                                            });
-                                          } else {
-
-                                            var resultData = (await StockQuery().updateInOrder(
-                                                QuickBonus(
-                                                    uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
-                                                    productName: "productCode",
-                                                    description: "comment",
-                                                    status: "UpdateUserInOrder"),
-                                                Participated(uidUser: "${myController.usersPick[index]["uid"]}", status: 'Default')))
-                                                .data;
-                                            if (resultData["status"]) {
-                                              var userProfile = {
-                                                "uid": "${myController.usersPick[index]["uid"]}",
-                                                "name": "${myController.usersPick[index]["name"]}",
-                                                "email": "on@gmail.com",
-                                                "phone": "782389359",
-                                                "Ccode": "+250",
-                                                "country": "Rwanda",
-                                                "initCountry": "none",
-                                                "PhoneNumber": "${myController.usersPick[index]["PhoneNumber"]}",
-                                                "carduid": "none"
-                                              };
-                                              setState(() {
-                                                (Get.put(StockQuery()).updateUserProfile(userProfile));
-                                                (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
-                                                (Get.put(StockQuery()).order)["resultData"][0]["myphone"]=myController.usersPick[index]["PhoneNumber"];
-                                              });
-                                              Future.microtask(() {
-                                                Navigator.of(context).pop();
-                                              });
-                                            } else {
-                                              // Handle error
-                                            }
+                                          bool isSuccess = await updatePickedUser(myController.usersPick[index]);
+                                          if(isSuccess)
+                                          {
+                                            cartDisplay();
+                                          }else{
+                                            print("something wrong and fish");
                                           }
                                         },
                                       ),
@@ -3812,7 +3845,6 @@ class _HomepageState extends State<Homepage> {
     });
     //(Get.put(StockQuery()).updateHideLoader(false));
     var resultData=(await StockQuery().searchUser(User(uid:"",name:searchName,phone:phoneNumber,platform:"4000",status:"offNotPick"),Topups(optionCase:"false",startlimit:limitData,searchOption:searchValOption,sortOrder:"ASC"))).data;
-    // print("amaData:${resultData}");
 
     if(resultData["status"])
     {
@@ -4244,6 +4276,89 @@ class _HomepageState extends State<Homepage> {
 
   }
 
+  Future<bool> updatePickedUser(Map<String, dynamic> thisUser) async {
+
+    ConstantClassUtil().showLoadingDialog(message: "Change Client");
+    Get.put(StockQuery()).updateHideLoader(false);
+
+    if (((Get.put(StockQuery()).order)["resultData"][0]["uid"]) == "none") {
+      var userProfile = {
+        "uid": "${thisUser["uid"]}",
+        "name": "${thisUser["name"]}",
+        "email": "on@gmail.com",
+        "phone": "782389359",
+        "Ccode": "+250",
+        "country": "Rwanda",
+        "initCountry": "none",
+        "marital_status": "${thisUser["marital_status"]}",
+        "PhoneNumber": "${thisUser["PhoneNumber"]}",
+        "carduid": "none"
+      };
+
+      Get.put(StockQuery()).updateUserProfile(userProfile);
+      setState(() {
+        (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+        (Get.put(StockQuery()).order)["resultData"][0]["myphone"] = thisUser["PhoneNumber"];
+      });
+
+
+      ConstantClassUtil().hideLoadingDialog();
+
+      Future.microtask(() {
+        Navigator.of(context).pop();
+      });
+
+      return true; // Return true on success
+    } else {
+      var resultData = (await StockQuery().updateInOrder(
+        QuickBonus(
+          uid: "${(Get.put(StockQuery()).order)["resultData"][0]["uid"]}",
+          productName: "productCode",
+          description: "comment",
+          status: "UpdateUserInOrder",
+        ),
+        Participated(uidUser: "${thisUser["uid"]}", status: 'Default'),
+      )).data;
+
+      if (resultData["status"]) {
+        var userProfile = {
+          "uid": "${thisUser["uid"]}",
+          "name": "${thisUser["name"]}",
+          "email": "on@gmail.com",
+          "phone": "782389359",
+          "Ccode": "+250",
+          "country": "Rwanda",
+          "initCountry": "none",
+          "marital_status": "${thisUser["marital_status"]}",
+          "PhoneNumber": "${thisUser["PhoneNumber"]}",
+          "carduid": "none"
+        };
+
+        setState(() {
+          Get.put(StockQuery()).updateUserProfile(userProfile);
+          (Get.put(StockQuery()).order)["resultData"][0]["name"] = userProfile["name"];
+          (Get.put(StockQuery()).order)["resultData"][0]["myphone"] = thisUser["PhoneNumber"];
+        });
+
+        //applyPromotion();
+        ConstantClassUtil().hideLoadingDialog();
+
+        Future.microtask(() {
+          Navigator.of(context).pop();
+        });
+
+        return true; // Return true on success
+      } else {
+        // Handle error path
+        ConstantClassUtil().hideLoadingDialog();
+        return false;
+      }
+    }
+
+
+    return false; // Return false if getPromotion() returns false
+  }
+
 
 //method
 }
@@ -4372,224 +4487,218 @@ class ProductSearchList extends StatelessWidget {
   const ProductSearchList({
     super.key,
     required this.addCartMethod,
-    required this.searchResult, required this.viewPictureMethod,
+    required this.searchResult,
+    required this.viewPictureMethod,
   });
-  final void Function(dynamic) addCartMethod;
-  final void Function(String,String) viewPictureMethod;
-  final dynamic searchResult;
-  @override
 
+  final void Function(dynamic) addCartMethod;
+  final void Function(String, String) viewPictureMethod;
+  final dynamic searchResult;
+
+  @override
   Widget build(BuildContext context) {
+    // Create a FocusNode for each item (list length + 1, but we only need for actual items)
+    final List<FocusNode> focusNodes = List.generate(
+      searchResult.length,
+          (index) => FocusNode(),
+    );
 
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: searchResult.length+1,
+      itemCount: searchResult.length + 1,
       itemBuilder: (context, index) {
+        if (index < searchResult.length) {
+          searchResult[index]['req_qty'] = "1";
+          searchResult[index]['name'] = "none";
 
-        if(index<searchResult.length)
-        {
-          searchResult[index]['req_qty']="1";
-          searchResult[index]['name']="none";
           return Container(
-            margin: const EdgeInsets.fromLTRB(0, 5, 0, 0),
+            margin: const EdgeInsets.fromLTRB(5,2, 5, 2),
             child: Card(
-              elevation:0,
-              //margin: EdgeInsets.symmetric(vertical:1,horizontal:5),
-              //color:Colors.white,
+              margin: EdgeInsets.zero,
+
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(9.0),
-                // side: BorderSide(color:_data[index]["color_var"]??true?Colors.white:Colors.green, width: 2),
               ),
-
               child: Column(
                 children: [
                   ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor:getRandomColor(),
-                        child: Icon(_getRandomIcon()),
-                      ),
-                      title:Row(
-                        children: [
-                          Expanded(
+                    leading: CircleAvatar(
+                      backgroundColor: getRandomColor(),
+                      child: Icon(_getRandomIcon()),
+                    ),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: (){
+                                  PricingBottomSheet.show(
+                                    productCode: "${searchResult[index]["productCode"]}",
+                                    cartonPrice: double.parse(searchResult[index]["price"]),
+                                    pcsInCarton: int.parse(searchResult[index]["pcs"])??0,
+                                    defaultMargin: 5.0, // Easily change default margin per item
+                                    currencySymbol: "\$", // Support different currencies
+                                    onConfirm: (quantity, totalPrice, totalProfit) {
+                                      // This runs when the user clicks "Confirm & Add"
+                                     /* print("User wants $quantity pieces.");
+                                      print("Total charge: €$totalPrice");
+                                      print("Total profit: €$totalProfit");*/
+                                      // 1. Grab the active CartController instance
+                                      final cartController = Get.find<CartController>();
 
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                                      // 2. Build the CartItem with your dynamic data
+                                      final cartItem = CartItem(
+                                        productCode: "${searchResult[index]["productCode"]}",
+                                        quantity: quantity,
+                                        pricePerPiece: quantity > 0 ? (totalPrice / quantity) : 0.0,
+                                        totalPrice: totalPrice,
+                                        totalProfit: totalProfit,
+                                        cartonCostPrice: double.tryParse("${searchResult[index]["price"]}") ?? 0.0,
+                                        pcsInCarton: int.tryParse("${searchResult[index]["pcs"]}") ?? 0,
+                                        marginPerCarton: 5.0,
+                                      );
 
-                                RichText(
+                                      // 3. Add it to the cart (this instantly triggers the FloatingCartBar to update and appear)
+                                      cartController.addItem(cartItem);
+
+                                      // Example: myCartController.addItem(productCode, quantity, totalPrice);
+                                    },
+                                  );
+                                },
+                                child: RichText(
                                   text: TextSpan(
-                                    text:"${searchResult[index]["productCode"]} (${searchResult[index]["pcs"]} pcs):",
+                                    text: "${searchResult[index]["productCode"]} (${searchResult[index]["pcs"]} pcs):",
                                     style: DefaultTextStyle.of(context).style,
                                     children: <TextSpan>[
                                       TextSpan(
                                         text: " 1X${searchResult[index]["price"]}",
                                         style: const TextStyle(color: Colors.blue),
-
-
                                       ),
-
                                     ],
                                   ),
                                 ),
-                                Text.rich(
-                                    TextSpan(
-                                        children: [
-                                          const TextSpan(
-                                            text: 'Qty :',
-
-                                          ),
-
-                                          WidgetSpan(
-
-                                            child: IntrinsicWidth(
-                                              stepWidth: 0.5,
-                                              child: TextField(
-                                                //controller: TextEditingController(text:"${_data[index]["textchange_var"]??_data[index]["qty"]}"),
-
-                                                keyboardType: TextInputType.number,
-                                                decoration: const InputDecoration(
-                                                  hintText: '-1-',
-                                                  hintStyle: TextStyle(color: Colors.blue),
-                                                  contentPadding: EdgeInsets.all(0),
-                                                  isDense: true,
-
-
-
-                                                ),
-                                                style: const TextStyle(
-                                                  color: Colors.blue, // Set the text color to red
-
-                                                ),
-                                                onChanged: (text) {
-                                                  final value = int.tryParse(text);
-                                                  if(value != null && value > 0){
-                                                    searchResult[index]['req_qty']=text;
-                                                    // print(searchResult[index]);
-
-                                                    searchResult[index]['totalQty']=text;
-                                                    searchResult[index]['totalAmount']=int.parse(searchResult[index]['price'])*int.parse(text);
-                                                    searchResult[index]['totalCount']=text;
-                                                    (Get.put(StockQuery()).updateHideaddCart(false));
-
-
-                                                  }
-                                                  else{
-                                                    (Get.put(StockQuery()).updateHideaddCart(true));
-                                                  }
-
-
-
-
-                                                },
-                                              ), // set minimum width to 100
-                                            ),
-                                          ),
-
-                                        ]
-                                    )
-                                ),
-                                const SizedBox(height: 5,),
-                                Text("Qty left:${num.parse(searchResult[index]["qty"])-num.parse(searchResult[index]["qty_sold"])}"),
-
-
-                              ],
-                            ),
-                          )
-
-
-
-
-
-
-                        ],
-                      ),
-
-                      subtitle: Wrap(
-                        //crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-
-                          const Icon(Icons.segment,color:Colors.orange,size:13,),
-                          Text("tags:${searchResult[index]["ProductName"]} "),
-
-
-
-                        ],
-                      ),
-                      trailing:Column(
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-
-
-
-                              GetBuilder<StockQuery>(
-                                builder: (myLoadercontroller) {
-                                  //return Text('Data: ${_controller.data}');
-                                  return
-                                    (myLoadercontroller.hideaddCart)?
-                                    const Text(""):
-                                    IconButton(
-                                      icon: const Icon(Icons.add_shopping_cart,
-                                          size: 23.0,
-                                          color: Colors.grey),
-                                      onPressed: () async{
-                                        //print(searchResult[index]);
-                                        myLoadercontroller.updateReqProductData(searchResult[index]);
-                                        addCartMethod(searchResult[index]);
-                                      },
-                                    );
-                                },
                               ),
-                              const Visibility(
-                                  visible:true,
-                                  child: Text("")),
-                              IconButton(
-                                icon: const Icon(
-                                    Icons.grid_view,
-                                    size: 23.0,
-                                    color: Colors.orange
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    // Make the "Qty :" text tappable
+                                    WidgetSpan(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          // Request focus on the corresponding TextField
+                                          FocusScope.of(context).requestFocus(focusNodes[index]);
+                                        },
+                                        child: const Text(
+                                          'Qty : ',
+                                          style: TextStyle(
+                                            decoration: TextDecoration.underline,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    WidgetSpan(
+                                      child: IntrinsicWidth(
+                                        stepWidth: 0.5,
+                                        child: TextField(
+                                          focusNode: focusNodes[index], // Attach FocusNode
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(
+                                            hintText: '-1-',
+                                            hintStyle: TextStyle(color: Colors.blue),
+                                            contentPadding: EdgeInsets.all(0),
+                                            isDense: true,
+                                          ),
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                          ),
+                                          onChanged: (text) {
+                                            final value = int.tryParse(text);
+                                            if (value != null && value > 0) {
+                                              searchResult[index]['req_qty'] = text;
+                                              searchResult[index]['totalQty'] = text;
+                                              searchResult[index]['totalAmount'] =
+                                                  double.parse(searchResult[index]['price']) *
+                                                      double.parse(text);
+                                              searchResult[index]['totalCount'] = text;
+                                              (Get.put(StockQuery()).updateHideaddCart(false));
+                                            } else {
+                                              (Get.put(StockQuery()).updateHideaddCart(true));
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                onPressed: () {
-                                  viewPictureMethod(searchResult[index]["productCode"],searchResult[index]["img_url"]);
-
-                                },
                               ),
+                              const SizedBox(height: 5),
+                              Text("Qty left:${num.parse(searchResult[index]["qty"]) - num.parse(searchResult[index]["qty_sold"])}"),
                             ],
                           ),
-
-                        ],
-                      )
-
-                    //trailing: Text()
-                  ),
-                  const Visibility(
-                    visible: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(8,0,8,8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text("1088888880808  8766"),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Wrap(
+                      children: [
+                        const Icon(Icons.segment, color: Colors.orange, size: 13),
+                        Text("tags:${searchResult[index]["ProductName"]} "),
+                      ],
+                    ),
+                    trailing: Column(
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            GetBuilder<StockQuery>(
+                              builder: (myLoadercontroller) {
+                                return myLoadercontroller.hideaddCart
+                                    ? const Text("")
+                                    : IconButton(
+                                  icon: const Icon(Icons.add_shopping_cart,
+                                      size: 23.0, color: Colors.grey),
+                                  onPressed: () async {
+                                    myLoadercontroller.updateReqProductData(searchResult[index]);
+                                    addCartMethod(searchResult[index]);
+                                  },
+                                );
+                              },
+                            ),
+                            const Visibility(visible: true, child: Text("")),
+                            IconButton(
+                              icon: const Icon(Icons.grid_view, size: 23.0, color: Colors.orange),
+                              onPressed: () {
+                                viewPictureMethod(
+                                    searchResult[index]["productCode"],
+                                    searchResult[index]["img_url"]);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-
                 ],
               ),
             ),
           );
-
+        } else {
+          return const SizedBox.shrink();
         }
-        else{
-          return Container();
-        }
-
       },
     );
   }
 
+  // Remember to dispose FocusNodes to avoid memory leaks
+  @override
+  void dispose() {
+    // This is a StatelessWidget, so we can't override dispose.
+    // If you convert to StatefulWidget, you can dispose the focus nodes.
+    // Alternatively, manage them outside and pass them in.
+  }
 }
 
 
@@ -4607,7 +4716,7 @@ class CheckoutPage extends StatelessWidget {
 
   final dynamic chekoutResult;
   final void Function(String,String) viewPictureM;
-  final void Function(int,int,int,bool,int) changeQtyCheckout;
+  final void Function(int,double,double,bool,int) changeQtyCheckout;
 
   final void Function(String,int,String) saveChangeQtyCheckout;
   final void Function(String) deleteCheckout;
@@ -4622,6 +4731,7 @@ class CheckoutPage extends StatelessWidget {
 
     return ListView.builder(
       padding: EdgeInsets.zero,
+
       itemCount: chekoutResult.length+1,
       itemBuilder: (context, index) {
 
@@ -4640,8 +4750,10 @@ class CheckoutPage extends StatelessWidget {
           return Stack(
             children: [
               Container(
+
                 margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                 child: Card(
+                  margin: EdgeInsets.zero,
                   elevation:0,
                   //margin: EdgeInsets.symmetric(vertical:1,horizontal:5),
                   //color:Colors.white,
@@ -4726,7 +4838,12 @@ class CheckoutPage extends StatelessWidget {
                                                           //String qtyDa=text.
                                                           //print("${(chekoutResult[index]["price"]).runtimeType} ${(chekoutResult[index]["totalQty"]).runtimeType} ${text.runtimeType}");
 
-                                                          changeQtyCheckout(index,(int.parse(chekoutResult[index]["price"])),(int.parse(text)),false,chekoutResult[index]["old_qty"]);
+
+                                                          double price=double.parse(chekoutResult[index]["price"]);
+                                                          double qtyEdit=double.parse(text);
+                                                          // double oldqty=double.parse(chekoutResult[index]["old_qty"]);
+                                                          changeQtyCheckout(index,price,qtyEdit,false,chekoutResult[index]["old_qty"]);
+                                                          // changeQtyCheckout(index,(int.parse(chekoutResult[index]["price"])),(int.parse(text)),false,chekoutResult[index]["old_qty"]);
 
                                                         }
 

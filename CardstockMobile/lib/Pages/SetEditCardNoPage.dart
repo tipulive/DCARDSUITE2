@@ -27,7 +27,7 @@ class SetEditCardNoPage extends StatelessWidget {
       //backgroundColor: Color(0xff010a0e),
 
       body:SetEditCardNoComp(),
-      bottomNavigationBar:HomeNavigator(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

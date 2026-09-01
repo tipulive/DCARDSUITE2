@@ -10,6 +10,8 @@ class HideShowState extends GetxController{
   var defaultInterest=5.obs;
   var homenavigator=0.obs;
   var profilenavigator=0.obs;
+  var currentTabIndex = 0.obs;
+
   //var delivery=0.obs;
   /*final delivery = [
     {
@@ -37,6 +39,9 @@ update();
 
 
 
+  }
+  void setCurrentTabIndex(int index) {
+    currentTabIndex.value = index;
   }
   isHideDelivery(indexData,numb){
     for (int i = 0; i < delivery.length; i++) {
@@ -70,6 +75,7 @@ update();
   setDefaultInterest(valData){
     defaultInterest.value=valData;
   }
+
   setHomenavigator(valData){
     homenavigator.value=valData;
   }

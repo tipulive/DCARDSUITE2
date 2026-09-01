@@ -81,7 +81,7 @@ String versionN="172363500";
 
   bool showOveray=false;
 
-  final StockQuery myStockQuery = Get.find<StockQuery>();
+  final StockQuery _stockQuery = Get.find<StockQuery>();
 
 
   /* picture upload*/
@@ -92,12 +92,15 @@ final fontSizeData=13.0;
   String sTitle='Products In Stocks';
   // Config data for action items
   final List<Map<String, dynamic>> _actions = [
-    {'sTitle':'Products In Stocks','label': 'Stocks', 'icon': Icons.swap_horiz, 'color': Colors.blue,'status': 'Stocks'},
-    {'sTitle':'Pending Products','label': 'Pending', 'icon': Icons.receipt_long, 'color': Colors.orange,'status': 'Pending'},
-    {'sTitle':'Received Products','label': 'Received', 'icon': Icons.phone_android, 'color': Colors.purple,'status': 'Received'},
-    {'sTitle':'Cancelled Products','label': 'Cancelled', 'icon': Icons.qr_code_scanner, 'color': Colors.teal,'status': 'Cancelled'},
+    {'sTitle':'Products In Stocks','label': 'Stocks', 'icon': Icons.swap_horiz, 'color': Colors.blue,'status': 'Stocks','sStatus':''},
+    {'sTitle':'Pending Products','label': 'Pending', 'icon': Icons.receipt_long, 'color': Colors.orange,'status': 'Pending','sStatus':'0'},
+    {'sTitle':'Received Products','label': 'Received', 'icon': Icons.phone_android, 'color': Colors.purple,'status': 'Received','sStatus':'1'},
+    {'sTitle':'Cancelled Products','label': 'Cancelled', 'icon': Icons.qr_code_scanner, 'color': Colors.teal,'status': 'Cancelled','sStatus':'2'},
   ];
 
+  String sStatus = "";
+
+  String adminSubscriber=Get.put(AdminQuery()).obj["result"][0]["subscriber"];
   // State Management Variables
   bool _isLoading = true;
   List<dynamic> _rawStockPayList = [];
@@ -190,6 +193,7 @@ final fontSizeData=13.0;
                 itemBuilder: (context, index) {
                   final item = _actions[index];
                   final isSelected = _selectedAction == item['status'];
+
                   final Color color = item['color'];
 
                   return _buildActionButton(
@@ -202,12 +206,14 @@ final fontSizeData=13.0;
                       setState(() {
                         _selectedAction = item['status'];
                         sTitle=item['sTitle'];
+                        sStatus=item['sStatus'];
                       });
                      // print('${item['label']} selected');
                       if(_selectedAction=='Stocks')
                         {
 
                         }else{
+
                         _fetchStockPayData();
                         }
 
@@ -430,7 +436,7 @@ final fontSizeData=13.0;
                                                     ),
                                                     onChanged: (text) {
 
-                                                      if((int.tryParse(text) != null)){
+                                                      if((double.tryParse(text) != null)){
                                                         price1=text;
                                                         productCode1=_data[index]["productCode"];
                                                         actionStatus="updatePrice";
@@ -559,7 +565,7 @@ final fontSizeData=13.0;
                               onTap: () {
                                 
 
-                                sendStockQuantity(context,_data[index]["productCode"],_data[index]["qty"]);
+                                sendStockQuantity(context,_data[index],_data[index]["qty"]);
                               },
                               child: const Padding(
                                 padding: EdgeInsets.all(8.0),
@@ -716,24 +722,31 @@ final fontSizeData=13.0;
                   final String name = item['name'] ?? 'N/A';
                   final String productCode = item['productCode'] ?? 'N/A';
                   final String qty = item['qty']?.toString() ?? '0';
-                  final String payer = item['subscriber'] ?? item['uidSender'] ?? 'Unknown Payer';
-                  final String receiver = item['recSubscriber'] ?? item['uidReceiver'] ?? 'N/A';
+                  final String payer = item['subscriber']  ?? 'Unknown Payer';
+                  final String receiver = item['recSubscriber']  ?? 'N/A';
                   final String commentData = item['commentData'] ?? 'Stock Transfer';
                   final String createdAt = item['created_at'] ?? 'N/A';
 
                   // Map raw status ("1") to friendly display string
                   final String rawStatus = item['status']?.toString() ?? '0';
-                  final String status = (rawStatus == '1') ? 'COMPLETED' : 'PENDING';
-
+                 // final String status = (rawStatus == '1') ? 'COMPLETED' : 'PENDING';
+                  final String status = _selectedAction;
                   final Color itemColor = _accentColors[uid.hashCode.abs() % _accentColors.length];
 
                   return _buildSalesItemCard(
                     salesName: '$name ($payer)',
                     uid: uid,
-                    receiver: receiver,
+                    receiverSub: receiver,
+                    senderSub:item['subscriber'],
                     paymentStatus: status,
-                    amount: 'Qty: $qty',
-                    byName: productCode,
+                    qty:qty,
+                    productCode: productCode,
+                    productName:item['productName'],
+                    pcs:item['pcs'],
+                    imgUrl:item['img_url'],
+                    price:item['price'],
+                    uidSender:item['uidSender'],
+                    uidReceiver:item['uidReceiver'],
                     dateCaptured: createdAt,
                     commentData: commentData,
                     accentColor: itemColor,
@@ -761,10 +774,17 @@ final fontSizeData=13.0;
   Widget _buildSalesItemCard({
     required String salesName,
     required String uid,
-    required String receiver,
+    required String receiverSub,
+    required String senderSub,
     required String paymentStatus,
-    required String amount,
-    required String byName,
+    required String qty,
+    required String productCode,
+    required String productName,
+    required String pcs,
+    required String imgUrl,
+    required String price,
+    required String uidSender,
+    required String uidReceiver,
     required String dateCaptured,
     required String commentData,
     required Color accentColor,
@@ -865,7 +885,7 @@ final fontSizeData=13.0;
 
                                 // Product/Item Title
                                 Text(
-                                  ConstantClassUtil().capitalizeFirstLetter(byName),
+                                  ConstantClassUtil().capitalizeFirstLetter(productCode),
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -881,7 +901,7 @@ final fontSizeData=13.0;
 
                           // Quantity / Amount Display
                           Text(
-                            amount,
+                            qty,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -924,7 +944,7 @@ final fontSizeData=13.0;
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'Rec: $receiver',
+                      'Rec: $receiverSub',
                       style: const TextStyle(
                         fontSize: 8,
                         fontWeight: FontWeight.bold,
@@ -972,12 +992,27 @@ final fontSizeData=13.0;
                           child: InkWell(
                             onTap: () => _showRequestDetailsBottomSheet(
                               uid: uid,
-                              receiver: receiver,
+                              uidUser: uidSender,
+                              uidReceiver: uidReceiver,
+                              receiver: receiverSub,
                               status: paymentStatus,
-                              clientName: byName,
-                              amount: amount,
+                              clientName:salesName,
+                              qty: qty,
                               purpose: commentData,
                               date: dateCaptured,
+                              senderSub: senderSub,
+                              uidReceiverSub: uidReceiver,
+                                onConfirm: (){
+                                  Get.back();
+                                  //print(uidReceiver);
+                                  receiveStock(uid,productCode,senderSub,qty);
+                                  //print(uid);
+                                },
+                                onCancel: (){
+                                  stockCancelStock(uid,senderSub);
+                                }
+
+
                             ),
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
@@ -1018,17 +1053,24 @@ final fontSizeData=13.0;
 // ------------------------------------------------------------------
   void _showRequestDetailsBottomSheet({
     required String uid,
+    required String uidUser,
+    required String uidReceiver,
     required String receiver,
     required String clientName,
     required String status,
-    required String amount,
+    required String qty,
     required String purpose,
     required String date,
+    required String senderSub,
+    required String uidReceiverSub,
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
   }) {
+    debugPrint("print $uidUser $uidReceiver $status");
     Get.bottomSheet(
       Container(
         constraints: BoxConstraints(
-          maxHeight: Get.height * 0.6,
+          maxHeight: Get.height * 0.7, // Increased slightly to comfortably fit buttons
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         decoration: const BoxDecoration(
@@ -1042,6 +1084,7 @@ final fontSizeData=13.0;
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Drag handle
             Center(
               child: Container(
                 width: 40,
@@ -1053,6 +1096,8 @@ final fontSizeData=13.0;
               ),
             ),
             const SizedBox(height: 16),
+
+            // Header: Purpose & Amount
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1071,7 +1116,15 @@ final fontSizeData=13.0;
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Status: ${status.toUpperCase()} • UID: $uid • Receiver: $receiver',
+                        'Status: ${status.toUpperCase()} ',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                      Text(
+                        '• UID: $uid ',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                      Text(
+                        '• Receiver: $receiver',
                         style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
                     ],
@@ -1081,7 +1134,7 @@ final fontSizeData=13.0;
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text(
-                      'AMOUNT',
+                      'QUANTITY',
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
@@ -1090,7 +1143,7 @@ final fontSizeData=13.0;
                       ),
                     ),
                     Text(
-                      '\$$amount',
+                      '$qty',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -1101,8 +1154,11 @@ final fontSizeData=13.0;
                 ),
               ],
             ),
+
             const Divider(height: 24, thickness: 1),
             const SizedBox(height: 8),
+
+            // Details section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1130,7 +1186,66 @@ final fontSizeData=13.0;
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 24),
+
+            // Action Buttons
+            Row(
+              children: [
+
+               Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Get.back(); // Dismiss bottom sheet
+                      if (onCancel != null) onCancel();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: Colors.grey.shade400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                    Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      //Get.back(); // Dismiss bottom sheet
+                      if (onConfirm != null) onConfirm();
+
+                      //onConfirm();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A315E),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1231,199 +1346,7 @@ final fontSizeData=13.0;
     super.dispose();
   }
 
-  // ------------------------------------------------------------------
-  // 2. REQUEST PAYMENT (FIXED: no conflicting Get.back() calls)
-  // ------------------------------------------------------------------
-  Future<void> reqSendProduct(String qty,String productCode, String subscriber,String company, BuildContext context) async {
-    FocusManager.instance.primaryFocus?.unfocus();
 
-    // Show loading dialog
-    ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
-
-    bool success = false;
-
-    try {
-
-      int qtyData=int.parse(qty);
-
-      final resultData = await myStockQuery.reqStock(
-        QuickBonus(
-          productName: productCode,
-          reqQty: qtyData,
-          subscriber: subscriber,
-          description: "req to receive Amount",
-
-        ),
-      );
-
-      if (resultData != null && resultData["status"] == true) {
-        // Refresh transactions (and optionally balance)
-        // await _fetchRecentTransactions();
-        _showFeatureSnackbar('Transfer Products', 'you Have send ${qty} to ${company}');
-        ConstantClassUtil().hideLoadingDialog();
-        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
-        success = true;
-      }
-    } catch (e) {
-      debugPrint("Error Sending Products: $e");
-    } finally {
-      // 1. Close loading dialog if still open
-
-
-      // 2. Show snackbar based on result
-      if (success) {
-        ConstantClassUtil().hideLoadingDialog();
-        Get.snackbar(
-          'Success',
-          'Payment request sent successfully!',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        // 3. Close the bottom sheet only on success
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send request. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
-    }
-  }
-  Future<void> viewReqProduct(String qty, String uid, BuildContext context) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    // Show loading dialog
-    Get.dialog(
-      const Center(
-        child: CircularProgressIndicator(color: Colors.orange),
-      ),
-      barrierDismissible: false,
-    );
-
-    bool success = false;
-
-    try {
-      final ownerData = box.get('owner');
-      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
-          ? ownerData[0]["uid"] ?? ""
-          : "";
-
-      ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
-      final resultData = await myStockQuery.reqPaymentStock(
-        Participated(
-          inputData: qty,
-          uidCreator: uidCreator,
-          status: "Req Payment",
-          promotion_msg: "req to receive Amount",
-        ),
-      );
-
-      if (resultData != null && resultData["status"] == true) {
-        // Refresh transactions (and optionally balance)
-        // await _fetchRecentTransactions();
-        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
-        success = true;
-      }
-    } catch (e) {
-      debugPrint("Error Sending Products: $e");
-    } finally {
-      // 1. Close loading dialog if still open
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-
-      // 2. Show snackbar based on result
-      if (success) {
-        Get.snackbar(
-          'Success',
-          'Payment request sent successfully!',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        // 3. Close the bottom sheet only on success
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send request. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
-    }
-  }
-  Future<void> receiveStock(String qty, String uid, BuildContext context) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    // Show loading dialog
-    ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
-
-    bool success = false;
-
-    try {
-      final ownerData = box.get('owner');
-      final String uidCreator = (ownerData != null && ownerData.isNotEmpty)
-          ? ownerData[0]["uid"] ?? ""
-          : "";
-
-
-      final resultData = await myStockQuery.reqPaymentStock(
-        Participated(
-          inputData: qty,
-          uidCreator: uidCreator,
-          status: "Req Payment",
-          promotion_msg: "req to receive Amount",
-        ),
-      );
-
-      if (resultData != null && resultData["status"] == true) {
-        // Refresh transactions (and optionally balance)
-        // await _fetchRecentTransactions();
-        ConstantClassUtil().hideLoadingDialog();
-        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
-        success = true;
-      }
-    } catch (e) {
-      debugPrint("Error Sending Products: $e");
-    } finally {
-      // 1. Close loading dialog if still open
-
-
-      // 2. Show snackbar based on result
-      if (success) {
-        ConstantClassUtil().hideLoadingDialog();
-        Get.snackbar(
-          'Success',
-          'Payment request sent successfully!',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        // 3. Close the bottom sheet only on success
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send request. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
-    }
-  }
 
   void _showFeatureSnackbar(String title, String message) {
     Get.snackbar(
@@ -1500,8 +1423,10 @@ final fontSizeData=13.0;
       if(resultData["status"])
       {
        // resetForm();
-        Get.snackbar("Success", productName1,backgroundColor: const Color(0xff9a1c55),
+        Get.snackbar("Success", productName1,
+            backgroundColor: const Color(0xff9a1c55),
             colorText: const Color(0xffffffff),
+
             titleText: const Text("Updated Successfully",  style: TextStyle(
               color: Colors.white, // Set the text color here
 
@@ -1663,16 +1588,224 @@ final fontSizeData=13.0;
     viewData('test',"ViewProduct");
 
   }
+
+  // ------------------------------------------------------------------
+  // 2. REQUEST PAYMENT (FIXED: no conflicting Get.back() calls)
+  // ------------------------------------------------------------------
+  Future<void> reqSendProduct(String qty,Map<String, dynamic> stockProduct,Map<String, dynamic> company, BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // Show loading dialog
+   // ConstantClassUtil().showLoadingDialog(message: "Sending Stocks..");
+
+    bool success = false;
+
+    String resultTest="";
+
+    try {
+
+     // print(stockProduct.runtimeType);
+      int qtyData=int.parse(qty);
+      //print(qtyData);
+
+      final resultData = await _stockQuery.reqStock(
+        QuickBonus(
+          uid:stockProduct["productCode"],
+          productName: stockProduct["ProductName"],
+          //productName: stockProduct["prod"],
+          giftPcs: stockProduct["pcs"],
+          giftName: stockProduct["img_url"],
+          price: stockProduct["price"],
+          reqQty: qtyData,
+          subscriber: company["subscriber"],//received subscriber
+          description: "req to receive Product",
+
+        ),
+      );
+     // debugPrint(stockProduct.toString());
+     // debugPrint('${stockProduct["productCode"]} ${stockProduct["productName"]} ${stockProduct["pcs"]} ${stockProduct["img_url"]}${stockProduct["price"]} ${company["subscriber"]}');
+      resultTest=resultData["result"];
+      //print(resultData);
+      if (resultData != null && resultData["status"] == true) {
+        // Refresh transactions (and optionally balance)
+        // await _fetchRecentTransactions();
+        _showFeatureSnackbar('Transfer Products', 'you Have send ${qty} to ${company["subscriber"]}');
+        ConstantClassUtil().hideLoadingDialog();
+        // controller.fetchCompanyRecord(); // uncomment if you want balance refresh too
+        success = true;
+      }else{
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error Sending Products: $e");
+    } finally {
+      // 1. Close loading dialog if still open
+
+
+      // 2. Show snackbar based on result
+      if (success) {
+
+        ConstantClassUtil().hideLoadingDialog();
+        //
+        setState(() {
+          sStatus="0";
+          _selectedAction="Pending";
+        });
+        _fetchStockPayData();
+        Get.snackbar(
+          'Success',
+          'Payment request sent successfully!',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        // 3. Close the bottom sheet only on success
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        print("error no data found");
+        Get.snackbar(
+          'Error',
+          resultTest,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  Future<void>receiveStock(String uid,String productCode,String senderSub,qty) async//both pending and cancel
+      {
+        debugPrint("${uid} ${productCode} ${senderSub} ${qty}");
+    var validation=ConstantClassUtil().validationTwo(senderSub,adminSubscriber,"You can not be able to Confirm This Payment because you are sender","Success fully");
+    if(validation["status"]) {
+      //print("hello validation $uidAuth");
+      Get.snackbar(
+        'Error',
+        validation["message"],
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }else{
+      ConstantClassUtil().showLoadingDialog(message: "Confirm receiving ......");
+      try {
+
+        int qtyData=int.parse(qty);
+
+        // Topups parameter passed as needed by your controller
+        final response = await _stockQuery.receiveStock(QuickBonus(
+            uid: uid,
+            productName:productCode,
+            subscriber: senderSub,
+            reqQty: qtyData
+        ));
+
+        if (response != null && response["status"] == true) {
+          // Adjust key according to API response wrapper (e.g., response.data["result"] or response.data)
+
+          ConstantClassUtil().hideLoadingDialog();
+          setState(() {
+            sStatus="2";
+            _selectedAction="Received";
+          });
+          // print("paid receiver");
+          Get.snackbar(
+            'Success',
+            'Payment  Received!',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.blueAccent,
+            colorText: Colors.white,
+          );
+        } else {
+
+          ConstantClassUtil().hideLoadingDialog();
+        }
+      } catch (e) {
+        debugPrint("Error fetching stock pay details: $e");
+        ConstantClassUtil().hideLoadingDialog();
+      }
+    }
+
+
+
+  }
+
+
+  Future<void>stockCancelStock(String uid,String senderSub) async//both pending and cancel
+      {
+        //print("$senderSub $adminSubscriber");
+    var validation=ConstantClassUtil().validationTwo(senderSub,adminSubscriber,"You can not be able to cancel This Payment","Success fully");
+    if(validation["status"])
+    {
+      ConstantClassUtil().showLoadingDialog(message: "Confirm receiving ......");
+      try {
+
+        // Topups parameter passed as needed by your controller
+        final response = await _stockQuery.stockCancelStock(Participated(
+            uid: uid,
+            status: "2"
+        ));
+
+        if (response != null && response["status"] == true) {
+          // Adjust key according to API response wrapper (e.g., response.data["result"] or response.data)
+          ConstantClassUtil().hideLoadingDialog();
+          Get.snackbar(
+            'Success',
+            'Request Payment Cancelled',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.pink,
+            colorText: Colors.white,
+          );
+
+          setState(() {
+            sStatus="2";
+            _selectedAction="Cancelled";
+          });
+          _fetchStockPayData();
+        } else {
+
+          ConstantClassUtil().hideLoadingDialog();
+        }
+      } catch (e) {
+        debugPrint("Error fetching stock pay details: $e");
+        ConstantClassUtil().hideLoadingDialog();
+      }
+    }else{
+      Get.snackbar(
+        'Error',
+        validation["message"],
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+
+
+
+
+  }
   // Fetch API Data from StockQuery Controller
   Future<void> _fetchStockPayData() async {
     setState(() => _isLoading = true);
 
     try {
       // Topups parameter passed as needed by your controller
-      final response = await myStockQuery.viewRecReqStock(Topups());
+      final response = await _stockQuery.viewRecReqStock(Participated(
+          status: sStatus
+      ));
 
       if (response != null && response.data != null) {
         // Adjust key according to API response wrapper (e.g., response.data["result"] or response.data)
+        //print(response);
         final List<dynamic> data = response.data is List
             ? response.data
             : (response.data["result"] ?? response.data["data"] ?? []);
@@ -2107,7 +2240,7 @@ final fontSizeData=13.0;
           ? ownerData[0]["uid"] ?? ""
           : "";
 
-      final resultData = await myStockQuery.miniAccount(
+      final resultData = await _stockQuery.sharing(
         Topups(
           optionCase: optionCase,
           name: name,
@@ -2115,6 +2248,7 @@ final fontSizeData=13.0;
         ),
       );
 
+      print(resultData);
       if (resultData != null && resultData["status"] == true) {
         final rawResult = resultData["result"];
 
@@ -2141,7 +2275,7 @@ final fontSizeData=13.0;
   /// 1. MAIN BOTTOM SHEET: SEND STOCK QUANTITY
   void sendStockQuantity(
       BuildContext context,
-      dynamic productCode,
+      dynamic stockProduct,
       dynamic qtyData, {
         String initialQuantity = "1",
       }) {
@@ -2190,7 +2324,7 @@ final fontSizeData=13.0;
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Text(
-                    "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                    "Send ${ConstantClassUtil().capitalizeFirstLetter(stockProduct["productCode"].toString())}",
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -2326,6 +2460,7 @@ final fontSizeData=13.0;
                               color: Colors.orange.shade800,
                             ),
                           ),
+
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -2384,6 +2519,11 @@ final fontSizeData=13.0;
                           ),
                         ),
                       ),
+                      Icon(
+                        Icons.comment,
+                        color: Colors.grey,
+                        size: 24.0,
+                      )
                     ],
                   ),
                 ),
@@ -2523,12 +2663,13 @@ final fontSizeData=13.0;
 
                           //print(company);
 
-                          await reqSendProduct(qty,productCode,company["subscriber"],company["companyName"],context);
+
+                          await reqSendProduct(qty,stockProduct,company,context);
                           //await reqPayment(qty, company["uid"], context);
 
-                          debugPrint("=================================");
-                          debugPrint("DISPATCH SUBMITTED");
-                          debugPrint("Product: $productCode");
+                          debugPrint("================================= $qty");
+                          debugPrint("DISPATCH SUBMITTED $company");
+                          debugPrint("Product: ${stockProduct}");
                           debugPrint("Quantity Sent: $qty");
                           debugPrint(
                             "Recipient: ${company['companyName'] ?? company['name']}",
@@ -2550,7 +2691,7 @@ final fontSizeData=13.0;
                           elevation: 0,
                         ),
                         child: Text(
-                          "Send ${ConstantClassUtil().capitalizeFirstLetter(productCode.toString())}",
+                          "Send ${ConstantClassUtil().capitalizeFirstLetter(stockProduct["productCode"].toString())}",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

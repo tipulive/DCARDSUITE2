@@ -34,7 +34,7 @@ class SetSalePage extends StatelessWidget {
 
 
       body:SetSaleComp(),
-      bottomNavigationBar:HomeNavigator(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4,),
 
 
 

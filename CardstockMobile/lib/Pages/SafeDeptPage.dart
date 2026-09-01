@@ -28,8 +28,8 @@ class SafeDeptPage extends StatelessWidget {
       ),
 
 
-      body:SafeDeptComp(),
-      bottomNavigationBar:HomeNavigator(),
+      body:const SafeDeptComp(),
+      bottomNavigationBar:HomeNavigator(currentIndex: 4),
 
 
 

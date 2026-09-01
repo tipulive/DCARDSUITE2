@@ -1,4 +1,3 @@
-
 class Promotion {
   /// Applies the best applicable promotion and returns a breakdown.
   /// Returns `quick` and `long` lists, each containing reward items (`inStock`) and bonus totals.
@@ -22,14 +21,14 @@ class Promotion {
         final filteredItems = filterCartProductsByCondition(condition, cartItems);
         final cartTotals = calculateCartTotals(filteredItems);
         final bonusData = _calculateBonus(promotion, cartTotals);
-        final bonus = bonusData['bonus'] as int;
+        final bonus = bonusData['bonus'] as num;          // <-- now num (double)
         final dividend = bonusData['dividend'] as int;
 
         promotionResults[promoId] = {
           'applied': true,
           'promotype': promoType,
           'amount': _toNum(promotion['promotion']['amount']),
-          'bonusTot': bonus,
+          'bonusTot': bonus,                              // <-- stored as num
           'dividend': dividend,
           'cartTotal': cartTotals['amount'],
           'cartCount': cartTotals['count'],
@@ -52,8 +51,8 @@ class Promotion {
       return {
         'success': false,
         'message': 'No applicable promotions found',
-        'quick': [],          // consistent empty lists
-        'long': [],           // consistent empty lists
+        'quick': [],
+        'long': [],
         'cart': cart,
         'allPromotionsStatus': promotionResults,
         'applicablePromotions': [],
@@ -161,6 +160,24 @@ class Promotion {
       normalized['card'] = 'both';
     }
 
+    // Normalise userTypes list
+    if (normalized.containsKey('userTypes')) {
+      if (normalized['userTypes'] is String) {
+        normalized['userTypes'] = (normalized['userTypes'] as String)
+            .split(',')
+            .map((s) => s.trim().toLowerCase())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      } else if (normalized['userTypes'] is List) {
+        normalized['userTypes'] = (normalized['userTypes'] as List)
+            .map((e) => e.toString().trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+    } else {
+      normalized['userTypes'] = <String>[];
+    }
+
     return normalized;
   }
 
@@ -179,7 +196,7 @@ class Promotion {
     if (promotion['promotype'] != 'quick') {
       return {
         'status': true,
-        'bonus': _toNum(promotion['promotion']['amount']).toInt(),
+        'bonus': _toNum(promotion['promotion']['amount']),   // <-- no .toInt()
         'dividend': 1,
       };
     }
@@ -196,8 +213,8 @@ class Promotion {
       final totalFactor = actualTotal / requiredTotal;
       final countFactor = actualCount / requiredCount;
       final factor = totalFactor < countFactor ? totalFactor : countFactor;
-      final multiplier = factor.floor();
-      final bonus = (promoAmount * multiplier).toInt();
+      final multiplier = factor.floor();                 // keep as integer for rewards
+      final bonus = promoAmount * multiplier;            // <-- no .toInt() – bonus is num
       return {
         'status': true,
         'type': 'both',
@@ -208,7 +225,7 @@ class Promotion {
 
     if (rule == 'CTotal') {
       final multiplier = (actualTotal / requiredTotal).floor();
-      final bonus = (promoAmount * multiplier).toInt();
+      final bonus = promoAmount * multiplier;            // <-- no .toInt()
       return {
         'status': true,
         'type': 'CTotal',
@@ -219,7 +236,7 @@ class Promotion {
 
     if (rule == 'cCount') {
       final multiplier = (actualCount / requiredCount).floor();
-      final bonus = (promoAmount * multiplier).toInt();
+      final bonus = promoAmount * multiplier;            // <-- no .toInt()
       return {
         'status': true,
         'type': 'cCount',
@@ -238,6 +255,10 @@ class Promotion {
       ) {
     final cond = _normalizeCondition(condition);
 
+    if (!checkUserTypeCondition(cond['userTypes'] as List, cart['userType']?.toString())) {
+      return "User type condition not met: expected '${cond['userTypes']}', actual '${cart['userType']}'";
+    }
+
     if (!checkCardCondition(cond['card'], cart['card'] as bool)) {
       return "Card condition not met: expected '${cond['card']}', actual '${cart['card']}'";
     }
@@ -255,11 +276,12 @@ class Promotion {
     final actualTotal = totals['amount'];
     final actualCount = totals['count'];
     final filterDesc = _describeFilter(cond);
-
+    print("total print from promotion ${actualTotal}");
     if (rule == 'both') {
       if (actualTotal < requiredTotal && actualCount < requiredCount) {
         return "Cart total & count insufficient: amount ($actualTotal < $requiredTotal) AND count ($actualCount < $requiredCount) | $filterDesc";
       } else if (actualTotal < requiredTotal) {
+
         return "Cart total insufficient: amount ($actualTotal < $requiredTotal) | count ($actualCount >= $requiredCount) | $filterDesc";
       } else if (actualCount < requiredCount) {
         return "Cart count insufficient: count ($actualCount < $requiredCount) | amount ($actualTotal >= $requiredTotal) | $filterDesc";
@@ -292,6 +314,8 @@ class Promotion {
       List<Map<String, dynamic>> cartItems,
       ) {
     final cond = _normalizeCondition(condition);
+
+    if (!checkUserTypeCondition(cond['userTypes'] as List, cart['userType']?.toString())) return false;
     if (!checkCardCondition(cond['card'], cart['card'] as bool)) return false;
 
     final filteredItems = filterCartProductsByCondition(cond, cartItems);
@@ -299,6 +323,20 @@ class Promotion {
 
     final totals = calculateCartTotals(filteredItems);
     return _checkCartTotalCondition(cond, totals);
+  }
+
+  static bool checkUserTypeCondition(List allowedUserTypes, String? currentUserType) {
+    if (allowedUserTypes.isEmpty) return true;
+    if (allowedUserTypes.contains('all') ||
+        allowedUserTypes.contains('both') ||
+        allowedUserTypes.contains('none')) {
+      return true;
+    }
+
+    if (currentUserType == null || currentUserType.isEmpty) return false;
+    final formattedUserType = currentUserType.trim().toLowerCase();
+
+    return allowedUserTypes.contains(formattedUserType);
   }
 
   static bool checkCardCondition(String required, bool userHasCard) {
@@ -367,12 +405,14 @@ class Promotion {
 
     for (final promo in promotions) {
       final id = promo['id'].toString();
+      final promoName = promo['name'] as String;
       final result = promotionResults[id];
       if (result == null || result['applied'] != true) continue;
 
       final promoType = promo['promotype'] as String;
       final condition = _normalizeCondition(promo['condition']);
-      final bonusTotal = result['bonusTot'] as int;
+
+      final bonusTotal = result['bonusTot'] as num;        // <-- now num
       final dividend = result['dividend'] as int;
       final cartTotal = (result['cartTotal'] as num).toDouble();
       final cartCount = result['cartCount'] as int;
@@ -395,8 +435,9 @@ class Promotion {
 
       final entry = {
         'id': id,
+        'name': promoName,
         'inStock': rewards,
-        'BonusTotal': bonusTotal,
+        'BonusTotal': bonusTotal,                          // <-- stored as num
         'condition': condition,
         'inputCount': cartCount,
         'inputTotal': cartTotal,
@@ -410,7 +451,7 @@ class Promotion {
       }
     }
 
-    return {'success':true,'quick': quickEntries, 'long': longEntries};
+    return {'success': true, 'quick': quickEntries, 'long': longEntries};
   }
 
   /// Returns the full list of reward items multiplied by the multiplier.
@@ -449,7 +490,7 @@ class Promotion {
       buffer.writeln('🎁 QUICK PROMOTIONS (multiplied by your cart):\n');
       for (final promo in quickList) {
         buffer.writeln('📌 Promotion ID: ${promo['id']}');
-        buffer.writeln('   💰 Bonus total: ${promo['BonusTotal']} RWF');
+        buffer.writeln('   💰 Bonus total: ${promo['BonusTotal']} RWF');   // shows decimals if any
         buffer.writeln('   📊 Based on: ${_describeTotalToCount(promo['condition']['TotalToCount'])}');
         buffer.writeln('   🛒 Your qualifying cart: ${promo['inputCount']} items / ${promo['inputTotal']} RWF');
 

@@ -39,8 +39,8 @@ class SettingPage extends StatelessWidget {
       //backgroundColor: Colors.yellow,
       //backgroundColor: Color(0xff010a0e),
 
-      body:SettingComp(),
-      bottomNavigationBar:HomeNavigator(),
+      body:const SettingComp(),
+      bottomNavigationBar:const HomeNavigator(currentIndex: 4),
 
 
 
