@@ -213,7 +213,7 @@ function updateProductUIs() {
                         <input type="text" class="form-control form-control-sm itemName" value="${escapeHtml(item.productName)}" readonly style="background:#f3f4f6;">
                     </div>
                     <div class="col-3">
-                        <input type="number" class="form-control form-control-sm itemQty" value="${item.qty}" min="1">
+                        <input type="number" class="form-control form-control-sm itemQty" value="${item.qty}" min="0">
                     </div>
                     <div class="col-3">
                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill removeInstockBtn"><i class="bi bi-trash"></i> Remove</button>

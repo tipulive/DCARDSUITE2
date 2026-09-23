@@ -865,8 +865,8 @@ Authorization: Bearer {{Auth_token}}
 "limitData":10,
 "platform":"3000",
 "searchOption":false,
-"isAdmin":"true",
-"isStatus":"true"
+"isAdmin":"tes",
+"isStatus":"none"
 
 
 
@@ -1207,7 +1207,7 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
- "uidReqPay":"",
+ "status":"0",
  "app_vers":"{{app_vers}}"
 }
 ### payment Admin Approval
@@ -1216,7 +1216,7 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
- "uidReqPay":"kebineericMuna_1668935525",
+ "status":"1",
  "app_vers":"{{app_vers}}"
 
 }
@@ -1255,11 +1255,21 @@ Content-Type: application/json
 Authorization: Bearer {{Auth_token}}
 
 {
-    "platform":"mobile",
+"platform":"mobile",
 "app_vers":"{{app_vers}}"
 
 }
+### Withdraw Long Promo promoData is input
 
+GET  {{baseUrl}}/withdrawLongPromo
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"ama_1785661733",
+"app_vers":"{{app_vers}}"
+
+}
 ####
 POST  {{baseUrl}}/SubmitOrder
 Content-Type: application/json

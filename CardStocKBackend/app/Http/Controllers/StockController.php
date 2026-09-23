@@ -31,6 +31,49 @@ class StockController extends Controller
     }
 
 
+    public function editMysale($input)//super super Admin
+    {
+
+    }
+    public function editProcessing($input)
+    {
+        //
+    }
+    public function checkOrder($input)//this is long promo first
+    {
+        //aribyo biza gutuma nshyiraho nagaciro kibyo yatwaye kuri order nabyo nimbona bishoboka
+        //hano mbanshaka kumenya amafaranga iyo promotion yatwaye no kugirango bimpe uko nzakumenya ideni umuclient yarafite cg nzamukuraho igihe nyakuyeho
+       return DB::select("select *from orders where uid=:uid limit 1",[
+           "uid"=>$input["uid"]
+       ]);
+    }
+
+    public function checklongpromohist($input)//Note nugusiba izifite promotion gusa
+    {
+        //hano mbashaka kumenya gusa igihe ifite longpromo kugira nge kuri izo account zose muri promoAccount nzihindure
+        return DB::select("select *from orders where orderId=:orderId",[
+            "uid"=>$input["uid"]
+        ]);
+    }
+
+    public function OrderHistGetPromo($input)
+    //ndashaka kumenya promotion zose zariho maze mfata izo product zari ziriho nzi deleting
+    //ariko nabanje kuzi combining izisa zose
+    {
+
+    }
+
+    public function backupSales($input)//ndabanza nkore backup muri orderHistories
+    {
+
+    }
+    public function deleteOrderUpdate($input)
+    {
+//ku deleting orders muri orders then
+//update orderHistories not the one with promo
+    }
+
+
     /*Locker on sales */
     public function lockerSales(){
 
@@ -314,6 +357,39 @@ public function checkCurrency($input){
    ]);
 }
 /*currency Code */
+public function stockCancelStock($input)
+{
+    $check=DB::update("update req_stocks set status=:status,uidCancel=:uidCancel,cancelDate=:cancelDate where uid=:uid and subscriber=:subscriber and status='0' limit 1",[
+        "status"=>$input["status"],
+        "uid"=>$input["uid"],//uid of sender
+        "uidCancel"=>Auth::user()->uid,//uidSender
+        "subscriber"=>Auth::user()->subscriber,
+        "cancelDate"=>$this->today
+    ]);
+    if($check)
+    {
+        return response([
+            "status" =>true,
+            "result"=>$check
+
+        ]);
+    }
+    else{
+        return response([
+            "status" =>false,
+            "result"=>$check
+
+        ]);
+    }
+}
+public function checkReqStock($input)
+{
+    return DB::select("select *from req_stocks where uidSender=:uidSender and productCode=:productCode and recSubscriber=:recSubscriber and status='0' limit 1",[
+    "uidSender"=>Auth::user()->uid,
+    "productCode"=>$input["productCode"],
+    "recSubscriber"=>$input["recSubscriber"]
+    ]);
+}
     public function reqStock($input)
     {
       if($this->checkReqStock($input))
@@ -343,6 +419,10 @@ public function checkCurrency($input){
             "uid"=>$this->CreateUid($input),//this is Safari Uid
             "uidSender"=>Auth::user()->uid,
             "productCode"=>$input["productCode"],
+            "productName"=>$input["productName"]??'none',
+            "pcs"=>$input["pcs"],
+            "img_url"=>$input["img_url"],
+            "price"=>$input["price"],
             "qty"=>$input["req_qty"],
             "status"=>"0",//request
             "subscriber"=>Auth::user()->subscriber,//sender subscriber
@@ -352,14 +432,7 @@ public function checkCurrency($input){
             "created_at"=>$this->today
             ]);
      }
-     public function checkReqStock($input)
-{
-    return DB::select("select *from req_stocks where uidSender=:uidSender and productCode=:productCode and recSubscriber=:recSubscriber limit 1",[
-    "uidSender"=>Auth::user()->uid,
-    "productCode"=>$input["productCode"],
-    "recSubscriber"=>$input["recSubscriber"]
-    ]);
-}
+
 
 public function reqStockView($input)
 {
@@ -377,7 +450,9 @@ public function reqStockView($input)
                  r.recSubscriber,
                  r.productCode,
                  b.productName,
+                 r.status,
                  b.pcs,
+                 b.img_url,
                  b.price,
 
                  r.qty,
@@ -388,13 +463,13 @@ public function reqStockView($input)
              FROM req_stocks r
              INNER JOIN admins a ON r.uidSender = a.uid
              INNER JOIN products b on r.productCode=b.productCode
-             WHERE r.recSubscriber = :recSubscriber and b.subscriber=r.subscriber
-             AND r.status = :status
+             WHERE  r.status = :status AND ( (r.recSubscriber = :recSubscriber and b.subscriber=r.subscriber) OR (r.subscriber=:bsub and b.subscriber=r.subscriber))
              ORDER BY r.id DESC
              LIMIT 10
          ", [
              "recSubscriber"=>Auth::user()->subscriber,
-             "status" => $input["status"]??'0',
+             "bsub"=>Auth::user()->subscriber,
+             "status" => $input["status"],
          ]);
          if($check)
          {
@@ -406,7 +481,7 @@ public function reqStockView($input)
          }else{
             return response([
                 "status" => false,
-                "result" => "no data found",
+                "result" =>$check,
                 //"result2"=> $this->checkSafariProduct($input)
             ]);
          }
@@ -567,7 +642,7 @@ $input["uidCreatorSub"] = $allocated[0]["uidCreatorSub"];
         return DB::table("safaristocks")
          ->insert([
              "uid"=>$input["uid"],
-             "name"=>$input["name"]??"safariTheo",
+             "name"=>$input["name"]??"safariNew",
              "refSaf"=>$input["refSaf"],
              "comment"=>$input["comment"]??'none',
              "uidCreator"=>$input["uidCreatorSub"],
@@ -630,7 +705,8 @@ $input["uidCreatorSub"] = $allocated[0]["uidCreatorSub"];
         {
             $input["uid"]=$this->CreateUid($input);
             $input["refSaf"]=$input["SafaRef"];
-            if($this->checkSafariRef($input))//check if safariProduct Existed
+            //if($this->checkSafariRef($input))//check if safariProduct Existed
+            if($this->checkSafariProductRef($input))
             {
               /*if($this->UpdateSafariStock($input))
               {
@@ -638,12 +714,25 @@ $input["uidCreatorSub"] = $allocated[0]["uidCreatorSub"];
               }else{
                   throw new \Exception("Unable to update Safari");
               }*/
-              $this->UpdateSafariStockRef($input);
+             if($this->UpdateSafariStockRef($input))
+             {
+                 return true;
+             }
+             else{
+                throw new \Exception("Unable to update SafariStock");
+             }
             }else{
 
               if($this->createSafariRef($input))
               {
-                 $this->createSafariProductRef($input);
+                 if($this->createSafariProductRef($input))
+                 {
+                     return true;
+                 }else{
+                    throw new \Exception("Unable to Create Product in Safari");
+                 }
+              }else{
+                throw new \Exception("Unable to Create Safari");
               }
 
             }
@@ -660,20 +749,12 @@ public function checkReceivedProduct($input)
     {
         if($this->ConfirmReceiveStockRef($input))
         {
-            if($this->updateReceivedStock($input))
+            if($this->ReceivedCheck($input))
             {
-
-                if($this->updateSenderStock($input))
-                {
-
-                    return true;
-                }else{
-                    throw new \Exception("Unable to Confirm Sender Product");
-                }
-
-            }else{
-                throw new \Exception("Unable to Confirm Received Product");
-            }
+               return true;
+           }else{
+                throw new \Exception("Unable to Save this stock");
+          }
 
                 //update products and subscriber stock received
         }else{
@@ -683,27 +764,63 @@ public function checkReceivedProduct($input)
         throw new \Exception("Unable to update This  Product");
     }
 }
-public function updateReceivedStock($input){//sender subscriber
 
-    return DB::update("update receivedStock set qty=:qty+:qty where productCode=:productCode and subscriber=:subscriber limit 1",[
-        "qty"=>$input["req_qtySub"],
-        "productCode"=>$input["productCodeSub"],
+
+public function SendStock($input){
+    try {
+
+
+        $check=DB::transaction(function () use ($input) {
+           // $orderId=$input['orderIdFromEdit']??'none';
+
+
+            $this->SendStockProcess($input);
+        });
+
+        return response([
+            "status" => true,
+            "result" => "Sucess",
+
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            "status" => false,
+            "message" => $e->getMessage(),
+            'errorCode' => $e->getLine()
+        ], 500);
+    }
+}
+public function SendStockProcess($input)
+{
+  if($this->checkOwnerStock($input))
+  {
+      if($this->ReceivedCheck($input))
+      {
+          return true;
+      }else{
+        throw new \Exception("Unable to Save this stock");
+      }
+  }else{
+    throw new \Exception("Unable to Save this stock");
+  }
+}
+
+
+public function checkOwnerStock($input){
+    return DB::select("select subscriber,productCode from OwnerStock where subscriber=:subscriber and productCode=:productCode limit 1",[
         "subscriber"=>Auth::user()->subscriber,
-        "updated_at"=>$this->today,
+        "productCode"=>$input["productCodeSub"]
     ]);
-
 }
 
-public function updateSenderStock($input){//sender subscriber
-
-    return DB::update("update senderStock set qty=:qty+:qty where productCode=:productCode and subscriber=:subscriber limit 1",[
-        "qty"=>$input["req_qtySub"],
-        "productCode"=>$input["productCodeSub"],
+public function checkSendStock($input){
+    return DB::select("select subscriber,productCode from senderstock where subscriber=:subscriber and productCode=:productCode limit 1",[
         "subscriber"=>$input["subscriberSub"],
-        "updated_at"=>$this->today,
+        "productCode"=>$input["productCodeSub"]
     ]);
-
 }
+
 
 
     public function checkSafariRef($input){
@@ -719,19 +836,31 @@ public function updateSenderStock($input){//sender subscriber
             ]
         );
     }
+    public function checkSafariProductRef($input){
+        return DB::select(
+            "SELECT productCode,subscriber FROM safariproducts
+             WHERE productCode = :productCode
+             AND subscriber = :subscriber
+             LIMIT 1",
+            [
+                "productCode" => $input["productCodeSub"],
+               // "subscriber" => $input["subscriberSub"]
+               "subscriber" =>Auth::user()->subscriber
+            ]
+        );
+    }
     public function UpdateSafariStockRef($input){
         return DB::update(
             "UPDATE safariproducts
              SET qty = qty + :qty,
                  totQty = totQty + :totAm,
                  updated_at = :updated_at
-             WHERE refSaf = :refSaf
-             AND productCode = :productCode
+             WHERE  productCode = :productCode
              AND subscriber = :subscriber",
             [
                 "qty" => $input["qty"],
                 "totAm" => $input["qty"],
-                "refSaf" => $input["refSaf"] ?? 'none',
+               // "refSaf" => $input["refSaf"] ?? 'none',
                 //"subscriber" => $input["subscriberSub"] ?? Auth::user()->subscriber,
                 "subscriber" =>Auth::user()->subscriber,
                 "productCode" => $input["productCodeSub"],
@@ -761,6 +890,84 @@ public function updateSenderStock($input){//sender subscriber
 
 
 
+
+     public function ReceivedCheck($input){
+        if($this->updateReceivedStock($input))
+        {
+            if($this->SendCheck($input))
+            {
+                return true;
+            }else{
+                throw new \Exception("Unable to send Stock");
+            }
+        }else{
+            if($this->saveReceivedStock($input))
+            {
+                if($this->SendCheck($input))
+                {
+                   return true;
+                }else{
+                    throw new \Exception("Unable to update sender stock");
+
+                }
+            }
+        }
+    }
+    public function SendCheck($input){
+        if($this->updateSenderStock($input)){
+
+           return true;
+         }else{
+            if($this->saveSendStock($input)){
+                return true;
+            }else{
+                throw new \Exception("Unable to Save this stock");
+            }
+         }
+    }
+
+
+    public function updateReceivedStock($input){//sender subscriber
+
+        return DB::update("update receivedstock set qty=qty+:qty,updated_at=:updated_at where productCode=:productCode and subscriber=:subscriber limit 1",[
+            "qty"=>$input["req_qtySub"],
+            "productCode"=>$input["productCodeSub"],
+            "subscriber"=>Auth::user()->subscriber,
+            "updated_at"=>$this->today,
+        ]);
+
+    }
+
+    public function saveReceivedStock($input){
+        return DB::table("receivedstock")
+        ->insert([
+            "productCode"=>$input["productCodeSub"],
+            "qty"=>$input["qty"],
+            "subscriber"=>Auth::user()->subscriber,
+            "created_at"=>$this->today
+        ]);
+    }
+
+    public function saveSendStock($input){
+        return DB::table("senderstock")
+        ->insert([
+            "productCode"=>$input["productCodeSub"],
+            "qty"=>$input["qty"],
+            "subscriber"=>$input["subscriberSub"],
+            "created_at"=>$this->today
+        ]);
+    }
+
+    public function updateSenderStock($input){//sender subscriber
+
+        return DB::update("update senderstock set qty=qty+:qty,updated_at=:updated_at where productCode=:productCode and subscriber=:subscriber limit 1",[
+            "qty"=>$input["req_qtySub"],
+            "productCode"=>$input["productCodeSub"],
+            "subscriber"=>$input["subscriberSub"],
+            "updated_at"=>$this->today,
+        ]);
+
+    }
 
 public function checkProduct($input){
     return DB::select("select *from products where productCode=:productCode and subscriber=:subscriber limit 1",[
@@ -793,46 +1000,81 @@ public function StockPayAdmin($input){//this is when Admin Received Payment from
         ], 500);
     }
 }
-public function stockPaymentProcessing($input){
-    $check=DB::select("select *from repaid_admins where uid=:uid  and subscriber=:subscriber and status='0' limit 1",[
+public function stockPayemtCancel($input)
+{
+    $check=DB::update("update repaid_admins set status=:status,uidCancel=:uidCancel,cancelDate=:cancelDate where uid=:uid and uidPaid=:uidSender and subscriber=:subscriber and status='0' limit 1",[
+        "status"=>$input["status"],
         "uid"=>$input["uid"],
-        "subscriber"=>Auth::user()->subscriber
+        "uidSender"=>$input["uidUserSub"],//uidSender
+        "uidCancel"=>$input["uidUserSub"],//uidSender
+        "subscriber"=>Auth::user()->subscriber,
+        "cancelDate"=>$this->today
     ]);
     if($check)
     {
-        if($check[0]->uidReceiver==Auth::user()->uid)
-        {
+        return response([
+            "status" =>true,
+            "result"=>'successfuly cancel status'
 
-           // return true;
-            $intM=$check[0]->intermediary_id;
-           $input["uidReceiverSub"]=Auth::user()->uid;
-           $input["intermediary_id"]=($intM=='none')?Auth::user()->uid:$intM;
-           if($this->stockSellerPayAdmin($input))
-           {
-                   return true;
-           }else{
-            throw new \Exception("something wrong ");
-           }
-        }else{
-            if($check[0]->intermediary_id=="none")
+        ]);
+    }
+    else{
+        return response([
+            "status" =>false,
+            "result"=>'unable to Cancel Transaction'
+
+        ]);
+    }
+}
+
+public function stockPaymentProcessing($input){
+    if($input["uidUserSub"]!=Auth::user()->uid)
+    {
+        $check=DB::select("select *from repaid_admins where uid=:uid  and subscriber=:subscriber limit 1",[
+            "uid"=>$input["uid"],
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+
+        if($check)
+        {
+            if($check[0]->uidReceiver==Auth::user()->uid)
             {
-                $input["intermediary_id"]=Auth::user()->uid;
-                $input["uidReceiverSub"]="none";
-                $input["status"]="0";
-                if($this->updatePaymentRequest($input))
+
+               // return true;
+                $intM=$check[0]->intermediary_id;
+               $input["uidReceiverSub"]=Auth::user()->uid;
+               $input["intermediary_id"]=($intM=='none')?Auth::user()->uid:$intM;
+               $input["status"]="2";//approval
+               if($this->stockSellerPayAdmin($input))
+               {
+                       return true;
+               }else{
+                throw new \Exception("something wrong ");
+               }
+            }else{
+                if($check[0]->intermediary_id=="none")
                 {
-                    return true;
+                    $input["intermediary_id"]=Auth::user()->uid;
+                    $input["uidReceiverSub"]=$check[0]->uidReceiver;
+                    $input["status"]="1";
+                    if($this->updatePaymentRequest($input))
+                    {
+                        return true;
+                    }else{
+                        throw new \Exception("Unable to update this paymentUid");
+                    }
+
                 }else{
-                    throw new \Exception("Unable to update this paymentUid");
+                    throw new \Exception("something wrong you can not replace this messengerUser contact system Admin");
                 }
 
-            }else{
-                throw new \Exception("something wrong you can not replace this messengerUser contact system Admin");
             }
-
+        }else{
+            throw new \Exception("Something wrong please contact System Admin");
         }
+
     }else{
-        throw new \Exception("Something wrong please contact System Admin");
+        throw new \Exception("you can not pay and sametimes received");
     }
 
 }
@@ -877,18 +1119,7 @@ public function stockSellerPayAdmin($input){//paid Admin
 
 }
 public function reqPaymentStock($input){
-    $check=DB::select("select status,uid from repaid_admins where uid=:uid and status='0' limit 1",[
-        "uid"=>Auth::user()->uid
-       // "status"=>$input["status"]
-    ]);
-    if($check)
-    {
-        return response([
-            "status" =>false,
-            "result"=>'unable to create request Payment'
 
-        ]);
-    }else{
         if($this->paymentRequest($input))
         {
             return response([
@@ -904,13 +1135,13 @@ public function reqPaymentStock($input){
 
             ]);
         }
-    }
+
 
 }
 public function updatePaymentRequest($input)
 {
-    //status 1 approval and 0 request
-    return DB::update("update repaid_admins set status=:status,intermediary_id=:intermediary_id,interDate=:interDate,uidReceiver=:uidReceiver,updated_at=:updated_at where uid=:uid and uidReceiver!=:uidSender and subscriber=:subscriber and amount=:amount and status='0' limit 1",[
+    //status 2 approval and 0 request,1 intermediary and 3 cancelled
+    return DB::update("update repaid_admins set status=:status,intermediary_id=:intermediary_id,interDate=:interDate,uidReceiver=:uidReceiver,updated_at=:updated_at where uid=:uid and uidReceiver!=:uidSender and subscriber=:subscriber and amount=:amount limit 1",[
         "status"=>$input["status"]??'1',
         "intermediary_id"=>$input["intermediary_id"],
         "interDate"=>$this->today,
@@ -942,13 +1173,14 @@ public function paymentRequest($input){
 }
 
 
-public function ViewReqStockPayment($input)
+public function ViewReqStockPayment($input)//this i will trigger pending and cancel
 {
     return DB::select("
         SELECT
             r.uid,
             r.amount,
             r.uidReceiver,
+            r.uidPaid,
             r.intermediary_id,
             r.status,
             r.purpose,
@@ -958,12 +1190,12 @@ public function ViewReqStockPayment($input)
         FROM repaid_admins r
         INNER JOIN admins a ON r.uidPaid = a.uid
         INNER JOIN admins b ON r.uidReceiver = b.uid
-        WHERE r.uidPaid = :uidPaid
+        WHERE r.subscriber = :subscriber
         AND r.status = :status
         ORDER BY r.id DESC
         LIMIT 10
     ", [
-        "uidPaid" =>$input["uidReqPay"]??Auth::user()->uid,
+        "subscriber" =>Auth::user()->subscriber,
         "status" => $input["status"]??'0',
     ]);
 }
@@ -975,6 +1207,7 @@ public function ViewReqStockPaymentHistory($input)
             r.uid,
             r.amount,
             r.uidReceiver,
+            r.uidPaid,
             r.status,
             r.purpose,
             r.created_at,
@@ -982,18 +1215,18 @@ public function ViewReqStockPaymentHistory($input)
             r.interDate,
             a.name AS payer,
             b.name As messenger,
-            c.name AS receiver
+            c.name AS OwnerAmount
         FROM repaid_admins r
         INNER JOIN admins a ON r.uidPaid = a.uid
         INNER JOIN admins b ON r.intermediary_id = b.uid
         INNER JOIN admins c ON r.uidReceiver = c.uid
-        WHERE r.uidPaid = :uidPaid
+        WHERE r.subscriber = :subscriber
         AND r.status =:status
         ORDER BY r.id DESC
         LIMIT 10
     ", [
-        "uidPaid"=>$input["uidReqPay"]??Auth::user()->uid,
-        "status"=>$input["status"]??'1'
+        "subscriber" =>Auth::user()->subscriber,
+        "status"=>$input["status"]
     ]);
 }
 public function CreateUid($input){
@@ -1342,7 +1575,12 @@ public function AddPromo($input)
         if($sum!=0)
         {
 
+            $longcheck=$input["longPromoWithDraw"]??"none";
+            $longpromoWithdraw=($longcheck=='none')?$input['inputData']:0;
+            $input['inputData']=$longpromoWithdraw;
+
             $input['all_total']=$sum-$input["totalPromoT"];
+           // var_dump($input['all_total']);
             $input["amountSub"]=$sum;//Tea Stock Amount
             $input["dettes"]=$input['all_total']-$input['inputData'];
             $input["detteSub"]=$input["dettes"];
@@ -1407,7 +1645,7 @@ public function CreateOrder($input){
         "paidStatus"=>$input["paidStatus"],
         "promotionUid"=>$input['uid']??'none',
         "reach"=>$input['reach']??'none',
-        "gain"=>$input['outPromoAmountSub']??'none',
+        "gain"=>$input['gainPromoSub']??'none',
         "systemUid"=>$input['systemUid']??'none',
         "uidUser"=>($input['uidUser']??$uidCreator),
        // "uidCreator"=>$uidCreator,
@@ -1975,7 +2213,7 @@ public function deleteImage($fileNam){
     }
     public function IsPickUser($input){
         $limitData=$input['limitData'];
-        $check=DB::select("select name,uid,PhoneNumber,platform from users where subscriber=:subscriber and status=:status LIMIT $limitData", array(
+        $check=DB::select("select name,uid,PhoneNumber,marital_status,platform from users where subscriber=:subscriber and status=:status LIMIT $limitData", array(
             "status"=>$input['isStatus'],
             "subscriber" => Auth::user()->subscriber
         ));
@@ -2007,7 +2245,7 @@ public function deleteImage($fileNam){
 
         if(strtolower($input["searchOption"])=='true')
         {
-            $check1=DB::select("select name,uid,PhoneNumber,created_at,platform from users where subscriber=:subscriber and platform=:platform and $queryData LIKE :itemName LIMIT $limitData", array(
+            $check1=DB::select("select name,uid,PhoneNumber,created_at,platform,marital_status from users where subscriber=:subscriber and platform=:platform and $queryData LIKE :itemName LIMIT $limitData", array(
                 "itemName" => $itemName,
                 "platform"=>$platform,
                 "subscriber" => Auth::user()->subscriber
@@ -2028,7 +2266,7 @@ public function deleteImage($fileNam){
         }
         else{
             $sortOrder=$input['sortOrder']??'ASC';
-            $check=DB::select("select name,uid,PhoneNumber,created_at,platform from users where subscriber=:subscriber and platform=:platform ORDER BY id $sortOrder LIMIT  $limitData", array(
+            $check=DB::select("select name,uid,PhoneNumber,created_at,platform,marital_status from users where subscriber=:subscriber and platform=:platform ORDER BY id $sortOrder LIMIT  $limitData", array(
                 "platform"=>$platform,
                 "subscriber" => Auth::user()->subscriber
             ));
@@ -4830,6 +5068,7 @@ public function ViewUserTempOrder($input){//make sure order must not be more tha
             $check = DB::select("
             SELECT
                 MAX(users.name) AS name,
+                MAX(users.marital_status) AS marital_status,
                 MAX(orderhistories.uid) AS uid,
                 MAX(orderhistories.userid) AS userid,
 
@@ -5458,6 +5697,73 @@ public function SubmitOrder($input){
 
        ],200);
     }
+    }
+    public function reportSales($input){
+        $uidCreator = Auth::user()->uid;
+        $thisDate = $input['thisDate'];
+
+        $advancedSearch = (strtolower($input['advancedSearch']) == 'today')
+            ? "
+                AND h.created_at >= CURDATE()
+                AND h.created_at < CURDATE() + INTERVAL 1 DAY
+              "
+            : "
+                AND DATE(h.created_at) = '$thisDate'
+              ";
+
+        $allSales = ($input['optionCase'] == 'allSales')
+            ? ""
+            : "AND h.order_creator = '$uidCreator'";
+        $check=DB::select("SELECT
+        CASE
+            WHEN h.promotionUid = 'none' THEN 'normal'
+            ELSE 'promotion'
+        END AS saleType,
+
+        h.productCode,
+        h.price,
+        Max(p.pcs) as pcs,
+
+        SUM(h.qty) AS qty,
+        SUM(h.qty * h.price) AS total
+
+    FROM orderhistories h
+    INNER JOIN products p ON p.productCode=h.productCode
+
+    WHERE h.subscriber =:subscriber
+    AND h.subscriber=p.subscriber
+    $allSales
+    AND h.paidStatus='checked'
+    AND h.status ='Open'
+    $advancedSearch
+
+    GROUP BY
+        saleType,
+        h.productCode,
+        h.price
+
+    ORDER BY
+        saleType,
+        h.productCode,
+        h.price",[
+            "subscriber"=>Auth::user()->subscriber
+        ]);
+        if($check)
+        {
+            return response([
+                "status"=>true,
+                "result"=>$check,
+                "reportDate"=>$this->today
+
+
+            ],200);
+        }else{
+            return response([
+                "status"=>false
+
+
+            ],200);
+        }
     }
     public function viewAnySales($input){//any one view any Sales
         //if($input["searchOption"]=='true') return $this->SearchSales($input);

@@ -106,7 +106,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Amount (Reward $)</label>
-                                <input type="number" class="form-control" id="promoAmount" value="100" />
+                                <input type="text" class="form-control" id="promoAmount" value="100" />
                             </div>
 
                             <div class="col-md-6">

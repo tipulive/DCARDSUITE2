@@ -8,7 +8,7 @@
 ##@PhoneNumber=+2507888889
 @PhoneNumber=+243977777777
 @password=1
-@Auth_token=1599|IjY133GhhvsKO5yafZ5J7XDnC7EdNWOmf2LUvZKq
+@Auth_token=1743|W5ziGWFMSrbW9M8OUslKBnwz572KgWjWvVz6sY6G
 ## Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
@@ -16,6 +16,18 @@ Content-Type: application/json
 {
 "email": "{{PhoneNumber}}",
 "password": "{{password}}"
+}
+###received Stock uidUserSub=ni sender, subscriberSub here is The receiver done
+POST  {{baseUrl}}/StockPayAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_my_1786030896",
+"uidUserSub":"ama_1785661733",
+"receivedSub":"100",
+ "app_vers":"{{app_vers}}"
+
 }
 ### myAccount
 GET  {{baseUrl}}/myAccount
@@ -27,6 +39,18 @@ Authorization: Bearer {{Auth_token}}
 "app_vers":"{{app_vers}}"
 
 
+
+}
+
+
+###received Stock uidUserSub=ni sender, subscriberSub here is The receiver done
+POST  {{baseUrl}}/sharing
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"OptionCase":"view",
+ "app_vers":"{{app_vers}}"
 
 }
 
@@ -57,21 +81,6 @@ Authorization: Bearer {{Auth_token}}
 
 }
 ### reqPayment
-### ViewReqPayment
-GET  {{baseUrl}}/viewReqStockPay
-content-type: application/json;charset=UTF-8
-Authorization: Bearer {{Auth_token}}
-
-{
-"status":"1",
- "app_vers":"{{app_vers}}"
-
-
-
-
-
-}
-##
 ### ViewRecReqStock
 GET  {{baseUrl}}/ViewRecReqStock
 content-type: application/json;charset=UTF-8
@@ -101,20 +110,6 @@ Authorization: Bearer {{Auth_token}}
 
 
 }
-#### Mini AccountViewRecReqStock
-POST  {{baseUrl}}/stockCancelStock
-content-type: application/json;charset=UTF-8
-Authorization: Bearer {{Auth_token}}
-
-{
-"uid":"uid of req Stock",
-"status":"1",
- "app_vers":"{{app_vers}}"
-
-
-
-}
-
 
 ###received Stock, subscriberSub here is The sender done
 POST  {{baseUrl}}/receiveStock

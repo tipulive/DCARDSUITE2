@@ -144,9 +144,9 @@ function savePromotion() {
         endDate: endPicker.input.value,
         promotype: $('#promoType').val(),
         promotion: {
-            amount: parseInt($('#promoAmount').val()),
+            amount: parseFloat($('#promoAmount').val()) || 0,
             items: {
-                inStock: currentInStockItems.map(i => ({ productName: i.productName, qty: i.qty })),
+                inStock: currentInStockItems.map(i => ({ productName: i.productName, qty: i.qty } || [])),
                 OutStock: []
             }
         },

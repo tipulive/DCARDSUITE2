@@ -6,9 +6,9 @@
 ##@PhoneNumber=+243464646
 ##@password=1
 ##@PhoneNumber=+2507888889
-@PhoneNumber=+243977777777
+@PhoneNumber=+243979319019
 @password=1
-@Auth_token=1599|IjY133GhhvsKO5yafZ5J7XDnC7EdNWOmf2LUvZKq
+@Auth_token=1731|XqGU4T9tSdJFWPPLhTsB539CuMz14pwSo62LjgId
 ## Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
@@ -16,6 +16,54 @@ Content-Type: application/json
 {
 "email": "{{PhoneNumber}}",
 "password": "{{password}}"
+}
+
+###place Order
+POST  {{baseUrl}}/placeOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"simba",
+"uidClient":"TheoFrere_1786287009",
+"req_qty":2,
+"ref":"test",
+"comment":"ok",
+"statusForm":"none",
+"orderIdFromEdit":"none",
+"app_vers":"{{app_vers}}"
+
+
+}
+###received Stock uidUserSub=ni sender, subscriberSub here is The receiver done
+POST  {{baseUrl}}/StockPayAdmin
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_my_1786030896",
+"uidUserSub":"ama_1785661733",
+"receivedSub":"100",
+ "app_vers":"{{app_vers}}"
+
+}
+### payment Admin View no Approval//uidReqPay is optional
+GET  {{baseUrl}}/viewReqStockPayHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "status":"1",
+ "app_vers":"{{app_vers}}"
+}
+### payment Admin View no Approval
+GET  {{baseUrl}}/viewReqStockPay
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+ "app_vers":"{{app_vers}}"
 }
 ### myAccount
 GET  {{baseUrl}}/myAccount
@@ -57,21 +105,6 @@ Authorization: Bearer {{Auth_token}}
 
 }
 ### reqPayment
-### ViewReqPayment
-GET  {{baseUrl}}/viewReqStockPay
-content-type: application/json;charset=UTF-8
-Authorization: Bearer {{Auth_token}}
-
-{
-"status":"1",
- "app_vers":"{{app_vers}}"
-
-
-
-
-
-}
-##
 ### ViewRecReqStock
 GET  {{baseUrl}}/ViewRecReqStock
 content-type: application/json;charset=UTF-8
@@ -101,20 +134,6 @@ Authorization: Bearer {{Auth_token}}
 
 
 }
-#### Mini AccountViewRecReqStock
-POST  {{baseUrl}}/stockCancelStock
-content-type: application/json;charset=UTF-8
-Authorization: Bearer {{Auth_token}}
-
-{
-"uid":"uid of req Stock",
-"status":"1",
- "app_vers":"{{app_vers}}"
-
-
-
-}
-
 
 ###received Stock, subscriberSub here is The sender done
 POST  {{baseUrl}}/receiveStock

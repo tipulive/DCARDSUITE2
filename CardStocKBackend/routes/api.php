@@ -58,10 +58,14 @@ Route::middleware('auth:sanctum')->group( function () {//here is to protect mult
     /*Currency */
     /*Promotion Data*/
 
-    Route::post('/withdrawLongPromo','CompanyController@withdrawLongPromo')->name('withdrawLongPromo');
+    Route::get('/withdrawLongPromo','CompanyController@withdrawLongPromo')->name('withdrawLongPromo');
     Route::get('/GetMyPromotion','PromotionController@GetMyPromotion')->name('GetMyPromotion');
     /*Promotion Data*/
 
+    //sharing company
+    Route::post('/sharing','CompanyController@sharing')->name('sharing');
+    Route::post('/addSharing','CompanyController@addSharing')->name('addSharing');
+    //sharing company
     /*Account done Testing*/
     Route::get('/SubscriberAccount','CompanyController@SubscriberAccount')->name('SubscriberAccount');
     Route::get('/myAccount','CompanyController@myAccount')->name('myAccount');
@@ -69,6 +73,7 @@ Route::middleware('auth:sanctum')->group( function () {//here is to protect mult
     /*ReqStock */
     Route::get('/ViewRecReqStock','CompanyController@ViewRecReqStock')->name('ViewRecReqStock');
     Route::post('/reqStock','CompanyController@reqStock')->name('reqStock');//done testing already
+    Route::post('/stockCancelStock','CompanyController@stockCancelStock')->name('stockCancelStock');//done testing already
     Route::post('/receiveStock','CompanyController@receiveStock')->name('receiveStock');//done testing already
     /*ReqStock */
     /*Payment RequreqPaymentStockest and Received*/
@@ -76,6 +81,7 @@ Route::middleware('auth:sanctum')->group( function () {//here is to protect mult
     Route::get('/viewReqStockPay','CompanyController@ViewReqStockPayment')->name('ViewReqStockPayment');
     Route::get('/viewReqStockPayHist','CompanyController@ViewReqStockPaymentHistory')->name('ViewReqStockPaymentHistory');
     Route::post('/StockPayAdmin','CompanyController@StockPayAdmin')->name('StockPayAdmin');
+    Route::post('/stockPayemtCancel','CompanyController@stockPayemtCancel')->name('stockPayemtCancel');
     /*Payment Request and Received*/
     /*add Mini Account*/
     Route::post('/switchAccount','CompanyController@switchAccount')->name('switchAccount');
@@ -193,6 +199,7 @@ Route::post('/checkDette','CompanyController@checkDette')->name('checkDette');
 /*dettes*/
 
 Route::post('/SubmitOrder','CompanyController@SubmitOrder')->name('SubmitOrder');
+Route::get('/reportSales','CompanyController@reportSales')->name('reportSales');
 Route::get('/viewAnySales','CompanyController@viewAnySales')->name('viewAnySales');
 Route::get('/viewSales','CompanyController@viewSales')->name('viewSales');
 Route::get('/viewSalesByUid','CompanyController@viewSalesByUid')->name('viewSalesByUid');

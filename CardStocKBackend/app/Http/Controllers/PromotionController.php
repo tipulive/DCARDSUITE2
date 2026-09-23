@@ -56,32 +56,90 @@ class PromotionController extends Controller
         }
     }
 
+
+    public function updateUserPromoAccount($input,$data){
+        return DB::update("update promoaccount set cCount=:cCount,cTotal=:cTotal,updated_at=:updated_at where uid=:uid and uidUser=:uidUser and subscriber=:subscriber limit 1",[
+            "cCount"=>$data["remaincCount"],
+            "cTotal"=>$data["remaincTotal"],
+            "uidUser"=>$input["uidUser"],
+            "uid"=>$data["uid"],
+            "subscriber"=>Auth::user()->subscriber,
+            "updated_at"=>$this->today
+        ]);
+    }
+    public function checkPromoAccount($input,$data){
+    if($this-> withdrawHistory($input,$data))
+    {
+        if($this->updateUserPromoAccount($input,$data))
+        {
+          return true;
+        }
+        else{
+            throw new \Exception("Unable to update Promotion".$data["uid"]);
+        }
+    }else{
+        throw new \Exception("Unable to withdraw Promotion");
+    }
+
+
+    }
+
+    public function withdrawHistory($input,$data)
+    {
+        return DB::table("withdrawlongpromo")
+        ->insert([
+            "uid"=>(new StockController)->CreateUid($input),
+            "promoId"=>$data["uid"],
+            "userId"=>$input["uidUser"],
+            "uidCreator"=>Auth::user()->uid,
+            "subscriber"=>Auth::user()->subscriber,
+            "commentData"=>$input["commentData"]??'none',
+            "dataWithdraw"=>json_encode($data),
+        ]);
+    }
     public function ProcesswithdrawLongPromo($input)
     {
 
+
+        $input["longPromoWithDraw"]="widthraw";
            // $input["outPromoAmountSub"] = $data["quick"]["BonusAmountTotal"];
+           $input["OrderId"]= (new StockController)->CreateUid($input);
+           $input["myOrderId"] = $input["OrderId"] ;
 
             $promo=$input["promoData"];
+        //$promo=$this->longPromoData();
+           // $promo=$input["promoData"];
             $data = json_decode($promo, true);
-            $input["outPromoAmountSub"] =$data["TotalBonus"];
 
-            $result = $this->withdrawLongPromo($input, $data);
 
-            if ($result) {
-                $input["totalPromoT"]=$result["totalPromo"];
-                $input["totalPromoQtyT"]=$result["totalQty"];
-                 $input["outPromoAssetSub"] =$result["totalPromo"];
-                $input["outProAssetQtySub"] =$result["totalQty"];
+            if($this->checkPromoAccount($input,$data))
+            {
+                $input["promoAmountSub"] =$data["TotalBonus"];
+                $input["gainPromoSub"]=$input["promoAmountSub"];
+                $result = $this->withdrawLongPromo($input,$data);
 
-                // Success - process order
-                (new StockController)->NewSubmitOrder($input);
-                // $result; // Return results instead of throwing exception
-            } else {
-                throw new \Exception("Unable to Process Quick Promotion");
+                if ($result) {
+
+                    //var_dump($mydata["condition"]); var_dump($mydata["condition"]);
+                    $input["totalPromoT"]=$result["totalPromo"];
+                    $input["totalPromoQtyT"]=$result["totalQty"];
+                     $input["promoAssetSub"] =$result["totalPromo"];
+                    $input["proAssetQtySub"] =$result["totalQty"];
+
+                    // Success - process order
+                    (new StockController)->NewSubmitOrder($input);
+                    // $result; // Return results instead of throwing exception
+                } else {
+                    throw new \Exception("Unable to Process Quick Promotion");
+                }
+
+            }else{
+                throw new \Exception("Unable to update Withdraw Data");
             }
 
+
     }
-    public function withdrawLongPromo($input, $data)
+    public function withdrawLongPromo($input,$data)
     {
         $results = [];
         $totalPromo = 0;
@@ -89,10 +147,13 @@ class PromotionController extends Controller
 
 
 
-            $input["saveQuickUid"]=$input["longPromoId"];
+            $input["saveQuickUid"]=$data["uid"];
             for($iv=0;$iv<count($data["itemsBonus"]);$iv++)
             {
+
                 $result = $this->saveWithdrawLongPromo($data["itemsBonus"][$iv], $input);
+               // var_dump($result);
+
                 if ($result) {
                     $results[] = $result;
                     $totalPromo += $result["totalPromo"] ?? 0;
@@ -102,14 +163,18 @@ class PromotionController extends Controller
                 }
             }
 
-
+            return [
+                "totalPromo" => $totalPromo,
+                "totalQty" => $totalQty,
+                "details" => $results  // Optional: keep individual results
+            ];
     }
-        public function saveWithdrawLongPromo($data, $input)
+        public function saveWithdrawLongPromo($data,$input)
         {
             $input["productCodeSub"] = $data["productName"];
             $input["req_qtySub"] = (int)$data['qty'];
             $input["uidClient"] = "eric_177358819";
-            $input["myOrderId"] = $input["OrderId"] ?? (new StockController)->CreateUid($input);
+
             $input["subscriberSub"]=Auth::user()->subscriber;
 
             $stockController = new StockController();
@@ -117,10 +182,27 @@ class PromotionController extends Controller
 
             return $result ?: false;
         }
+
+        public function longPromoData()
+        {
+            return '{
+                "uid": "promo_b4_1785919506",
+                "countCondition": "cCount",
+                "remaincCount": "2",
+                "remaincTotal": "350",
+                "TotalBonus": "300",
+                "itemsBonus": [
+                  {
+                    "productName": "bombo",
+                    "qty": 2
+                  }
+               ]
+              }';
+        }
    /*withdraw Long PromoData */
     public function reusePromo($input)
     {
-        $inStock = $input["promo"]["promotion"]["items"]["inStock"];
+        $inStock = $input["promo"]["promotion"]["items"]["inStock"]??[];
         $json_items = [];
 
         for($i = 0; $i < count($inStock); $i++) {
@@ -400,7 +482,7 @@ return $inStockJsonString = implode(",", $json_items);
 
     }
     public function promoCreate($input){
-                   return DB::table("promoCreate")
+                   return DB::table("promocreate")
                     ->insert([
                         "uid"=>$input["promo"]["id"],
                         "name"=>$input["promo"]["name"],
@@ -412,7 +494,7 @@ return $inStockJsonString = implode(",", $json_items);
                         "cTotal"=>$input["promo"]["condition"]["cartTotal"],
                         "countCondition"=>$input["promo"]["condition"]["TotalToCount"],
                         "bonusAmount"=>$input["promo"]["promotion"]["amount"],
-                        "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]),
+                        "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]??[]),
                        // "target"=>$input["promo"]["condition"]["TargetPoint"],//means minimum to withdraw
                         "targetCount"=>$input["promo"]["condition"]["targetCount"]??'0',//means minimum to withdraw
                         "targetTotal"=>$input["promo"]["condition"]["targetTotal"]??'0',//means minimum to withdraw
@@ -424,7 +506,7 @@ return $inStockJsonString = implode(",", $json_items);
 
     public function UpdatePromoCreate($input)
     {
-        return DB::update("update promoCreate set promoschema=:promoschema,name=:name,description=:description,cCount=:cCount,cTotal=:cTotal,countCondition=:countCondition,bonusAmount=:bonusAmount,targetCount=:targetCount,targetTotal=:targetTotal,bonusStocks=:bonusStocks where uid=:uid and subscriber=:subscriber",[
+        return DB::update("update promocreate set promoschema=:promoschema,name=:name,description=:description,cCount=:cCount,cTotal=:cTotal,countCondition=:countCondition,bonusAmount=:bonusAmount,targetCount=:targetCount,targetTotal=:targetTotal,bonusStocks=:bonusStocks where uid=:uid and subscriber=:subscriber",[
             "promoschema"=>json_encode($input["promo"]),
             "name"=>$input["promo"]["name"],
             "description"=>$input["promo"]["description"],
@@ -435,7 +517,7 @@ return $inStockJsonString = implode(",", $json_items);
             "bonusAmount"=>$input["promo"]["promotion"]["amount"],
             "targetCount"=>$input["promo"]["condition"]["targetCount"]??'0',//means minimum to withdraw
             "targetTotal"=>$input["promo"]["condition"]["targetTotal"]??'0',//means minimum to withdraw
-            "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]),
+            "bonusStocks"=>json_encode($input["promo"]["promotion"]["items"]["inStock"]??[]),
            //
             "subscriber"=>Auth::user()->subscriber
         ]);
@@ -443,7 +525,7 @@ return $inStockJsonString = implode(",", $json_items);
     public function DeletePromoCreate($input)
     {
         return DB::delete(
-            "DELETE FROM promoCreate
+            "DELETE FROM promocreate
              WHERE uid = :uid
              AND subscriber = :subscriber
              LIMIT 1",
@@ -456,7 +538,7 @@ return $inStockJsonString = implode(",", $json_items);
 
 
     public function checkPromo($input){
-       return DB::select("select *from promoCreate where uid=:uid and refId=:refId and subscriber=:subscriber",[
+       return DB::select("select *from promocreate where uid=:uid and refId=:refId and subscriber=:subscriber",[
             "uid"=>$input["promo"]["id"],
             "refId"=>$input["mainPromoId"]??"none",
             "subscriber"=>Auth::user()->subscriber
@@ -905,7 +987,7 @@ $newpromoschema = json_encode($filtered);*/
             $this->saveLongPromo($input,$data["long"][$i]);
            }else{
             //$condParts= $mydata["condition"]["TotalToCount"];
-               var_dump($mydata["condition"]);
+
             throw new \Exception("unable to Create History Long Promo");
 
            }
@@ -1034,7 +1116,7 @@ $newpromoschema = json_encode($filtered);*/
            // $input["outPromoAmountSub"] = $data["quick"]["BonusAmountTotal"];
             $input["outPromoAmountSub"] =array_sum(array_column($data["quick"], 'BonusTotal'));
 
-
+            $input["gainPromoSub"]=$input["outPromoAmountSub"];
             $result = $this->QuickPromo($input, $data);
 
             if ($result) {

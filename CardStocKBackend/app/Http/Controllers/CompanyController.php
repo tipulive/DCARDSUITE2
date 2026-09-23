@@ -37,6 +37,80 @@ class CompanyController extends Controller
         $this->platform1=env('PLATFORM3');
     }
 
+    public function checkSharing($input)
+    {
+         return DB::select("select subscriber where shareMe=:shareMe and subscriber=:subscriber limit 1",[
+            "shareMe"=>$input["OtherSubscriber"],
+            "subscriber"=>Auth::user()->subscriber,
+          ]);
+    }
+
+    public function sharing(Request $request)
+    {
+        $input=$request->all();
+        return $this->sharingData($input);
+
+    }
+    public function sharingData($input)
+    {
+        if($input["optionCase"]='view')
+        {
+
+            return response([
+               "status" => true,
+               "result" =>$this->viewShare($input)
+           ]);
+
+        }
+        else if($input["optionCase"]='search'){
+
+            return response([
+               "status" => true,
+               "result" =>searchByUidowner($input)
+           ]);
+        }
+
+    }
+    public function viewShare($input){
+
+
+return DB::select("
+SELECT
+    MAX(u.uid) AS uid,
+    MAX(u.PhoneNumber) AS PhoneNumber,
+    MAX(u.password) AS password,
+    MAX(u.subscriber) AS subscriber,
+    MAX(u.name) AS name,
+    MAX(u.companyName) AS companyName,
+    MAX(m.created_at) AS created_at,
+    MAX(m.uidCreator) AS uidOwner
+FROM sharing m
+INNER JOIN admins u ON m.shareMe = u.subscriber
+WHERE m.subscriber = :subscriber
+GROUP BY m.shareMe
+", [
+'subscriber' => Auth::user()->subscriber
+]);
+    }
+
+    public function addSharing(Request $request)
+    {
+
+        if(checkSharing($input))
+        {
+
+        }else{
+            DB::table("sharing")
+            ->inser([
+                "shareMe"=>$input["OtherSubscriber"],
+                "subscriber"=>Auth::user()->subscriber,
+                "created_at"=>$this->today,
+            ]);
+        }
+
+
+    }
+
     public function withdrawLongPromo(Request $request){
         if(env('APP_VERS')===$request->input('app_vers'))
         {
@@ -51,7 +125,7 @@ class CompanyController extends Controller
             {
                 $input=$request->all();
 
-                return (new PromotionController)->withdrawLongPromo($input);
+                return (new PromotionController)->withdawPromo($input);
             }
             else{
                 return response([
@@ -370,6 +444,52 @@ else{
 
     }
 
+
+    public function stockCancelStock(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->stockCancelStock($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
 public function reqStock(Request $request){
     if(env('APP_VERS')===$request->input('app_vers'))
     {
@@ -612,6 +732,51 @@ else{
                 $input=$request->all();
 
                 return (new StockController)->StockPayAdmin($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
+    }
+
+    }
+    public function stockPayemtCancel(Request $request){
+        if(env('APP_VERS')===$request->input('app_vers'))
+        {
+        if(Auth::check())
+        {
+
+
+
+
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->stockPayemtCancel($input);
             }
             else{
                 return response([
@@ -994,6 +1159,7 @@ else{
             {
                 $input=$request->all();
 
+
                 return (new StockController)->Products($input);
             }
             else{
@@ -1080,7 +1246,32 @@ else{
             {
                 $input=$request->all();
 
-                return (new StockController)->updateProducts($input);
+                if($input["actionStatus"]==="updatePrice")
+                {
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+
+                       $editPriceTrue = array(
+                        "editPrice" =>"true"
+                    );
+
+                       $mypermission=$jsonData["editPrice"]??$editPriceTrue["editPrice"];
+                   if($mypermission==="true")
+                       {
+                        return (new StockController)->updateProducts($input);
+                       }else{
+                        return response([
+                            "status"=>false
+
+
+                        ],200);
+                       }
+
+                }else{
+                    return (new StockController)->updateProducts($input);
+                }
+
             }
             else{
                 return response([
@@ -2010,6 +2201,35 @@ else{
 
         ],200);
     }
+    }
+    public function reportSales(Request $request)
+    {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+                return (new StockController)->reportSales($input);
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
     }
     public function viewAnySales(Request $request){
         if(Auth::check())
@@ -3503,7 +3723,16 @@ public function CompanySafariCalculate(Request $request){
 
             ],200);
         }
+    } else{
+        return response([
+            "status"=>false,
+            "result"=>1,
+            "downNew"=>env('APP_DOWN'),
+            "error"=>"Your app has expired. Please update to the latest version. or Contact System Admin",
+
+        ],200);
     }
+
 	}
     public function CompanyPromoget(Request $request){//add money to your country
         if(env('APP_VERS')===$request->input('app_vers'))
