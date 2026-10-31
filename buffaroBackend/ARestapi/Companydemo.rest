@@ -1,0 +1,1200 @@
+@baseUrl = http://localhost:8000/api
+@email=kopa@gmail.com
+@PhoneNumber=ceke@gmail.com
+@password=1
+@Auth_token=505|GuVlaXRswz5LDJTJaV9vr3EwUxMtmCFJAfIdzLyj
+
+### Company Login with email
+POST  {{baseUrl}}/AdminLoginEmail/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+
+
+### Company Login with phone
+POST  {{baseUrl}}/AdminLoginPhone/
+Content-Type: application/json
+
+{
+"PhoneNumber": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+
+###upload
+POST  {{baseUrl}}/upload
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name": "kebine eric Muna"
+
+
+}
+
+###Company Create User
+POST  {{baseUrl}}/CreateUser
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name": "kebine eric Muna",
+"email": "on@gmail.com",
+"Ccode": "+250",
+"phone": "0782389359",
+"country":"Rwanda",
+"password": "1"
+
+}
+
+
+###Create User and Assign With Card iyi niyo nyayo ikora neza
+POST  {{baseUrl}}/CreateUserAssign
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name":"kebine eric Muna",
+"email":"on2@gmail.com",
+"Ccode":"+250",
+"phone":"7823893587",
+"initCountry":"US",
+"country":"Rwanda",
+"password":"1",
+"carduid":"TEALTD_7hEnj_1672352175"
+
+}
+###Edit User and Assign With Card iyi niyo nyayo ikora neza Auth User Register
+POST  {{baseUrl}}/EditUserAssign
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kebineericMuna_1674592764",
+"name":"gogo",
+"email":"on2@gmail.com",
+"Ccode":"250",
+"phone":"0789359",
+"country":"Rwanda",
+"initCountry":"initCountry",
+"status":"test",
+"password":"1",
+"carduid":"TEALTD_lN7o8_1672352175"
+
+}
+### view all
+GET  {{baseUrl}}/view
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+### Add Balance
+
+POST  {{baseUrl}}/AddBalance
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1674592764",
+"balance":"250",
+"description":"Balance of User"
+
+
+}
+### EditBalance
+
+POST  {{baseUrl}}/EditBalance
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1674592764",
+"balance":"-450",
+"description":"Balance of User"
+
+
+}
+### Redeemmed Balance (Withdraw)
+POST  {{baseUrl}}/RedeemBalance
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kebineericMuna_1674592764",
+"amount":"15",
+"description":"descr"
+}
+### Redeemmed Bonus
+POST  {{baseUrl}}/RedeemBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kebineericMuna_1674592764",
+"amount":"10",
+"description":"descr"
+}
+
+### Get Widraw Bonus,Balance,top up balance too after Redeem
+GET  {{baseUrl}}/GetCompanyRecord
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+###
+GET  http://localhost:8000/submit-form
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"Ccode":"250",
+"phone":"0782389359"
+
+
+
+}
+
+###Company GEt Details of Card ID using number this will help me to assign user with new card
+GET  {{baseUrl}}/GetNumberDetail
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"Ccode":"+250",
+"phone":"0782389359"
+
+
+
+}
+###Company GEt Details of Card ID or to check if he reached target
+GET  {{baseUrl}}/GetCardDetail
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"carduid":"TEALTD_7hEnj_1672352175"
+
+
+
+}
+
+### Get Balance and Bonus of User
+
+GET  {{baseUrl}}/GetBalanceUser
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kebineericMuna_1674160265"
+
+
+
+}
+### Get Balance and Bonus Hist
+
+GET  {{baseUrl}}/GetBalanceHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kebineericMuna_1668935593",
+"LimitStart":0,
+"LimitEnd":10,
+"optionCase":"bonus"
+
+
+
+}
+### Get Balance and Bonus Hist
+
+GET  {{baseUrl}}/GetBalanceHistCreator
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"LimitStart":0,
+"LimitEnd":10,
+"name":"none",
+"optionCase":"bonus"
+
+
+
+}
+### print card
+GET  {{baseUrl}}/PrintCard
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+###Company Create Card single card depricated
+POST  {{baseUrl}}/CreateCard
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"numberQr": "kebine eric Muna"
+
+}
+###Company Create Multiple Card
+POST  {{baseUrl}}/CreateMultipleCard
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"numberQr":3
+
+}
+
+###Company Assign Card to User /*uid of user*/
+POST  {{baseUrl}}/AssignCard
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"Ccode": "+250",
+"phone":"0782389359",
+"carduid":"TEALTD_7hEnj_1672352175"
+
+
+
+}
+###Company Syncronous card Data
+
+GET  {{baseUrl}}/CompanySyncCardDownload
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"versionCount":"0"
+
+}
+
+
+###Company Create Promotion
+POST  {{baseUrl}}/CreatePromotionEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"promoName":"Vita",
+"promoMsg":"i will give you 300 nugura ibintu bya 1000$",
+"reach":"1200",
+"gain":"350",
+"extended_date":"2023-05-12 12:00:0 to 2023-05-27 12:00:0",
+"status":"On"
+
+}
+
+###Company Edit Promotion
+POST  {{baseUrl}}/EditPromotionEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"chito_1683916343",
+"promoName":"Vita",
+"promoMsg":"i will give you 300 nugura ibintu bya 1000$",
+"reach":"1200",
+"gain":"350",
+"extended_date":"2023-05-12 12:00:0 to 2023-05-27 12:00:0",
+"status":"On"
+
+}
+
+###Company GetAll Promotion on and update promotion status to close when it is expired
+GET  {{baseUrl}}/GetAllPromotionEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+###Company ViewAll Promotion
+GET  {{baseUrl}}/ViewAllPromotionEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+
+###Company Set Promotion status uid=//promotion ID
+POST  {{baseUrl}}/SetPromotionEventStatus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"status":"On"
+
+}
+
+### Company Make User Participate in Events:uid,reach,gain come from promotion
+POST  {{baseUrl}}/ParticipateEvent
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"uidUser":"kebineericMuna_1674160265",
+"inputData":"200",
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1"
+
+
+}
+### Edit ParticipateEditEvent this inputData is from InputData from participatedHist
+POST  {{baseUrl}}/ParticipateEditEvent
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"uidUser":"kebineericMuna_1674160265",
+"inputData":"300",
+"reach":"1200",
+"gain":"350"
+
+
+}
+
+
+### Get All participateEvents
+
+GET  {{baseUrl}}/GetAllParticipateEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1668935593",
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+### count all event participated
+GET  {{baseUrl}}/CountParticipateEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1668935593"
+
+
+}
+### Get All  GetActiveParticipateEvents
+
+GET  {{baseUrl}}/GetActiveParticipateEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1668935593",
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+### Get All GetReachedParticipateEvent
+
+GET  {{baseUrl}}/GetReachedParticipateEvent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidUser":"kebineericMuna_1668935593",
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+
+### Get All inputData and how user send data uid:is promotion id,
+
+GET  {{baseUrl}}/GetParticipatedHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kivuBucket_1672353285",
+"uidUser":"kebineericMuna_1674160265",
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+### Get All ParticipatedHist
+
+GET  {{baseUrl}}/GetAllParticipatedHist
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kivuBucket_1672353285",
+"uidUser":"kebineericMuna_1674160265",
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+
+### Get All Participate
+
+GET  {{baseUrl}}/GetAllParticipate
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"kivuBucket_1672353285",
+"uidUser":"kebineericMuna_1674160265",
+"LimitStart":0,
+"LimitEnd":3
+
+
+
+
+}
+
+
+### Quick Bonus
+
+### GetAllQuickBonus
+GET  {{baseUrl}}/GetAllQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"LimitStart":0,
+"LimitEnd":10
+
+
+}
+### Search QuickBonus
+GET  {{baseUrl}}/SearchQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productName":"bi"
+
+
+
+}
+
+### SubmitQuickBonus
+GET  {{baseUrl}}/SubmitQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Quick_1678918381",
+ "uidUser":"juma",
+ "productName":"Nyota",
+ "qty":"5",
+ "price":"400",
+ "status":"none",
+ "bonusType":"Gift",
+ "giftName":"PO-4",
+ "giftPcs":"45",
+ "bonusValue":"50",
+ "totBonusValue":"60",
+ "description":"gh"
+
+
+
+}
+
+### SubmitQuickBonus this is updatec cart Order
+GET  {{baseUrl}}/UpdateSubmitQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidUser":"juma",
+ "id":"8",
+ "productName":"Nyota",
+ "qty":"5",
+ "price":"400",
+ "status":"confirm",
+ "bonusType":"Gift",
+ "giftName":"PO-4",
+ "giftPcs":"45",
+ "bonusValue":"50",
+ "totBonusValue":"60",
+ "description":"gh"
+
+
+
+}
+
+### SearchSubmitQuickBonus
+GET  {{baseUrl}}/SearchSubmitQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidUser":"juma",
+ "productName":"meka"
+
+
+
+
+}
+
+### Search By uid SubmitQuickBonus
+GET  {{baseUrl}}/GetUidSubmitQuickBonus
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+ "uidUser":"juma",
+ "productName":"nyota"
+
+
+
+
+}
+
+
+
+###Safari
+
+###Company Safari Create
+POST  {{baseUrl}}/SafariCreate
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name":"amakarito",
+"comment":"comment"
+
+
+}
+
+###Company Safari AddItem
+POST  {{baseUrl}}/SafariAddItem
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariuid":"amakarito_47lvw_1670704037",
+"uid":"Reona",
+"qty":"25",
+"price":"500",
+"typeData":"Other",
+"comment":"none"
+
+
+
+
+}
+
+###Company Safari Spent //Add Money you paid every Safari
+POST  {{baseUrl}}/SafariSpent
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"numberQr":3
+
+}
+
+###Company Safari Spent //Add Money you paid every Safari
+
+GET  {{baseUrl}}/SafariCalculate
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariuid":"amakarito_47lvw_1670704037",
+"name":"safari"
+
+}
+
+
+
+###safari new Stock and add Products
+### View Safaris missing good paginate
+
+GET  {{baseUrl}}/GetSafaris
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"safariuid":"amakarito_47lvw_1670704037",
+"name":"safari"
+
+}
+
+###Create Safari  testdone temp record Missing
+POST  {{baseUrl}}/CreateSafari
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name":"Mbona",
+"comment":"testViko"
+
+}
+
+###Edit Safari testdone temp record Missing
+GET  {{baseUrl}}/EditSafari
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Viko_4OHxv_1696880090",
+"name":"Bima",
+"comment":"testa"
+
+}
+
+
+
+###Search productCode or productName  done or i may search both productCode and productName together
+### either productCode equal none or productName equal none
+GET  {{baseUrl}}/SearchProduct
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"b",
+"productName":"none"
+
+
+}
+
+### CreateProduct 100% done but fact_price niyo price igomba kuba price yuko yaranguye maze price yindi nuko azacuruza
+### example nyota ushobora kuyirangura kuri 60  as fact price,maze ukayicuruza kuri 80
+POST  {{baseUrl}}/CreateStockProduct
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"name":"Phone",
+"uid":"Uid",
+"cat":"1",
+"catName":"China",
+"productName":"WebCam",
+"productCode":"0",
+"fact_price":"50",
+"status":"Spendproduct",
+"CommentStatus":"Inserting Product",
+"price":"60",
+"qty":"500",
+"pcs":"30",
+"tags":"Phone My Model",
+"active":"on",
+"description":"on"
+}
+
+### Edit Product Price
+POST  {{baseUrl}}/EditProductPrice
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"veve_1697829456",
+"price":"40"
+
+}
+### Change All Products
+POST  {{baseUrl}}/EditProducts
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"veve_1697829456",
+"productName":"veve_1697829456",
+"price":"40",
+"cat":"500",
+"catName":"500",
+"tags":"20",
+"active":"on",
+"pcs":"on"
+
+}
+### Edit Stock Qty
+POST  {{baseUrl}}/EditStockQty
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"veve_1697829456",
+"safariId":"veve_1697829456",
+"qty":"40"
+
+}
+
+### Edit Stock Price
+POST  {{baseUrl}}/EditStockFactPrice
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"veve_1697829456",
+"safariId":"veve_1697829456",
+"qty":"40"
+
+}
+
+###place order ,this oTher ref after req_qty are after sales not allowed negative value
+### more order i need to Add orderId value to orderIdFromEdit to track my Order
+### req_qty must be number
+POST  {{baseUrl}}/placeOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"cuyi_1703849876",
+"uidclient":"kebineericMuna_1674160265",
+"req_qty":5.0,
+"ref":"test",
+"comment":"ok",
+"statusForm":"none",
+"orderIdFromEdit":"none"
+
+
+}
+
+###
+###Edit temporary Order edit order done not allowed negative Value 100% tested and working perfect
+### req_qty must be number
+GET  {{baseUrl}}/EditOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"webcam_1700726985",
+"req_qty":0,
+"uidclient":"kebineericMuna_1674160265",
+
+"uid":"OrderId_2S_1700747346",
+"statusForm":"editOrder"
+
+
+}
+
+###delete Single temporary Order tested Done
+GET  {{baseUrl}}/deleteTSingleOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"webcam_1700726985",
+"uid":"OrderId_8b_1701507455"
+
+}
+
+###delete temporary Full Order  half tested
+GET  {{baseUrl}}/deleteTOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"uid":"0s"
+
+}
+
+
+###
+### double test submit Order later,this uid is promotion uid
+POST  {{baseUrl}}/SubmitOrder
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Nyota_1672353378",
+"uidUser":"kebineericMuna_1674160265",
+"OrderId":"UID_DX_1702452146",
+"inputData":"180",
+"all_total":"180",
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1"
+
+
+}
+### done but not by SystemUid
+
+GET  {{baseUrl}}/viewSales
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+
+}
+###Edit  OginalOrder this is very Important but done later
+GET  {{baseUrl}}/EditOGOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"productCode":"bido_1698592481",
+"req_qty":2,
+"current_qty":10,
+"uid":"KoBZ8"
+
+
+}
+
+###ViewTempOrder
+
+
+GET  {{baseUrl}}/ViewTempOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Km08c"
+
+
+}
+###ViewTempOrder
+
+
+GET  {{baseUrl}}/ViewUserTempOrder/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"Km08c"
+
+
+}
+
+
+###this is to calculate when want to see Safari interest
+GET  {{baseUrl}}/displayCalculate
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"name":"Mbona"
+
+}
+
+###testCalculate this is to calculate based on temporary data
+POST  {{baseUrl}}/calculateAll
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"productCode":"bido_1698592481",
+"qty":"20",
+"price":"50",
+"status":"spendProduct"
+
+}
+
+###Display all Temp Calculator not from Database
+GET  {{baseUrl}}/GetDispTempCalculator
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219"
+
+}
+###Reset all Temp Calculator not from Database
+GET  {{baseUrl}}/ResetTempCalculator
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219"
+
+
+
+
+
+
+}
+
+###Save Temporally Data to Database
+POST  {{baseUrl}}/SaveCalculateTemp
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"name":"saveTemp1",
+"systemUid":"Point_Sale1",
+"commentData":"commentData"
+}
+###Update Temporally Data to Database
+POST  {{baseUrl}}/UpdatecalculateTemp
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"uid":"saveTemp1_1700324601"
+
+
+}
+
+###Delete Temporally Data From Database
+POST  {{baseUrl}}/DeleteCalculateTemp
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"saveTemp1_1700328261"
+
+
+}
+###Get All Temporally Data to Database
+GET  {{baseUrl}}/GetAllcalculateTemp
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+
+###Use This CalculateTemp From Database to continue to calculate Interest
+GET  {{baseUrl}}/UseThisCalculateTemp
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"Mbona_tbSwL_1697829219",
+"uid":"saveTemp1_1700396580"
+
+
+}
+
+### Get Total Debt,here we must even check with PhoneNumber
+GET  {{baseUrl}}/GetDebt
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"cardUid":"TEALTD_7hEnj_1672352175"
+
+
+
+}
+### paid dette done,remain is admin repay to Owner,input Data must be number
+POST  {{baseUrl}}/PaidDept
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"uidUser":"kebineericMuna_1674160265",
+"inputData":30,
+"all_total":"220",
+"ref":"Eric",
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1",
+"commentData":"karera"
+
+
+
+}
+### not done
+
+POST  {{baseUrl}}/EditPaidDept
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"uidUser":"kebineericMuna_1674160265",
+"inputData":20,
+"all_total":"215",
+"ref":"Eric",
+"reach":"1200",
+"gain":"350",
+"systemUid":"PointSales1",
+"commentData":"karera"
+
+
+
+}
+### done but not by SystemUid
+
+GET  {{baseUrl}}/viewDept
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"viewAll":"fa",
+"searchOption":false,
+"name":"m"
+}
+### done but not by SystemUid
+
+GET  {{baseUrl}}/viewSafeBalance
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"searchOption":false
+}
+### done uidReceiver is Admin Owner of Dept
+
+PoST  {{baseUrl}}/repaidBack
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidReceiver":"kebineericMuna_1668935525",
+"amount":150,
+"systemUid":"PointSales1"
+}
+
+### done but not by SystemUid
+
+GET  {{baseUrl}}/viewBorrowBalance
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"searchOption":false,
+"name":"w"
+}
+### this is to view in Details IsSafe true when it on SafeBalance
+
+GET  {{baseUrl}}/viewSafeBorrow
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"veki_1687463785",
+"isSafe":"false",
+"searchOption":false,
+"name":"be"
+}
+### done and tested
+PoST  {{baseUrl}}/repaidBack
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"uidReceiver":"kebineericMuna_1668935525",
+"amount":10,
+"systemUid":"PointSales1",
+}
+### Confirm Payment
+GET  {{baseUrl}}/confirmRepaidBack
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+
+"uid":"PID_SG_1703526591"
+
+
+
+
+}
+### done even in Testing ,isReceiver true,means Safe User View How much They Pay him,Then he can Confirm Payments
+
+GET  {{baseUrl}}/viewRepay
+Content-Type: application/json
+Authorization: Bearer {{Auth_token}}
+
+{
+"IsReceiver":"false",
+"uid":"kebineericMuna_1668935525",
+"searchOption":false,
+"name":""
+
+
+
+
+}
+### View Order When Someone Submit
+GET  {{baseUrl}}/OrderViewCount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+}
+### View Order When Someone Submit
+GET  {{baseUrl}}/OrderViewByUid
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"orderId":"UID_jT_1702383743"
+}
+
+
+### take OuT Stock and Shout
+### uid is OrderId StockCount Done 100% reste is Order
+GET  {{baseUrl}}/StockCount
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid":"UID_jT_1702383743",
+"productCode":"bido_1698592481",
+"uidTransport":"Qito",
+"qty_Transport":1,
+"stockName":"M crispin",
+"ref":"NeeMaUid",
+"status":"delivered",
+"comment":"comment Test"
+
+
+
+
+
+}
+
+###Add Depense  //General Depense Status GeneralSpend ,
+POST  {{baseUrl}}/addDepense
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"amount":"40",
+"status":"GeneralSpend",
+"purpose":"testViko",
+"commentData":"testViko",
+"systemUid":"PointSales1"
+}
+#### View Depense
+GET  {{baseUrl}}/viewDepense
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+
+}
+
+
+
+### take OuT Stock and Shout
+### Dettes and Pay API
+#on Order Just Add
+### Dettes and Pay API
+//safari new Stock and add Products
+
+### Make Sales this is dumy test will send data to promotion
+GET  {{baseUrl}}/testSubmitOrder
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"safariId":"sa1",
+"productCode":"kabi",
+"price":"0",
+"qty":"0",
+"status":"spendTransport"
+
+
+
+
+
+}
+### Make Sales
+
+
+
+
+

@@ -1,0 +1,89 @@
+<aside class="menu-sidebar d-none d-lg-block">
+    <div class="logo">
+        <a href="dashboard/#">
+            <img src="dashboard/images/icon/logo-mini.png" alt="Cool Admin" />
+        </a>
+    </div>
+    <div class="menu-sidebar__content js-scrollbar1">
+        <nav class="navbar-sidebar">
+            <ul class="list-unstyled navbar__list">
+            @if(Auth::user()->platform=='SuperAdmin')
+                
+                <li class="active has-sub">
+                    <a class="js-arrow" href="#" >
+                        <i class="fas fa-tachometer-alt" ></i>Super Admin <i class="fas fa-caret-down" ></i></a>
+                    <ul class="list-unstyled navbar__sub-list js-sub-list">
+                        <li>
+                            <a href="#Forms_createdoc" onclick="dynamic_menu('Forms_createdoc')">Create Document</a>
+                        </li>
+                        
+                        <li>
+                            <a href="#Forms_creator" onclick="dynamic_menu('Forms_creator')">Customize Form</a>
+                        </li>
+                        <li>
+                            <a href="#Forms_restriction" onclick="dynamic_menu('Forms_restriction')">Add Restriction</a>
+                        </li>
+                        <li>
+                            <a href="#Table_admindocument" onclick="dynamic_menu('Table_admindocument')">Documents</a>
+                        </li>
+                        <li>
+                            <a href="#Table_adminusers" onclick="dynamic_menu('Table_adminusers')">Users</a>
+                        </li>
+                        
+                    </ul>
+                </li>
+
+                <li class="active has-sub">
+                    <a class="js-arrow" href="#show_document" onclick="show_document();">
+                         <i class="fas fa-table"></i>Customize Invoice</a>
+                    <ul class="list-unstyled navbar__sub-list js-sub-list listinvoice_display">
+                    <li>
+                            <a href="#formuser_submit" onclick="menu_formuser_submit()">Invoice</a>
+                        </li>
+                    </ul>
+                </li>
+                @elseif(Auth::user()->platform=='Admin')
+                <li>
+                <a href="#Table_admindocument" onclick="dynamic_menu('Table_admindocument')"><i class="fas fa-copy"></i>Documents</a>
+           
+                </li>
+                <li class="active has-sub">
+                    <a class="js-arrow" href="#show_document" onclick="show_document();">
+                         <i class="fas fa-table"></i>Customize Invoice</a>
+                    <ul class="list-unstyled navbar__sub-list js-sub-list listinvoice_display">
+                    <li>
+                            <a href="#formuser_submit" onclick="menu_formuser_submit()">Invoice</a>
+                        </li>
+                    </ul>
+                </li>
+                @else
+                <li>
+                    <a href="#Forms_clientsubmit" onclick="dynamic_menu('Forms_clientsubmit')" id="cashpayment_verification">
+                        <i class="fas fa-copy"></i>Submit Document</a>
+                </li>
+                @endif
+
+
+                <li class="active has-sub">
+                    <a class="js-arrow" href="#show_document" onclick="show_document();">
+                         <i class="fas fa-table"></i>
+                         @if(Auth::user()->platform=='Standard')
+                         {{'Documents'}}
+                         @else
+                         {{'Verify Documents'}}
+                         @endif
+                         </a>
+                    <ul class="list-unstyled navbar__sub-list js-sub-list listdoc_display">
+                    <li>
+                            <a href="#formuser_submit" onclick="menu_navigate()">User Submit</a>
+                        </li>
+                    </ul>
+                </li>
+                
+          
+               
+            
+            </ul>
+        </nav>
+    </div>
+</aside>

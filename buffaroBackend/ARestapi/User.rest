@@ -1,0 +1,100 @@
+@baseUrl = http://localhost:8000/api
+@email=on@gmail.com
+@password=1
+
+@Auth_token=103|Yx7fEV0ToWA3DgWzQGpubHrzkRHuoe2yUF5mtBSs
+### UserRegisterEmail
+POST  {{baseUrl}}/UserRegisterEmail/
+Content-Type: application/json
+
+{
+"name": "Eric Kayiranga",
+"email":"{{email}}",
+"phone":"{{email}}",
+"password":"{{password}}"
+}
+### UserLoginEmail
+POST  {{baseUrl}}/UserLoginEmail
+Content-Type: application/json
+
+{
+"email": "{{email}}",
+"password":"{{password}}"
+}
+###
+
+###place order
+GET  {{baseUrl}}/testGetProductSafari/
+content-type: application/json;charset=UTF-8
+
+{
+"productId":"nyota",
+"req_qty":320
+
+
+}
+
+###
+###Edit order
+GET  {{baseUrl}}/testEditorder/
+content-type: application/json;charset=UTF-8
+
+{
+"productId":"nyota",
+"req_qty":310,
+"current_qty":30,
+"uid":"uid"
+
+
+}
+
+###
+
+###this is to calculate when want to see Safari interest
+GET  {{baseUrl}}/testdisplayCalculate
+content-type: application/json;charset=UTF-8
+
+{
+"SafariId":"sa1"
+
+}
+
+###testCalculate
+GET  {{baseUrl}}/testcalculate
+content-type: application/json;charset=UTF-8
+
+{
+"SafariId":"sa1",
+"productId":"kabi",
+"price":"500",
+"qty":"400",
+"status":"gainTransport"
+
+
+
+
+
+}
+###
+
+
+### Logout
+GET  {{baseUrl}}/logout
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+POST  {{baseUrl}}/login
+Content-Type: application/json
+
+{
+"name": "Kyle", "password": "passwor"
+}
+
+###testGetData
+GET  {{baseUrl}}/testGetData/
+
+
+
+###test Encryption
+GET  {{baseUrl}}/testencrypt/
+

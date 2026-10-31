@@ -1,0 +1,155 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Quicksand, sans-serif;
+ }
+
+ html {
+    font-size: 62.5%;
+ }
+
+ .container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+ }
+
+ .container.change {
+    background: #262626;
+ }
+
+ .card-wrapper {
+    width: 35rem;
+    height: 20rem;
+    background: white;
+    box-shadow: 0 2rem 3rem rgb(0, 0, 0, 0.4);
+    border-radius: 1rem;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+ }
+
+ .container.change .card-wrapper {
+    background: #353535;
+    color: #eee;
+    box-shadow: 0 2rem 3rem rgba(255, 255, 255, 0.009);
+ }
+
+ .card-map {
+    width: 32rem;
+    height: 20rem;
+    opacity: 0.23;
+ }
+
+ .card-chip {
+    width: 4.5rem;
+    position: absolute;
+    top: 5.8rem;
+    left: 1.2rem;
+ }
+
+ .card-type {
+    position: absolute;
+    top: 2rem;
+    font-weight: bold;
+    letter-spacing: .1rem;
+    left: 2rem;
+    opacity: .8;
+ }
+
+ .card-left {
+    position: absolute;
+    bottom: 1rem;
+    left: 2rem;
+ }
+
+ .card-mode-icon {
+    position: absolute;
+    top: 1rem;
+    right: 2rem;
+
+ }
+
+ .card-circle-right {
+    position: relative;
+ }
+
+ .red-circle {
+    height: 4rem;
+    width: 4rem;
+    position: absolute;
+    right: 2rem;
+    top: 4rem;
+    background: red;
+    opacity: .8;
+    border-radius: 50%;
+ }
+
+ .orange-circle {
+    width: 4rem;
+    height: 4rem;
+    background: orange;
+    position: absolute;
+    right: 0rem;
+    top: 4rem;
+    opacity: .7;
+    border-radius: 50%;
+ }
+
+ .card-left {
+    opacity: .8;
+ }
+
+ .card-bin-number {
+    font-size: 1.5rem;
+    margin-top: -4rem;
+    margin-bottom: .6rem;
+ }
+
+ .card-date {
+    font-size: 1.2rem;
+ }
+
+ .card-date {
+    letter-spacing: .1rem;
+ }
+
+ .card-date > span {
+    display: block;
+ }
+
+ .card-owner {
+    margin-top: .5rem;
+    font-size: 1.2rem;
+ }
+
+ .card-mode-icon > span {
+    font-size: 3.3rem;
+    position: relative;
+    cursor: pointer;
+    width: 4.3rem;
+    height: 4.3rem;
+    background: #eee;
+    opacity: .8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+
+ }
+ .myQr {
+    position: absolute;
+    width: 40px;
+    /* top: 0; */
+    right: 70px;
+    bottom: 5px;
+    /* margin-right: -20px; */
+}
+.myQr img {
+    width: 100px;
+}

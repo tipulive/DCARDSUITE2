@@ -1,0 +1,40 @@
+@baseUrl = http://localhost:8000/api
+@email=admin@gmail.com
+@password=1
+@Auth_token=4|vk5mT0kWSVOYkrvJbhEsL4pW87WVLuZzbuXk4NRl
+### AdminRegisterEmail
+POST  http://localhost:8000/api/AdminRegisterEmail/
+Content-Type: application/json
+
+{
+"fname":"Eric",
+"name":"Kayiranga",
+"email":"{{email}}",
+"tel":"{{email}}",
+"password":"{{password}}"
+}
+### AdminLoginEmail
+POST  http://localhost:8000/api/AdminLoginEmail/
+Content-Type: application/json
+
+{
+"email": "{{email}}",
+"password": "{{password}}"
+}
+
+###
+###Admin Create User
+POST  {{baseUrl}}/CreateCompany
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"name": "kebine eric Muna",
+"email": "company2@gmail.com",
+"PhoneNumber": "078238935988",
+"CompanyName": "TVA",
+"password": "1"
+
+
+}
+

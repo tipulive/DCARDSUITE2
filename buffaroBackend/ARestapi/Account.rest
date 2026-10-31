@@ -1,0 +1,40 @@
+### Account
+### VIew
+@baseUrl = http://localhost:8000/api
+@email=admin@gmail.com
+@password=1
+@Auth_token=15|fHA9iZJTje4jftWANiM1WMr1FoKZmWHm76DufNq1
+GET {{baseUrl}}/view
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+
+### update
+POST  {{baseUrl}}/update
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"fname": "Eric",
+"lname": "Kayiranga",
+"email": "ericsoft123@gmail.com",
+"tel": "ericsoft123@gmail.com",
+"password": "1"
+}
+### delete
+POST  {{baseUrl}}/deleteAcc
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+
+### delete
+POST  {{baseUrl}}/api/logout
+Content-Type: application/json
+
+{
+"fname": "Eric",
+"lname": "Kayiranga",
+"email": "ericsoft123@gmail.com",
+"tel": "ericsoft123@gmail.com",
+"password": "1"
+}
