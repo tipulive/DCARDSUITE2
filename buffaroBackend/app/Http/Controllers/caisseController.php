@@ -96,15 +96,15 @@ public string $curdate;
     public function UpdateCaisseStatus(mixed $input){
       return DB::update("update reqCaisse set status=:status,voter=voter+:vote,votingCount=votingCount+:votingCount,uidApprove=:uidApprove,updated_at=:updated_at where uid=:uid and subscriber=:subscriber limit 1",[
           "uid"=>$input["uid"],
-          "voter"=>$input["voter"],
-          "votingCount"=>$input["votingCount"]??'0',
+          "voter"=>$input["voter"]??'1',//umubare wabatora
+          "votingCount"=>$input["votingCount"]??'0',//1 ni yes 0,ni no
           "status"=>$input["status"],
           "uidApprove"=>Auth::user()->uid,
           "subscriber"=>Auth::user()->subscriber,
           "updated_at"=>$this->today
       ]);
     }
-     public function checkVoteReqCaisse(mixed $input){
+     public function checkVoteReqCaisse(mixed $input){// to check if he is the last one to vote
        return DB::select("select *from reqCaisse where uid=:uid and subscriber=:subscriber and approvalVote=(votingCount+:votingCount) limit 1",[
             "uid"=>$input["uid"],
             "votingCount"=>$input["votingCount"]??'0',

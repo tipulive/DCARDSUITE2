@@ -1,0 +1,27 @@
+@baseUrl = http://localhost:8000/api
+##@email=company@gmail.com
+##@PhoneNumber=+250782389359
+@app_vers=1.0.0
+@email=ceke@gmail.com
+##@PhoneNumber=+243464646
+##@password=1
+@PhoneNumber=+243842470216
+@password=1
+@Auth_token=962|a1i5jItgxzfVTt5nhyC8J4S6yHnhYmsBTjACmlql
+### Company Login with email
+POST  {{baseUrl}}/AdminLoginEmail/
+Content-Type: application/json
+
+{
+"email": "{{PhoneNumber}}",
+"password": "{{password}}"
+}
+### Company Login with email
+POST  {{baseUrl}}/reqCaisse/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid": "Ange_1779748991",
+"permission": {"perm":true,"keza":false,"editOrderAction":true}
+}

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -49,6 +50,14 @@ Route::post('/AdminLoginPhone','AdminController@AdminLoginPhone')->name(' AdminL
 
 Route::middleware('auth:sanctum')->group( function () {//here is to protect multiple route
     Route::get('/logout','AccountController@logout')->name('logout');
+
+/*buffaro*/
+  /*permission*/
+  Route::post('/adminSetPermission','CompanyController@adminSetPermission')->name('adminSetPermission');
+  /*permission*/
+    Route::post('/reqCaisse','CompanyController@reqCaisse')->name('reqCaisse');
+    Route::post('/reqSpending','CompanyController@reqSpending')->name('reqSpending');
+/*buffaro*/
 
     /*Currency Against USD  done and Testing*/
     Route::get('/getProducts','StockController@getProducts')->name('getProducts');

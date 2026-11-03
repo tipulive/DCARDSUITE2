@@ -13,7 +13,7 @@ use App\Http\Controllers\spendingController;
 use App\Http\Controllers\caisseController;
 use App\Http\Controllers\votingController;
 use App\Http\Controllers\NotifyController;
-
+use App\Http\Controllers\notifyController as ControllersNotifyController;
 
 class buffaroController extends Controller
 {
@@ -46,7 +46,7 @@ public string $curdate;
     }
 
 
-public function AddCaisse(mixed $input){
+public function reqCaisse(mixed $input){
      try {
 
 
@@ -75,7 +75,7 @@ public function AddCaisse(mixed $input){
 public function AddCaisseProcessing(mixed $input){//done
 
 //
-$input["action"] = $this->permissions["notification"]["addCaisse"]->name;
+$input["action"] = $this->permissions["notification"]["addCaisse"]->uid;
 
 
 $result = (new NotifyController)->checkPermNotify($input);
@@ -91,7 +91,7 @@ if ($result['error']) {
    // return false;
       $input["permission"] = [
     [
-        "permission" =>$this->permissions["notification"]["addCaisse"]->name,
+        "permission" =>$this->permissions["notification"]["addCaisse"]->uid,
         "approvalAction" => $this->permissions["notification"]["addCaisse"]->approvalAction
     ]
 
@@ -171,7 +171,12 @@ public function updateCaisseVoteStatusProcessing(mixed $input){
 
             if((new caisseController)->reqCaisseHistory($input))//update reqCaisseHistory
             {
-                //add Caisse or Subscriber table
+                //remove all notify
+                if((new NotifyController)->updateNotify($input)){
+                    return true;
+                }else{
+                     throw new \Exception("Error Updating Notify", 1);
+                }
             }
             else{
                   throw new \Exception("Error Updating Caisse Status", 1);
@@ -184,9 +189,18 @@ public function updateCaisseVoteStatusProcessing(mixed $input){
 
     }else{
         $input["status"]=env('STATUS_VOTED');
+
   if((new caisseController)->UpdateCaisseStatus($input))
          {
-            //update User and give them notification
+            //update User and give them notification ,the
+
+
+            if((new caisseController)->reqCaisseHistory($input))//update reqCaisseHistory
+            {
+                 return true;
+            }else{
+              throw new \Exception("Error unable to update Caisse Status", 1);
+            }
          }else{
              throw new \Exception("Error unable to update Caisse Status", 1);
 
@@ -195,9 +209,91 @@ public function updateCaisseVoteStatusProcessing(mixed $input){
 
 }
 
-public function addSpending(mixed $input){
+public function reqSpending(mixed $input){
+     try {
+
+
+            $check=DB::transaction(function () use ($input) {
+
+
+
+                $this->AddSpendingProcessing($input);
+            });
+
+            return response([
+                "status" => true,
+                "result" => "Success",
+
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                'errorCode' => $e->getLine()
+            ], 500);
+        }
 
 }
+public function AddSpendingProcessing(mixed $input){//done
+
+//
+$input["action"] = $this->permissions["notification"]["addSpending"]->uid;
+
+
+$result = (new NotifyController)->checkPermNotify($input);
+
+if ($result['error']) {
+
+    // Database error
+     throw new \Exception("Error unable to notify Admin Database Error", 1);
+
+} elseif (!$result['status']) {
+
+    // Permission not found
+   // return false;
+      $input["permission"] = [
+    [
+        "permission" =>$this->permissions["notification"]["addSpending"]->uid,
+        "approvalAction" => $this->permissions["notification"]["addSpending"]->approvalAction
+    ]
+
+   ];
+  return $this->reqSpendingMethod($input);
+
+} else {
+
+    // Success
+
+
+      $input["permission"] = $result['data'];
+  return $this->reqSpendingMethod($input);
+
+    // Continue your operation
+}
+//
+
+
+
+}
+
+public function reqSpendingMethod(mixed $input){
+      $reqSpending=(new SpendingController)->reqSpending($input);
+   if($reqSpending["status"]){
+
+
+   $input["uid"]=$reqSpending["uid"];
+    if((new NotifyController)->notifyAdmin($input))
+    {
+        return true;
+    }else{
+        throw new \Exception("Error unable to notify Admin", 1);
+   }
+   }else{
+        throw new \Exception("Error unable to add Spending", 1);
+   }
+}
+
 public function updateVoteSpendingStatus(mixed $input){
 
  try {
@@ -225,42 +321,55 @@ public function updateVoteSpendingStatus(mixed $input){
         }
 
 }
+
 public function updateSpendingVoteStatusProcessing(mixed $input){
 
-if((new spendingController)->checkVoteReqSpending($input))
+    if((new SpendingController)->checkVoteReqSpending($input))
     {
- $input["status"]=env('STATUS_APPROVED');
-         if((new spendingController)->updateVoteSpendingStatus($input))
+         $input["status"]=env('STATUS_APPROVED');
+         if((new SpendingController)->UpdateSpendingStatus($input))
          {
 
-            //here status must be approve,and update Caisse and update Admin as well
+            //here status must be approve,and update Spending and update Admin as well
 
-            if((new spendingController)->reqSpendingHistory($input))//update reqSpendingHistory
+            if((new SpendingController)->reqSpendingHistory($input))//update reqSpendingHistory
             {
-                //add Caisse or Subscriber table
+                //remove all notify
+                if((new NotifyController)->updateNotify($input)){
+                    return true;
+                }else{
+                     throw new \Exception("Error Updating Notify", 1);
+                }
             }
             else{
-                  throw new \Exception("Error Updating Caisse Status", 1);
+                  throw new \Exception("Error Updating Spending Status", 1);
             }
                 //update User and give them notification
          }else{
-             throw new \Exception("Error Updating Caisse Status", 1);
+             throw new \Exception("Error Updating Spending Status", 1);
 
          }
+
     }else{
         $input["status"]=env('STATUS_VOTED');
 
-          if((new spendingController)->updateVoteSpendingStatus($input))
+  if((new SpendingController)->UpdateSpendingStatus($input))
          {
-            //update User and give them notification
+            //update User and give them notification ,the
+
+
+            if((new SpendingController)->reqSpendingHistory($input))//update reqSpendingHistory
+            {
+                 return true;
+            }else{
+              throw new \Exception("Error unable to update Spending Status", 1);
+            }
          }else{
              throw new \Exception("Error unable to update Spending Status", 1);
 
          }
     }
 
-
-    }
 }
-
+}
 

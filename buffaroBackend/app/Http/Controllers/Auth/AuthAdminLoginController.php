@@ -39,6 +39,7 @@ class AuthAdminLoginController extends Controller
 
 		{
             $user=auth::guard('Admin')->user();
+
             $success['token']=$user->createToken('MyApp')->plainTextToken;
             $success['name']=$user->email;
             $this->createAdmin_record();
@@ -73,6 +74,7 @@ class AuthAdminLoginController extends Controller
         {
 
             $user=auth::guard('Admin')->user();
+            //var_dump($user);
             $success['token']=$user->createToken('MyApp')->plainTextToken;
             $success['name']=$user->email;
 //create admin_records
@@ -159,6 +161,9 @@ class AuthAdminLoginController extends Controller
         }
 
 
+
+    }
+    public function checkUserPermission($input){
 
     }
     public function switchAccount($input)

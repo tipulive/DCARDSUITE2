@@ -54,7 +54,7 @@ public string $curdate;
                 "status"=>env('STATUS_REQUEST'),
                 "permission"=>$perm[$i]["permission"],
                 "notificationType"=>$input["notificationType"]??'none',
-                "notifyApproval"=>$perm[$i]["approvalAction"]??'0',//equal 1,less 1,greater 1
+                "notifyApproval"=>$perm[$i]["approvalAction"]??'0',//equal 1,less 1,greater 1  abantu bakwiye kuyikuramo cg kwemeza
                // "notifyCount"=>$input["notifyCount"]??'0',//count
                 "subscriber"=>Auth::user()->subscriber,
                 "uidCreator"=>Auth::user()->uid,
@@ -80,11 +80,16 @@ public string $curdate;
     }
 
 
-
+public function updateNotify(mixed $input)
+{
+    return DB::update("update notify set approvalAction=approvalAction-1 where uid=:uid limit 1",[
+        "uid"=>$input['uid']
+    ]);
+}
 
  public function checkPermNotify(mixed $input): array//this is to check if this action exists
 {
-    try {
+    try {//this is a permissionACtion when i setup Action what user will access it
 
         $check = DB::select(
             "SELECT permission FROM permissionACtion

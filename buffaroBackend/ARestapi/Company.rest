@@ -27,6 +27,16 @@ Content-Type: application/json
 "password": "{{password}}"
 }
 
+### Company Login with email
+POST  {{baseUrl}}/adminSetPermission/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"uid": "Ange_1779748991",
+"permission": {"perm":true,"keza":false,"editOrderAction":true}
+}
+
 ### print Qr code on product
 GET  {{baseUrl}}/getProducts
 content-type: application/json;charset=UTF-8

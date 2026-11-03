@@ -37,7 +37,38 @@ class permissionController extends Controller
         $this->platform1=env('PLATFORM3');
     }
 
-    public function AdminPermission(mixed $input){//permission
+    public function AdminSetPermission(mixed $input)
+    {
+        //$permission =$input["permission"];
+        $permission = json_encode($input["permission"]);
+        $check=DB::update("UPDATE admins
+SET updated_at=:updated_at,permission = JSON_MERGE_PATCH(
+    COALESCE(permission, JSON_OBJECT()),
+    :permission
+)
+WHERE uid = :uid and subscriber=:subscriber limit 1",[
+ "permission"=>$permission,
+ "uid"=>$input['uid'],
+ "subscriber"=>Auth::user()->subscriber,
+ "updated_at"=>$this->today
+]);
+
+if($check){
+ return response([
+            "status" =>true,
+            "result"=>$check
+
+        ]);
+}else{
+     return response([
+            "status" =>false,
+            "result"=>$check
+
+        ]);
+}
+    }
+
+    /*public function AdminPermission(mixed $input){//permission
     $permission=$input["permission"];
     $boolean=$input["boolean"];
            return DB::update("UPDATE admins
@@ -50,7 +81,7 @@ WHERE uid := uid and subscriber=:subscriber limit 1",[
             "subscriber"=>Auth::user()->subscriber,
             "updated_at"=>$this->today
         ]);
-    }
+    }*/
 
 
 

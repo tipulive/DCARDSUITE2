@@ -9,8 +9,9 @@ use DB;
 use Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\StockController;
 
-class spendingController extends Controller
+class SpendingController extends Controller
 {
     //
      public string $today;
@@ -39,24 +40,37 @@ public string $curdate;
         $this->platform1=env('PLATFORM3');
     }
 
-    public function reqSpending(mixed $input)//kuri buffaro caisse
+    public function reqSpending(mixed $input):array//kuri buffaro caisse
     {
          // "uidApprove"=>,
-      return DB::table("reqSpending")
+   $uid=(new StockController)->CreateUid($input);
+         // "uidApprove"=>,
+      $check=DB::table("reqCaisse")
       ->insert([
-          "uid"=>$input["uid"],
+          "uid"=>$uid,
           "status"=>env('STATUS_REQUEST'),
           "purpose"=>$input["purpose"]??'none',
           "source"=>$input["source"]??'none',
           "commentData"=>$input["commentData"]??'none',
           "subscriber"=>Auth::user()->subscriber,
           "uidReq"=>Auth::user()->uid,
-          "img_url"=>$input["img_url"]??'none',
           "approvalVote"=>$input["approvalVote"]??'0',
           "amount"=>$input["amount"],
           "currency"=>$input["currency"],
           "created_at"=>$this->today,
       ]);
+      if($check)
+        {
+         return [
+            'status'=>true,
+            'uid'=>$uid
+         ];
+        }else{
+            return [
+                'status'=>false
+            ];
+
+        }
     }
     public function updateVoteSpendingStatus(mixed $input)
     {

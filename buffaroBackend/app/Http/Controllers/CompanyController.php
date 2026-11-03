@@ -17,18 +17,22 @@ use App\Http\Controllers\TopupController;
 use App\Http\Controllers\MyHistoryController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\utilityController;
+use App\Http\Controllers\permissionController;
 
 
 class CompanyController extends Controller
 {
     public string $today;
     public string $Appstate;
+    protected mixed $permissions;
     public string $AppName;
     public string $otp;
     public string $email_confirm;
     public string $Admin_Auth_error;
     public string $Admin_Auth_result_error;
+    public string $Admin_Auth_Permission_Denied;
     public string $platform1;
+     public string $SuperAdmin;
     // public string $input;
     //
     public function __construct()
@@ -43,9 +47,283 @@ class CompanyController extends Controller
         $this->email_confirm='24 hours';
         $this->Admin_Auth_error="You Are not authenticate please Request Permission to Admin";
         $this->Admin_Auth_result_error="0";//Admin auth result zero
+        $this->Admin_Auth_Permission_Denied="3";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
+        // $this->SuperAdmin=env('PLATFORM1');//super
+        $this->SuperAdmin=env('PLATFORM3');
+         $this->permissions = config('permissions');
     }
 
+    //buffaro
+
+      public function adminSetPermission(Request $request) {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->SuperAdmin)
+            {
+                $input=$request->all();
+
+
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                       $permObj=$this->permissions["notification"]["adminSetPermission"];
+                       $perm=$permObj->uid;
+                       $permTrue = array(
+                        $perm =>"true"
+                    );
+
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
+                   if($mypermission==="true")
+                       {
+                        return (new permissionController)->AdminSetPermission($input);
+                       }else{
+                            return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
+
+
+                        ],200);
+                       }
+
+
+
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+  public function reqCaisse(Request $request) {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                      $permObj=$this->permissions["notification"]["addCaisse"];
+                       $perm=$permObj->uid;
+
+                       $permTrue = array(//default value
+                        $perm =>"false"
+                    );
+   ///var_dump($jsonData[$perm]);
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
+                   if($mypermission==="true")
+                       {
+                        return (new buffaroController)->reqCaisse($input);
+                       }else{
+                        return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
+
+
+                        ],200);
+                       }
+
+
+
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+
+      public function updateCaisse(Request $request) {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                       $permObj=$this->permissions["notification"]["updateCaisse"];
+                       $perm=$permObj->uid;
+                       $permTrue = array(
+                        $perm =>"true"
+                    );
+
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
+                   if($mypermission==="true")
+                       {
+                        return (new buffaroController)->updateVoteCaisseStatus($input);
+                       }else{
+                         return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
+
+
+                        ],200);
+                       }
+
+
+
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+      public function reqSpending(Request $request) {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                       $permObj=$this->permissions["notification"]["reqSpending"];
+                       $perm=$permObj->uid;
+                      $permTrue = array(//default value
+                        $perm =>"false"
+                    );
+
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
+                   if($mypermission==="true")
+                       {
+                        return (new buffaroController)->reqSpending($input);
+                       }else{
+                        return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
+
+
+                        ],200);
+                       }
+
+
+
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+         public function updateBuffaroSpending(Request $request) {
+        if(Auth::check())
+        {
+
+            if(Auth::user()->platform==$this->platform1)
+            {
+                $input=$request->all();
+
+
+
+                      // $jsonData=json_decode(Auth::user()->permission,true);
+                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                      $permObj=$this->permissions["notification"]["updateSpending"];
+                       $perm=$permObj->uid;
+                      $permTrue = array(
+                        $perm =>"true"
+                    );
+
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
+                   if($mypermission==="true")
+                       {
+                        return (new buffaroController)->updateVoteSpendingStatus($input);
+                       }else{
+                           return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
+
+
+                        ],200);
+                       }
+
+
+
+            }
+            else{
+                return response([
+                    "status"=>false,
+                    "result"=>$this->Admin_Auth_result_error,
+                    "error"=>$this->Admin_Auth_error,
+
+                ],200);
+            }
+        }
+        else{
+            return response([
+                "status"=>false,
+                "result"=>$this->Admin_Auth_result_error,
+                "error"=>$this->Admin_Auth_error,
+
+            ],200);
+        }
+    }
+    //buffaro
     public function checkSharing(mixed $input)
     {
          return DB::select("select subscriber where shareMe=:shareMe and subscriber=:subscriber limit 1",[
@@ -1260,19 +1538,23 @@ else{
                 {
 
                       // $jsonData=json_decode(Auth::user()->permission,true);
-                      $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                       $jsonData = json_decode(Auth::user()->permission, true) ?? [];
+                      $permObj=$this->permissions["notification"]["EditPrice"];
+                       $perm=$permObj->uid;
 
-                       $editPriceTrue = array(
-                        "editPrice" =>"true"
+                       $permTrue = array(//default value
+                        $perm =>"true"//means that even if it is ticket you may be able to access it by default
                     );
-
-                       $mypermission=$jsonData["editPrice"]??$editPriceTrue["editPrice"];
+   ///var_dump($jsonData[$perm]);
+                       $mypermission=$jsonData[$perm]??$permTrue[$perm];
                    if($mypermission==="true")
                        {
                         return (new StockController)->updateProducts($input);
                        }else{
-                        return response([
-                            "status"=>false
+                       return response([
+                            "status"=>false,
+                            "result"=>$this->Admin_Auth_Permission_Denied,
+                            "error"=>$permObj->error
 
 
                         ],200);
