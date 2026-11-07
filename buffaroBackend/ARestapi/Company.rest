@@ -34,7 +34,7 @@ Authorization: Bearer {{Auth_token}}
 
 {
 "uid": "Ange_1779748991",
-"permission": {"perm":true,"keza":false,"editOrderAction":true}
+"permission": {"addSpending":true,"keza":false}
 }
 
 ### print Qr code on product
@@ -870,13 +870,15 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"phoneNumber":"+250",
-"name":"ang",
+"phoneNumber":"none",
+"name":"map",
 "limitData":10,
-"platform":"3000",
-"searchOption":false,
-"isAdmin":"tes",
-"isStatus":"none"
+"platform":"4000",
+"searchOption":"false",
+"isAdmin":"false",
+"isStatus":"offNotPick",
+"sortOrder":"ASC"
+
 
 
 
@@ -898,18 +900,20 @@ Authorization: Bearer {{Auth_token}}
 ###Search productCode or productName  done or i may search both productCode and productName together
 ### either productCode equal none or productName equal none
 ### when $productQr is available means Search By Qr
+### search is a default one,then currencySearch is when there is another options
 GET  {{baseUrl}}/Products
 content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"productCode":"none",
+"productCode":"nyota",
 "productName":"none",
 "productQr":"none",
 "LimitStart":1,
 "LimitEnd":10,
-"isProductAction":"search",
-"withTotal":"true"
+"isProductAction":"currencysearch",
+"withTotal":"true",
+"currency":"FRW"
 
 
 
@@ -1064,14 +1068,17 @@ Authorization: Bearer {{Auth_token}}
 ###place order ,this oTher ref after req_qty are after sales not allowed negative value
 ### more order i need to Add orderId value to orderIdFromEdit to track my Order
 ### req_qty must be number
+//export
 POST  {{baseUrl}}/placeOrder/
 content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"productCode":"ubugari",
+"productCode":"nyota",
 "uidClient":"ericmushi_1773588035",
-"req_qty":5,
+"orderType":"export",
+"req_qty":2,
+"currency":"WHOLESALE_RWF",
 "ref":"test",
 "comment":"ok",
 "statusForm":"none",
@@ -1288,12 +1295,14 @@ Authorization: Bearer {{Auth_token}}
 {
 "uid":"Nyota_1672353378",
 "uidUser":"ericmushi_1773588035",
-"OrderId":"UID_Ef_1781902614",
-"inputData":"225",
+"OrderId":"UID_Ry_1793813549",
+"inputData":"100",
+"currencySub":"FRW",
 
 "reach":"1200",
 "gain":"350",
 "systemUid":"PointSales1",
+"promoData":"none",
 "app_vers":"{{app_vers}}"
 
 
@@ -1367,7 +1376,7 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"uid":"Km08c"
+"currency":"RWF"
 
 
 }

@@ -13,6 +13,7 @@ class CreateSafProductlosesTable extends Migration
      */
     public function up()
     {
+         if (!Schema::hasTable('exchanges')) {
         Schema::create('saf_productloses', function (Blueprint $table) {
             $table->id();
 
@@ -31,7 +32,7 @@ class CreateSafProductlosesTable extends Migration
             $table->timestamps();
         });
     }
-
+    }
     /**
      * Reverse the migrations.
      *

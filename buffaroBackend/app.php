@@ -26,10 +26,10 @@
         <h2>1. Hide Data (Encoder)</h2>
         <label for="coverImage">Select Cover Image:</label>
         <input type="file" id="coverImage" accept="image/*">
-        
+
         <label for="secretText">Secret Message / QR Data:</label>
         <textarea id="secretText" rows="3" placeholder="Enter secret text here..."></textarea>
-        
+
         <button onclick="encodeMessage()">Hide Message & Download</button>
         <br><br>
         <a id="downloadLink" style="display:none;" download="stego_image.png">Download Stego Image</a>
@@ -40,9 +40,9 @@
         <h2>2. Extract Data (Decoder)</h2>
         <label for="stegoImage">Select Stego Image:</label>
         <input type="file" id="stegoImage" accept="image/*">
-        
+
         <button onclick="decodeMessage()">Extract Secret Message</button>
-        
+
         <label>Extracted Result:</label>
         <pre id="outputResult">No message extracted yet.</pre>
     </div>
@@ -91,7 +91,7 @@
                 img.onload = function() {
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d');
-                    
+
                     canvas.width = img.width;
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
@@ -146,7 +146,7 @@
                 img.onload = function() {
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d');
-                    
+
                     canvas.width = img.width;
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);

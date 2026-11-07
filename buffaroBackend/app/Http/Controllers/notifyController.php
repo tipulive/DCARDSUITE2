@@ -58,8 +58,8 @@ public string $curdate;
                // "notifyCount"=>$input["notifyCount"]??'0',//count
                 "subscriber"=>Auth::user()->subscriber,
                 "uidCreator"=>Auth::user()->uid,
-                "title"=>$input["title"],
-                "message"=>$input["message"],
+                "title"=>$input["name"]??'none',
+                "message"=>$input["message"]??'none',
                 "created_at"=>$this->today,
             ]);
             if ($check) {
@@ -92,7 +92,7 @@ public function updateNotify(mixed $input)
     try {//this is a permissionACtion when i setup Action what user will access it
 
         $check = DB::select(
-            "SELECT permission FROM permissionACtion
+            "SELECT permission FROM permissionaction
              WHERE action = :action
              AND subscriber = :subscriber
              AND status = :status

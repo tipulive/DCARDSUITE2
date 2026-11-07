@@ -13,6 +13,7 @@ class CreateReqStocksTable extends Migration
      */
     public function up()
     {
+         if (!Schema::hasTable('exchanges')) {
         Schema::create('req_stocks', function (Blueprint $table) {
             $table->id();
             $table->string('uid')->index('uid');// Uid
@@ -27,6 +28,7 @@ class CreateReqStocksTable extends Migration
             $table->longtext('commentData')->nullable();//
             $table->timestamps();
         });
+         }
     }
 
     /**

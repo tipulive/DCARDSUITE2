@@ -74,6 +74,7 @@ window.location.href="/";
     }
     else{
         localStorage.setItem('Usertoken',data.token);
+        localStorage.setItem('User',JSON.stringify(data.User));
 
 
  window.location.href ="admin";

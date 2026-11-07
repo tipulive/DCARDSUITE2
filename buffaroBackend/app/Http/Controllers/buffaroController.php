@@ -67,6 +67,7 @@ public function reqCaisse(mixed $input){
             return response()->json([
                 "status" => false,
                 "message" => $e->getMessage(),
+                "file" => $e->getFile(),
                 'errorCode' => $e->getLine()
             ], 500);
         }
@@ -152,6 +153,7 @@ public function updateVoteCaisseStatus(mixed $input){
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);
@@ -229,6 +231,7 @@ public function reqSpending(mixed $input){
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);
@@ -315,6 +318,7 @@ public function updateVoteSpendingStatus(mixed $input){
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);

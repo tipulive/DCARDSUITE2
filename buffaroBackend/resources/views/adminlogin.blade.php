@@ -75,6 +75,7 @@ success:function(data){
 if(data.status){//return data as true
 
     localStorage.setItem('Usertoken',data.token);
+    localStorage.setItem('User',JSON.stringify(data.User));
  //console.log(hashfunction);
 
  window.location.href ="admin";

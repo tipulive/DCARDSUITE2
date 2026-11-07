@@ -7,11 +7,10 @@
 ##@password=1
 @PhoneNumber=+243842470216
 @password=1
-@Auth_token=962|a1i5jItgxzfVTt5nhyC8J4S6yHnhYmsBTjACmlql
+@Auth_token=1781|WCcGqvnbclNzwfxO8vpB9wx7THUWWusD8Stlrwja
 ### Company Login with email
 POST  {{baseUrl}}/AdminLoginEmail/
 Content-Type: application/json
-
 {
 "email": "{{PhoneNumber}}",
 "password": "{{password}}"
@@ -22,6 +21,25 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"uid": "Ange_1779748991",
-"permission": {"perm":true,"keza":false,"editOrderAction":true}
+"purpose": "Monthly software subscription and licensing",
+  "source": "web_portal",
+  "commentData": "Approved by department head",
+  "approvalVote": "1",
+  "amount": "1000",
+  "currency": "USD"
 }
+### request Spending
+POST  {{baseUrl}}/reqSpending/
+content-type: application/json;charset=UTF-8
+Authorization: Bearer {{Auth_token}}
+
+{
+"purpose": "Monthly software subscription and licensing",
+  "source": "web_portal",
+  "commentData": "Approved by department head",
+  "approvalVote": "1",
+  "amount": "500",
+  "currency": "FRW"
+}
+
+

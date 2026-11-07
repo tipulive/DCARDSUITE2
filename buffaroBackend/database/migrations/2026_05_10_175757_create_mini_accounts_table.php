@@ -13,6 +13,7 @@ class CreateMiniAccountsTable extends Migration
      */
     public function up()
     {
+         if (!Schema::hasTable('exchanges')) {
         Schema::create('mini_accounts', function (Blueprint $table) {
             $table->id();
             $table->string('uidOwner')->index("uidOwner");
@@ -27,7 +28,7 @@ class CreateMiniAccountsTable extends Migration
             $table->timestamps();
         });
     }
-
+    }
     /**
      * Reverse the migrations.
      *

@@ -191,13 +191,13 @@ WHERE id = 1;*/
     }
 
     public function checkPermssionAdded(mixed $input){
-       return  DB::select("select uid from permissionAdded where uid=:uid and subscriber=:subscriber limit 1",[
+       return  DB::select("select uid from permissionadded where uid=:uid and subscriber=:subscriber limit 1",[
             "uid"=>$input["uid"],
             "subscriber"=>Auth::user()->subscriber
         ]);
     }
     public function permissionAdded(mixed $input){
-        return DB::table("permissionAdded")
+        return DB::table("permissionadded")
         ->insert([
             "uid"=>$input["uid"],
             "uidUser"=>$input["uidUser"],
@@ -210,7 +210,7 @@ WHERE id = 1;*/
     }
 
     public function permissionAddedAction(mixed $input){//this is to setup action on notification by default
-        return DB::table("permissionACtion")
+        return DB::table("permissionaction")
         ->insert([
 
             "action"=>$input["action"],//notification  createCaisse

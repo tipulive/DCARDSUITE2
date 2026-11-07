@@ -13,6 +13,7 @@ class CreateExchangesTable extends Migration
      */
     public function up()
     {
+        if (!Schema::hasTable('exchanges')) {
         Schema::create('exchanges', function (Blueprint $table) {//this is currency according to dollars currency
             $table->id();
             $table->string('currency')->default('0')->index('currency');
@@ -21,6 +22,7 @@ class CreateExchangesTable extends Migration
 
             $table->timestamps();
         });
+    }
     }
     /*e.g: -usd:1
             -fc:2880

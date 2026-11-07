@@ -45,7 +45,7 @@ public string $curdate;
          // "uidApprove"=>,
    $uid=(new StockController)->CreateUid($input);
          // "uidApprove"=>,
-      $check=DB::table("reqCaisse")
+      $check=DB::table("reqSpending")
       ->insert([
           "uid"=>$uid,
           "status"=>env('STATUS_REQUEST'),

@@ -13,6 +13,7 @@ class CreateDeliversTable extends Migration
      */
     public function up()
     {
+        if (!Schema::hasTable('delivers')) {
         Schema::create('delivers', function (Blueprint $table) {
             $table->id();
             $table->String('uid')->index('uid');
@@ -24,7 +25,7 @@ class CreateDeliversTable extends Migration
             $table->String('subscriber')->index('subscriber');
             $table->longtext('commentData')->nullable();
             $table->timestamps();
-        });
+        });}
     }
 
     /**

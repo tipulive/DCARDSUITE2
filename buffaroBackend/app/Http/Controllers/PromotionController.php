@@ -50,7 +50,7 @@ class PromotionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
-                "message" => $e->getMessage(),
+                 "message" => $e->getMessage(),"file" => $e->getFile(),
                 'errorCode' => $e->getLine()
             ], 500);
         }
@@ -390,7 +390,7 @@ return $inStockJsonString = implode(",", $json_items);
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
-                "message" => $e->getMessage(),
+                 "message" => $e->getMessage(),"file" => $e->getFile(),
                 'errorCode' => $e->getLine()
             ], 500);
         }
@@ -722,7 +722,7 @@ return response([
                 "status" => false,
                 "test"=>$input["newpromoschema"],
                 "input"=>$input["promoMainUid"],
-                "message" => $e->getMessage(),
+                 "message" => $e->getMessage(),"file" => $e->getFile(),
                 'errorCode' => $e->getLine()
             ], 500);
         }
@@ -793,7 +793,7 @@ return response([
                 "status" => false,
                 "test"=>$input["newpromoschema"],
                 "input"=>$input["promoMainUid"],
-                "message" => $e->getMessage(),
+                 "message" => $e->getMessage(),"file" => $e->getFile(),
                 'errorCode' => $e->getLine()
             ], 500);
         }
@@ -1326,6 +1326,7 @@ $newpromoschema = json_encode($filtered);*/
         $input["UserId"]=($input["uidUser"]===$mamaUid)?$mamaUid:Auth::user()->uid;
         $input["uidCreator"]=Auth::user()->uid; //is the one who will pay money to client when he will withdraw
         $input["subscriber"]=Auth::user()->subscriber;
+
            $this->addData($input);
         });
 
@@ -1337,12 +1338,12 @@ $newpromoschema = json_encode($filtered);*/
     } catch (\Exception $e) {
         return response()->json([
             "status" => false,
-            "message" => $e->getMessage(),
+             "message" => $e->getMessage(),"file" => $e->getFile(),
             'errorCode' => $e->getLine()
         ], 500);
     }
 }
-    public function addData($input):bool
+    public function addData(mixed $input):bool
     {
 
         //code...

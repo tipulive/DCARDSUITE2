@@ -16,9 +16,22 @@ use App\Http\Controllers\CompanyController;
 | contains the "web" middleware group. Now create something great!
 |
 */
+/*test purpose */
+Route::get('/upload', function () {
+    return view('upload');
+});
+
+
+    Route::get('/productOrder', function () {
+        return view('productOrder');
+    });
+
+/*test purpose */
+
 Route::get('/promotion', function () {
     return view('promotion');
 });
+
 Route::get('/cbm', function () {
     return view('cbm');
 });

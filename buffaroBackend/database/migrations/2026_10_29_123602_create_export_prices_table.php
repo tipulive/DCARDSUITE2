@@ -15,20 +15,16 @@ class CreateExportPricesTable extends Migration
     {
         Schema::create('exportProductPrice', function (Blueprint $table) {
             $table->id();
-            $table->string('productCode', 191);
+            $table->string('productCode', 191)->index();
             $table->string('qty', 191); // VARCHAR(191) as requested
-            $table->string('currency', 191)->default('none');
-            $table->string('status', 191)->default('none');
-            $table->string('subscriber', 191)->default('none');
-            $table->string('uidCreator', 191)->default('none');
+            $table->string('currency', 191)->index()->default('none');
+            $table->string('status', 191)->index()->default('none');
+            $table->string('subscriber', 191)->index()->default('none');
+            $table->string('uidCreator', 191)->index()->default('none');
             $table->timestamps();
 
             // Indexes for productCode, qty, and status
-            $table->index('productCode');
-            $table->index('qty');
-            $table->index('currency');
-            $table->index('subscriber');
-            $table->index('status');
+           
         });
     }
 

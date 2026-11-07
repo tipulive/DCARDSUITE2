@@ -9,7 +9,7 @@ return [
     "notification" => [
         "addCaisse" => (object) [
             "name" => "Add Caisse",
-            "uid"=>"AddCaisse",
+            "uid"=>"addCaisse",
             "approvalAction"=>"1",
             "description" => "request Caisse",
             "enabled" => true,
@@ -23,9 +23,9 @@ return [
             "enabled" => true,
             "error"=>"Error unable to Access update Caisse please Ask Permission to Admin or Super Admin please"
         ],
-         "reqSpending" => (object) [
+         "addSpending" => (object) [
             "name" => "request Spending",
-            "uid"=>"reqSpending",
+            "uid"=>"addSpending",
             "approvalAction"=>"1",
             "description" => "request Caisse",
             "enabled" => true,
@@ -56,6 +56,32 @@ return [
             "enabled" => false,
             "error"=>"Error unable to Access Edit Sale Price please Ask Permission to Admin or Super Admin please"
         ],
+        "PlaceOrder" => (object) [
+            "name" => "place Order",
+            "uid"=>"placeOrder",
+            "approvalAction"=>"1",
+            "description" => "Place Order",
+            "enabled" => true,
+            "error"=>"Error unable to Access Place Order please Ask Permission to Admin or Super Admin please"
+        ],
+        "SubmitOrder" => (object) [
+            "name" => "Submit Order",
+            "uid"=>"submitOrder",
+            "approvalAction"=>"1",
+            "description" => "Submit Order",
+            "enabled" => true,
+            "error"=>"Error unable to Access Submit Order please Ask Permission to Admin or Super Admin please"
+        ],
+        "paidDette" => (object) [
+            "name" => "paid Dette",
+            "uid"=>"paidDette",
+            "approvalAction"=>"1",
+            "description" => "Paid Dette",
+            "enabled" => false,
+            "error"=>"Error unable to Access Paid Dette please Ask Permission to Admin or Super Admin please"
+        ],
+
+
     ],
 
 ];

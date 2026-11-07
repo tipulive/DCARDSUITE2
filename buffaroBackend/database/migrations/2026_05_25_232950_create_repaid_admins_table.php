@@ -13,6 +13,7 @@ class CreateRepaidAdminsTable extends Migration
      */
     public function up()
     {
+         if (!Schema::hasTable('exchanges')) {
         Schema::create('repaid_admins', function (Blueprint $table) {
             $table->id();
             $table->string('uid')->index('uid');//
@@ -26,6 +27,7 @@ class CreateRepaidAdminsTable extends Migration
             $table->longtext('commentData')->nullable();//
             $table->timestamps();
         });
+         }
     }
 
     /**

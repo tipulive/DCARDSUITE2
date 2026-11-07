@@ -9,6 +9,7 @@ use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\exportPriceController;
 use DB;
 use Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 
@@ -41,7 +42,36 @@ class StockController extends Controller
         $this->Admin_Auth_result_error="0";//Admin auth result zero
         $this->platform1=env('PLATFORM3');
     }
+public function testImageUpload(Request $request)
+{
 
+    $request->merge([
+        'locationImage' => 'orders' // or any dynamic value you want
+    ]);
+    // Call your reusable image upload method passing only the request
+    $uploadResult = $this->imageUploadReusable($request);
+
+    // Check if the 'status' key is true
+    if (isset($uploadResult['status']) && $uploadResult['status'] === true) {
+        // Success! The image was moved/saved correctly.
+        $savedFilename = $uploadResult['filename'];
+
+        // Proceed with saving your product data to the database here...
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image and product processed successfully.',
+            'filename' => $savedFilename
+        ], 200);
+    }
+
+    // Failure: Validation failed or an exception occurred during the move
+    return response()->json([
+        'success' => false,
+        'message' => $uploadResult['msg'] ?? 'Image upload failed',
+        'errors' => $uploadResult['errors'] ?? null
+    ], $uploadResult['code'] ?? 422);
+}
 
     public function editMysale(mixed $input)//super super Admin
     {
@@ -110,6 +140,7 @@ class StockController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);
@@ -524,6 +555,7 @@ public function reqStockView(mixed $input)
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);
@@ -798,6 +830,7 @@ public function SendStock(mixed $input){
     } catch (\Exception $e) {
         return response()->json([
             "status" => false,
+            "file" => $e->getFile(),
             "message" => $e->getMessage(),
             'errorCode' => $e->getLine()
         ], 500);
@@ -1007,6 +1040,7 @@ public function StockPayAdmin(mixed $input){//this is when Admin Received Paymen
     } catch (\Exception $e) {
         return response()->json([
             "status" => false,
+            "file" => $e->getFile(),
             "message" => $e->getMessage(),
             'errorCode' => $e->getLine()
         ], 500);
@@ -1339,7 +1373,7 @@ public function AddPromo(mixed $input)
     }
 
     public function UpdateSafariOrderHistory(mixed $input){
-        $products =($input['systemOrderType']==='export') ? (new exportPriceController)->ExportUpdateSafariOrderHistory($input) : $this->ChooseProductInSafari($input);
+        $products =($input['systemOrderType']==='export') ? (new exportPriceController)->ExportChooseProductInSafari($input) : $this->ChooseProductInSafari($input);
         if($products) {
             $allocated = [];
             $data = [];
@@ -1347,18 +1381,18 @@ public function AddPromo(mixed $input)
             $totalAmount = 0;
             $totalQty = 0;
             $remaining = $input["req_qtySub"];
-
+$input["currencySub"]="";
             foreach ($products as $product) {
                 if ($remaining <= 0) break;
 
                 $take = min($product->qty, $remaining);
- $input["currency"] = $product->currency ?? 'default';//default means system default
+ $input["currencySub"] = $product->currency ?? env('DEFAULT_CURRENCY');//default means system default
                 $input["SoldOut"] = $take;
                 $input["qtyData"] = $product->qty - $take;
-                $input["totAm"] = ($input["currency"] === 'default') ? $take * $product->price : 0;
-                $totalAmount += ($input["currency"] === 'default') ?$take * $product->price : 0;
+                $input["totAm"] =  $take * $product->price ;
+                $totalAmount += $take * $product->price;
                 $totalQty += $take;
-                $input["currency"] = $product->currency ?? 'default';//default means system default
+               // $input["currency"] = $product->currency ?? env('DEFAULT_CURRENCY');//default means system default
 
                 $input["safariId"] = $product->safariId;
 
@@ -1372,6 +1406,7 @@ public function AddPromo(mixed $input)
                     "subscriber" => Auth::user()->subscriber,
                     'productCode' => $product->productCode,
                     'price' => $product->price,
+                    'currency'=>$input["currency"],
                     'qty' => $take,
                     'qty_count' => $take,
                     'currency' => $input["currency"],
@@ -1473,7 +1508,7 @@ public function AddPromo(mixed $input)
         "qty"=>$input["qtyData"],
         "SoldOut"=>$input["SoldOut"],
         "refSaf"=>$input["refSaf"]??'none',
-        "totAm"=>$input["totAm"],
+        "totAm"=>($input["currencySub"]==env('DEFAULT_CURRENCY'))?$input["totAm"]:0,
         "subscriber"=>$input["subscriberSub"]??Auth::user()->subscriber,
         "safariId"=>$input["safariId"],
         "productCode"=>$input["productCodeSub"],
@@ -1510,13 +1545,54 @@ public function AddPromo(mixed $input)
     }
 
     public function UpdateAdminRecord(mixed $input){
-        return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,balanceSent=balanceSent+:balanceSent,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency and status=:status  limit 1",array(
+        try {
+            $check=DB::select("select currency from admnin_records where uid=:uid and status=:status limit 1",[
+              "uid"=>$input["uidUserSub"]??Auth::user()->uid,
+              "status"=>$input["statusSub"]??'Sales'
+            ]);
+           // var_dump($check);
+            if($check){
+                if($check[0]->currency==$input["currencySub"])
+                    {
+
+                             //updateSubscriber
+                        if($this->adminRecordUpdate($input))
+                            {
+                               return true;
+                            }else{
+                                throw new \Exception("subscriber and currency not Found in admin_records");
+                            }
+
+                    }else{
+                       //createSubsriber
+
+                       //var_dump("hello");
+                         if($this->adminRecordInsert($input))
+                            {
+
+                            return true;
+                            }else{
+                         throw new \Exception("unable insert data in admin_records");
+                            }
+                    }
+            }else{
+             throw new \Exception("admin record not Found");
+            }
+
+        } catch (\Illuminate\Database\QueryException $e) {
+           // throw new \Exception("error Something unable to add Subscriber contact system Admin");
+             \Log::error('error Something unable to add Subscriber contact system Admin: ' . $e->getMessage());
+        }
+    }
+
+    public function adminRecordUpdate(mixed $input){
+ return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,balanceSent=balanceSent+:balanceSent,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency and status=:status  limit 1",array(
             // "uid"=>$uidCreator,
               "bonus"=>$input["bonusSub"]??'0',
               "safeBalance"=>$input["safeBalanceSub"]??'0',
              "uid"=>$input["uidUserSub"]??Auth::user()->uid,
              "status"=>$input["statusSub"]??'Sales',
-             "currency"=>$input["currency"]??'none',
+             "currency"=>$input["currencySub"]??env('DEFAULT_CURRENCY'),
              "balance"=>$input['balanceSub']??'0',
              "balanceSent"=>$input['balanceSent']??'0',
              "dettes"=>$input["detteSub"]??'0',
@@ -1529,6 +1605,27 @@ public function AddPromo(mixed $input)
 
              "updated_at"=>$this->today
          ));
+    }
+    public function adminRecordInsert(mixed $input){
+ return DB::table("admnin_records")
+        ->insert([
+             "bonus"=>$input["bonusSub"]??'0',
+              "safeBalance"=>$input["safeBalanceSub"]??'0',
+             "uid"=>$input["uidUserSub"]??Auth::user()->uid,
+             "status"=>$input["statusSub"]??'Sales',
+             "currency"=>$input["currencySub"]??env('DEFAULT_CURRENCY'),
+             "balance"=>$input['balanceSub']??'0',
+             "balanceSent"=>$input['balanceSent']??'0',
+             "dettes"=>$input["detteSub"]??'0',
+             "promoAmount"=>$input["promoAmountSub"]??'0',
+             "promoAsset"=>$input["promoAssetSub"]??'0',
+             "proAssetQty"=>$input["proAssetQtySub"]??'0',
+             "outPromoAmount"=>$input["outPromoAmountSub"]??'0',
+             "outPromoAsset"=>$input["outPromoAssetSub"]??'0',
+             "subscriber"=>$input["subscriber"],
+             "outProAssetQty"=>$input["outProAssetQtySub"]??'0',
+            "created_at"=> $this->today
+        ]);
     }
     public function UpdateQtyProductRef(mixed $input){
         return  DB::update("update products set qty=qty+:qty where subscriber=:subscriber and productCode=:productCode limit 1",array(
@@ -1563,9 +1660,11 @@ public function AddPromo(mixed $input)
             GROUP BY uid
         ) t ON o.uid = t.uid
         SET o.all_total = t.total_sum,
+
         o.custom_price=t.total_sum,
         order_creator=:order_creator,
         paidStatus='checked',
+
         o.orderDebt=t.total_sum-:inputData
         WHERE o.uid = :uid2
     ", [
@@ -1664,7 +1763,7 @@ public function CreateOrder(mixed $input){
         "gain"=>$input['gainPromoSub']??'none',
         "systemUid"=>$input['systemUid']??'none',
         "uidUser"=>($input['uidUser']??$input["UserId"]),
-        "currency"=>$input['currency']??'none',
+        "currency"=>$input['currencySub']??'none',
        // "uidCreator"=>$uidCreator,
         "uidCreator"=>$input["UserId"],
         "subscriber"=>$input["subscriber"],
@@ -1713,13 +1812,69 @@ public function CreateOrder(mixed $input){
         return DB::table("subscriber")
         ->insert([
             "uid"=>$input["subscriberSub"],
+            "amount"=>$input["amountSub"]??"0",
+            "currency"=>$input["currencySub"]??env('DEFAULT_CURRENCY'),
+            "stockpurchase"=>$input["stockpurchaseSub"]??"0",
+            "received"=>$input["receivedSub"]??"0",
+            "dettes"=>$input["dettesSub"]??"0",
+            "spending"=>$input["spendingSub"]??"0",
+            "promoAmount"=>$input["promoAmountSub"]??"0",
+            "promoAsset"=>$input["promoAssetSub"]??"0",
+            "proAssetQty"=>$input["proAssetQtySub"]??"0",
+            "outPromoAmount"=>$input["outPromoAmountSub"]??"0",
+            "outPromoAsset"=>$input["outPromoAssetSub"]??"0",
+            "outProAssetQty"=>$input["outProAssetQtySub"]??"0",
             "created_at"=> $this->today
         ]);
     }
     public function addSubscriber(mixed $input){
-        return DB::update("update subscriber set amount=amount+:amount,stockpurchase=stockpurchase+:stockpurchase,received=received+:received,dettes=dettes+:dettes,spending=spending+:spending,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency limit 1",[
+
+       try {
+            $check=DB::select("select currency from subscriber where uid=:uid limit 1",[
+              "uid"=>$input["subscriber"]
+            ]);
+            //var_dump($check);
+            if($check){
+                if($check[0]->currency==$input["currencySub"])
+                    {
+
+                             //updateSubscriber
+                        if($this->UpdateSubscriber($input))
+                            {
+                               return true;
+                            }else{
+                                throw new \Exception("subscriber and currency not Found");
+                            }
+
+                    }else{
+                       //createSubsriber
+                       $input["subscriberSub"]=$input["subscriber"];
+                       //var_dump("hello");
+                         if($this->insertSubscriber($input))
+                            {
+
+                            return true;
+                            }else{
+                         throw new \Exception("unable insert subscriber");
+                            }
+                    }
+            }else{
+             throw new \Exception("subscriber not Found");
+            }
+
+        } catch (\Illuminate\Database\QueryException $e) {
+           // throw new \Exception("error Something unable to add Subscriber contact system Admin");
+             \Log::error('error Something unable to add Subscriber contact system Admin: ' . $e->getMessage());
+        }
+
+    }
+
+
+
+    public function UpdateSubscriber(mixed $input){
+         return DB::update("update subscriber set amount=amount+:amount,stockpurchase=stockpurchase+:stockpurchase,received=received+:received,dettes=dettes+:dettes,spending=spending+:spending,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency limit 1",[
             "amount"=>$input["amountSub"]??"0",
-            "currency"=>$input["currencySub"]??"none",
+            "currency"=>$input["currencySub"]??env('DEFAULT_CURRENCY'),
             "stockpurchase"=>$input["stockpurchaseSub"]??"0",
             "received"=>$input["receivedSub"]??"0",
             "dettes"=>$input["dettesSub"]??"0",
@@ -1733,7 +1888,6 @@ public function CreateOrder(mixed $input){
             "uid"=>$input["subscriber"],
             "updated_at"=>$this->today
         ]);
-
     }
     //new update Reusable Methods
     public function upload(Request $request)
@@ -1769,7 +1923,65 @@ return $this->EditImage($request);
     }
 
 }
+public function imageUploadReusable(Request $request)
+{
+    // Retrieve parameters from the request payload (sent via FormData)
+    $fileNumb = $request->input('fileNumb', '01');
+    $isFilenameExist = $request->input('isFilenameExist', 'false');
 
+    $validator = Validator::make($request->all(), [
+        'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'productCode' => 'required|string|max:50',
+        'fileNumb' => 'required',
+        'isFilenameExist' => 'required',
+    ]);
+
+    if ($validator->fails()) {
+        return [
+            'status' => false,
+            'code'   => 422,
+            'msg'    => 'Validation failed',
+            'errors' => $validator->errors()
+        ];
+    }
+
+    try {
+        $subscriber = preg_replace('/[^A-Za-z0-9_-]/', '', Auth::user()->subscriber);
+        $typeImage =$request->input('locationImage');
+
+        $destinationPath = public_path("images/{$subscriber}/{$typeImage}");
+
+        if (!File::exists($destinationPath)) {
+            File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        $extension = $request->file('image')->extension();
+
+        if ($isFilenameExist === "true") {
+            $filename = $fileNumb;
+        } else {
+            $productCode = preg_replace('/[^A-Za-z0-9_-]/', '', $request->input('productCode'));
+            $filename = "{$productCode}_{$subscriber}_{$fileNumb}.{$extension}";
+        }
+
+        $request->file('image')->move($destinationPath, $filename);
+
+        return [
+            'status'   => true,
+            'code'     => 200,
+            'msg'      => 'Image uploaded successfully',
+            'filename' => $filename,
+            'path'     => "images/{$subscriber}/{$typeImage}/{$filename}"
+        ];
+
+    } catch (\Exception $e) {
+        return [
+            'status' => false,
+            'code'   => 500,
+            'msg'    => 'Image upload failed: ' . $e->getMessage()
+        ];
+    }
+}
 public function imageUpload(Request $request,$fileNumb,$isFilenameExist)
 {
     $validator = Validator::make($request->all(), [
@@ -1816,6 +2028,7 @@ WHERE productCode =:productCode and subscriber=:subscriber",[
         return [
             'status' => false,
             'msg' => 'File upload error',
+            "file" => $e->getFile(),
             'error' => $e->getMessage()
         ];
     }
@@ -1878,6 +2091,7 @@ $data = json_decode($check->img_url, true);
 
         return response()->json([
             'error' => 'An error occurred',
+            "file" => $e->getFile(),
             'errorPrint' => $e->getMessage(),
             'errorCode' => $e->getLine(),
         ], 500);
@@ -2369,11 +2583,18 @@ public function deleteImage($fileNam){
 
     public function Products(mixed $input)
     {
+
         try {
             $isProductAction=strtolower($input["isProductAction"]);
             if($isProductAction=='search')
             {
+
                 return $this->isSearchProduct($input);
+            }
+            else if($isProductAction==='currencysearch')
+            {
+                //var_dump("hello");
+                return $this->isSearchProductCurrency($input);
             }
             else if($isProductAction=='stockloserestore')
             {
@@ -2474,6 +2695,7 @@ public function deleteImage($fileNam){
             DB::rollback();
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -2582,6 +2804,7 @@ public function deleteImage($fileNam){
 
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -2734,6 +2957,7 @@ else{
 
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -2892,7 +3116,78 @@ return response([
             ]);
         }
     }
+    public function isSearchProductCurrency(mixed $input){
 
+        try {
+
+            // Code...
+            $productName = strtolower($input["productName"] ?? 'none');
+            $productCode = strtolower($input["productCode"] ?? 'none');
+            $productQr = strtolower($input["productQr"] ?? 'none');
+
+            if ($productQr == 'none') {
+                list($queryData, $itemName) = ($productCode != 'none')
+                    ? (['s.productCode', '%' . $productCode . '%'])
+                    : (['s.ProductName', '%' . $productName . '%']);
+
+                $check = DB::select("
+        SELECT
+            s.productCode,
+            s.price,
+            p.ProductName,
+             p.qty,
+             p.qty_sold,
+             p.pcs,
+             p.img_url,
+             p.mult_imgurl
+        FROM exportProductPrice s
+        INNER JOIN products p ON s.productCode = p.productCode
+            AND s.subscriber = p.subscriber
+        WHERE s.subscriber = :subscriber
+            AND $queryData LIKE :itemName
+            AND s.currency = :currency
+
+        ORDER BY s.id ASC
+
+    ", [
+        "subscriber" => Auth::user()->subscriber,
+        "itemName" => $itemName,
+        "currency" => $input["currency"]
+    ]);
+
+
+
+
+
+                if ($check) {
+                    return response([
+                        "status" => true,
+                        "searchType" => "NotQr",
+                        "result" => $check
+                    ]);
+                } else {
+                    return response([
+                        "status" => false,
+                        "searchType" => "NotQr",
+                        "result" => $check
+                    ]);
+                }
+            } else {
+                 return response([
+                        "status" => false,
+                        "searchType" => "NotQr",
+                        "result" =>"false"
+                    ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'An error occurred',
+                "file" => $e->getFile(),
+                'errorPrint' => $e->getMessage(),
+                'errorCode' => $e->getLine(),
+            ], 500);
+        }
+    }
     public function isSearchProduct(mixed $input){
         try {
             // Code...
@@ -2946,6 +3241,7 @@ return response([
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -3033,6 +3329,7 @@ return response([
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -3264,7 +3561,9 @@ return response([
             DB::rollback();
            // throw $e;
             return response()->json(['error' => 'An error occurred',
-        'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+        'errorPrint'=>$e->getMessage(),
+        "file" => $e->getFile(),
+        "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
 
@@ -3335,7 +3634,9 @@ return response([
             DB::rollback();
            // throw $e;
             return response()->json(['error' => 'An error occurred',
-        'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+        'errorPrint'=>$e->getMessage(),
+        "file" => $e->getFile(),
+        "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
 
@@ -3502,7 +3803,9 @@ return response([
             DB::rollback();
             // throw $e;
              return response()->json(['error' => 'An error occurred',
-         'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+         'errorPrint'=>$e->getMessage(),
+         "file" => $e->getFile(),
+         "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
 
@@ -3592,7 +3895,9 @@ return response([
             DB::rollback();
             // throw $e;
              return response()->json(['error' => 'An error occurred',
-         'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+         'errorPrint'=>$e->getMessage(),
+         "file" => $e->getFile(),
+         "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
 
@@ -3837,6 +4142,7 @@ return response([
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -4169,6 +4475,7 @@ else{
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
+                "file" => $e->getFile(),
                 "message" => $e->getMessage(),
                 'errorCode' => $e->getLine()
             ], 500);
@@ -4193,7 +4500,8 @@ else{
 
                  $myorderType=$input["orderType"]??'none';
         $input['systemOrderType']=($myorderType=='export')?'export':'none';
- $this->UpdateSafariOrderHistory($input);
+
+        $this->UpdateSafariOrderHistory($input);
 
 
 
@@ -4650,6 +4958,7 @@ else{
             DB::rollback();
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -4753,6 +5062,7 @@ else{
                 DB::rollback();
                 return response()->json([
                     'error' => 'An error occurred',
+                    "file" => $e->getFile(),
                     'errorPrint' => $e->getMessage(),
                     'errorCode' => $e->getLine(),
                 ], 500);
@@ -4957,6 +5267,7 @@ $isBackup=DB::table("orderhistories_backup")
        } catch (\Exception $e) {
            return response()->json([
                'error' => 'An error occurred',
+               "file" => $e->getFile(),
                'errorPrint' => $e->getMessage(),
                'errorCode' => $e->getLine(),
            ], 500);
@@ -5065,6 +5376,7 @@ public function ViewTempOrder(mixed $input){//make sure order must not be more t
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -5087,7 +5399,9 @@ public function ViewTempOrder(mixed $input){//make sure order must not be more t
         }
 
     } catch (\Exception $e) {
-        return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(), 'errorCode' => $e->getLine()], 500);
+        return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(),
+        "file" => $e->getFile(),
+        'errorCode' => $e->getLine()], 500);
     }
 
 
@@ -5105,10 +5419,12 @@ public function ViewUserTempOrder(mixed $input){//make sure order must not be mo
         try {
             $check = DB::select("
             SELECT
+            MAX(orderhistories.userid) AS userid,
                 MAX(users.name) AS name,
+                MAX(users.PhoneNumber) AS PhoneNumber,
                 MAX(users.marital_status) AS marital_status,
                 MAX(orderhistories.uid) AS uid,
-                MAX(orderhistories.userid) AS userid,
+
 
 
                 MAX(orderhistories.orderDebt) AS orderDebt,
@@ -5128,6 +5444,7 @@ public function ViewUserTempOrder(mixed $input){//make sure order must not be mo
             INNER JOIN users ON orderhistories.userid = users.uid
             WHERE orderhistories.order_creator=:orderCreator
                 AND orderhistories.subscriber=:subscriber
+                AND orderhistories.currency=:currency
                 AND orderhistories.paidStatus='none'
             GROUP BY orderhistories.productCode order by orderhistories.id desc
 
@@ -5135,6 +5452,7 @@ public function ViewUserTempOrder(mixed $input){//make sure order must not be mo
 
             'orderCreator' => Auth::user()->uid,
             'subscriber' => Auth::user()->subscriber,
+            "currency" => $input['currency'],
         ]);
         if($check)
         {
@@ -5147,6 +5465,7 @@ public function ViewUserTempOrder(mixed $input){//make sure order must not be mo
         else{
            return response([
                "status"=>false,
+               "subscriber"=>auth::user()->subscriber,
                "result"=>0,
 
            ],200);
@@ -5154,6 +5473,7 @@ public function ViewUserTempOrder(mixed $input){//make sure order must not be mo
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -5348,7 +5668,9 @@ public function paid_dettes(mixed $input){
         DB::rollback();
         // throw $e;
          return response()->json(['error' => 'An error occurred',
-     'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+     'errorPrint'=>$e->getMessage(),
+     "file" => $e->getFile(),
+     "errorCode"=>$e->getLine()], 500); // Return an error JSON response
     }
 
 
@@ -5538,7 +5860,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
         }
     }
     public function UpdateUserAccount(mixed $input){
-        return DB::update("update admnin_records set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,balanceSent=balanceSent+:balanceSent,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency and status=:status  limit 1",array(
+        return DB::update("update userAccount set safeBalance=safeBalance+:safeBalance, bonus=bonus+:bonus,balance=balance+:balance,balanceSent=balanceSent+:balanceSent,dettes=dettes+:dettes,promoAmount=promoAmount+:promoAmount,promoAsset=promoAsset+:promoAsset,proAssetQty=proAssetQty+:proAssetQty,outPromoAmount=outPromoAmount+:outPromoAmount,outPromoAsset=outPromoAsset+:outPromoAsset,outProAssetQty=outProAssetQty+:outProAssetQty,updated_at=:updated_at where uid=:uid and currency=:currency and status=:status  limit 1",array(
             // "uid"=>$uidCreator,
               "bonus"=>$input["bonusSub"]??'0',
               "safeBalance"=>$input["safeBalanceSub"]??'0',
@@ -5751,6 +6073,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
 
          return response()->json([
              'error' => 'An error occurred',
+             "file" => $e->getFile(),
              'errorPrint' => $e->getMessage(),
              'errorCode' => $e->getLine(),
          ], 500);
@@ -6212,6 +6535,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
         } catch (\Exception $e) {
           return response()->json([
               'error' => 'An error occurred',
+              "file" => $e->getFile(),
               'errorPrint' => $e->getMessage(),
               'errorCode' => $e->getLine(),
           ], 500);
@@ -6556,6 +6880,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
       } catch (\Exception $e) {
         return response()->json([
             'error' => 'An error occurred',
+            "file" => $e->getFile(),
             'errorPrint' => $e->getMessage(),
             'errorCode' => $e->getLine(),
         ], 500);
@@ -6652,6 +6977,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             } catch (\Exception $e) {
                 return response()->json([
                     'error' => 'An error occurred',
+                    "file" => $e->getFile(),
                     'errorPrint' => $e->getMessage(),
                     'errorCode' => $e->getLine(),
                 ], 500);
@@ -6674,7 +7000,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             }
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(), 'errorCode' => $e->getLine()], 500);
+            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(),
+            "file" => $e->getFile(),
+            'errorCode' => $e->getLine()], 500);
         }
 
     }
@@ -6765,7 +7093,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             DB::rollback();
            // throw $e;
             return response()->json(['error' => 'An error occurred',
-        'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+        'errorPrint'=>$e->getMessage(),
+        "file" => $e->getFile(),
+        "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
     }
@@ -6983,7 +7313,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
                      DB::rollback();
                     // throw $e;
                      return response()->json(['error' => 'An error occurred',
-                 'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+                 'errorPrint'=>$e->getMessage(),
+                 "file" => $e->getFile(),
+                 "errorCode"=>$e->getLine()], 500); // Return an error JSON response
                  }
 
     }
@@ -8013,6 +8345,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             } catch (\Exception $e) {
                 return response()->json([
                     'error' => 'An error occurred',
+                    "file" => $e->getFile(),
                     'errorPrint' => $e->getMessage(),
                     'errorCode' => $e->getLine(),
                 ], 500);
@@ -8036,7 +8369,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             }
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(), 'errorCode' => $e->getLine()], 500);
+            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(),
+            "file" => $e->getFile(),
+            'errorCode' => $e->getLine()], 500);
         }
     }
     public function OrderViewByUid(mixed $input){
@@ -8078,6 +8413,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             } catch (\Exception $e) {
                 return response()->json([
                     'error' => 'An error occurred',
+                    "file" => $e->getFile(),
                     'errorPrint' => $e->getMessage(),
                     'errorCode' => $e->getLine(),
                 ], 500);
@@ -8100,7 +8436,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             }
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(), 'errorCode' => $e->getLine()], 500);
+            return response()->json(['error' => 'An error occurred', 'errorPrint' => $e->getMessage(),
+            "file" => $e->getFile(),
+            'errorCode' => $e->getLine()], 500);
         }
 
     }
@@ -8369,7 +8707,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             DB::rollback();
             // throw $e;
              return response()->json(['error' => 'An error occurred',
-         'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+         'errorPrint'=>$e->getMessage(),
+         "file" => $e->getFile(),
+         "errorCode"=>$e->getLine()], 500); // Return an error JSON response
         }
 
 
@@ -8536,7 +8876,9 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
                      DB::rollback();
                     // throw $e;
                      return response()->json(['error' => 'An error occurred',
-                 'errorPrint'=>$e->getMessage(),"errorCode"=>$e->getLine()], 500); // Return an error JSON response
+                 'errorPrint'=>$e->getMessage(),
+                 "file" => $e->getFile(),
+                 "errorCode"=>$e->getLine()], 500); // Return an error JSON response
                  }
 
     }
@@ -8856,6 +9198,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
                     DB::rollback();
                    // throw $e;
                     return response()->json(['error' => 'An error occurred',
+                    "file" => $e->getFile(),
                 'errorPrint'=>$e->getMessage()], 500); // Return an error JSON response
                 }
     }
@@ -8932,6 +9275,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
             DB::rollback();
             return response()->json([
                 'error' => 'An error occurred',
+                "file" => $e->getFile(),
                 'errorPrint' => $e->getMessage(),
                 'errorCode' => $e->getLine(),
             ], 500);
@@ -9401,6 +9745,7 @@ public function SubmitOrder(mixed $input){//this is a new one with promo
                     DB::rollback();
                    // throw $e;
                     return response()->json(['error' => 'An error occurred',
+                    "file" => $e->getFile(),
                 'errorPrint'=>$e->getMessage()], 500); // Return an error JSON response
                 }
     }
@@ -9485,6 +9830,7 @@ public function addFunding(mixed $input){//General Funding
                     DB::rollback();
                    // throw $e;
                     return response()->json(['error' => 'An error occurred',
+                    "file" => $e->getFile(),
                 'errorPrint'=>$e->getMessage()], 500); // Return an error JSON response
                 }
 }
@@ -9574,6 +9920,7 @@ public function deleteFunding(mixed $input){
                         DB::rollback();
                        // throw $e;
                         return response()->json(['error' => 'An error occurred',
+                        "file" => $e->getFile(),
                     'errorPrint'=>$e->getMessage()], 500); // Return an error JSON response
                     }
     }

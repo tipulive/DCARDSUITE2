@@ -56,6 +56,7 @@ class CompanyController extends Controller
 
     //buffaro
 
+
       public function adminSetPermission(Request $request) {
         if(Auth::check())
         {
@@ -71,11 +72,11 @@ class CompanyController extends Controller
                        $permObj=$this->permissions["notification"]["adminSetPermission"];
                        $perm=$permObj->uid;
                        $permTrue = array(
-                        $perm =>"true"
+                        $perm =>true
                     );
 
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
                         return (new permissionController)->AdminSetPermission($input);
                        }else{
@@ -127,10 +128,11 @@ class CompanyController extends Controller
                        $permTrue = array(//default value
                         $perm =>"false"
                     );
-   ///var_dump($jsonData[$perm]);
+   //var_dump($jsonData["addcaisse"]);
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
+                        //var_dump($jsonData["addcaisse"]);
                         return (new buffaroController)->reqCaisse($input);
                        }else{
                         return response([
@@ -179,11 +181,11 @@ class CompanyController extends Controller
                        $permObj=$this->permissions["notification"]["updateCaisse"];
                        $perm=$permObj->uid;
                        $permTrue = array(
-                        $perm =>"true"
+                        $perm =>true
                     );
 
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
                         return (new buffaroController)->updateVoteCaisseStatus($input);
                        }else{
@@ -229,14 +231,14 @@ class CompanyController extends Controller
 
                       // $jsonData=json_decode(Auth::user()->permission,true);
                       $jsonData = json_decode(Auth::user()->permission, true) ?? [];
-                       $permObj=$this->permissions["notification"]["reqSpending"];
+                       $permObj=$this->permissions["notification"]["addSpending"];
                        $perm=$permObj->uid;
                       $permTrue = array(//default value
                         $perm =>"false"
                     );
 
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
                         return (new buffaroController)->reqSpending($input);
                        }else{
@@ -285,11 +287,11 @@ class CompanyController extends Controller
                       $permObj=$this->permissions["notification"]["updateSpending"];
                        $perm=$permObj->uid;
                       $permTrue = array(
-                        $perm =>"true"
+                        $perm =>true
                     );
 
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
                         return (new buffaroController)->updateVoteSpendingStatus($input);
                        }else{
@@ -1543,11 +1545,11 @@ else{
                        $perm=$permObj->uid;
 
                        $permTrue = array(//default value
-                        $perm =>"true"//means that even if it is ticket you may be able to access it by default
+                        $perm =>true//means that even if it is ticket you may be able to access it by default
                     );
    ///var_dump($jsonData[$perm]);
                        $mypermission=$jsonData[$perm]??$permTrue[$perm];
-                   if($mypermission==="true")
+                   if($mypermission===true)
                        {
                         return (new StockController)->updateProducts($input);
                        }else{

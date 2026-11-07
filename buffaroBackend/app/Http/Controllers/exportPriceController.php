@@ -41,7 +41,7 @@ public string $curdate;
 
 public function ExportChooseProductInSafari(mixed $input){
 
-    return DB::select("
+    return       DB::select("
         SELECT
             s.id,
             s.safariId,
@@ -53,10 +53,11 @@ public function ExportChooseProductInSafari(mixed $input){
             AND s.subscriber = p.subscriber
         WHERE s.subscriber = ?
             AND s.productCode = ?
+            AND p.currency=?
             AND s.qty > 0
         ORDER BY s.id ASC
         FOR UPDATE
-    ", [Auth::user()->subscriber, $input['productCodeSub']]);
+    ", [Auth::user()->subscriber, $input['productCodeSub'],$input["currency"]]);
 }
 
 

@@ -49,9 +49,13 @@ Route::post('/AdminLoginPhone','AdminController@AdminLoginPhone')->name(' AdminL
 //Route::get('/testauth','TestController@testauth')->name('testauth');
 
 Route::middleware('auth:sanctum')->group( function () {//here is to protect multiple route
-    Route::get('/logout','AccountController@logout')->name('logout');
+
+Route::get('/logout','AccountController@logout')->name('logout');
 
 /*buffaro*/
+
+
+Route::post('/testImageUpload','StockController@testImageUpload')->name('testImageUpload');
   /*permission*/
   Route::post('/adminSetPermission','CompanyController@adminSetPermission')->name('adminSetPermission');
   /*permission*/

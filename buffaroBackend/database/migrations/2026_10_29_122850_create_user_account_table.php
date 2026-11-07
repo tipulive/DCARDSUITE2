@@ -14,30 +14,35 @@ class CreateUserAccountTable extends Migration
   public function up(): void
     {
         Schema::create('userAccount', function (Blueprint $table) {
-            $table->id();
-            $table->string('uid', 191);
-            $table->string('status', 191)->default('active');
-            $table->string('currency', 191)->default('none');
-            $table->string('subscriber', 191);
+    $table->id();
 
-            // Financial and balance columns as VARCHAR(191) with default '0'
-            $table->string('safeBalance', 191)->default('0');
-            $table->string('bonus', 191)->default('0');
-            $table->string('balance', 191)->default('0');
-            $table->string('balanceSent', 191)->default('0');
-            $table->string('dettes', 191)->default('0');
-            $table->string('promoAmount', 191)->default('0');
-            $table->string('promoAsset', 191)->default('0')->nullable();
-            $table->string('proAssetQty', 191)->default('0');
-            $table->string('outPromoAmount', 191)->default('0');
-            $table->string('outPromoAsset', 191)->default('0')->nullable();
-            $table->string('outProAssetQty', 191)->default('0');
+    $table->string('uid', 191)->index();
+    $table->string('subscriber', 191)->index();
 
-            $table->timestamps();
+    $table->string('safeBalance', 191)->default('0');
+    $table->string('bonus', 191)->default('0');
+    $table->string('balance', 191)->default('0');
+    $table->string('balanceSent', 191)->default('0');
+    $table->string('dettes', 191)->default('0');
 
-            // Composite index for lookups
-            $table->index(['uid', 'currency', 'status','subscriber']);
-        });
+    $table->string('promoAmount', 191)->default('0');
+    $table->string('promoAsset', 191)->default('0');
+    $table->string('proAssetQty', 191)->default('0');
+
+    $table->string('outPromoAmount', 191)->default('0');
+    $table->string('outPromoAsset', 191)->default('0');
+    $table->string('outProAssetQty', 191)->default('0');
+
+    $table->string('currency', 191)->default('none');
+    $table->string('status', 191)->default('Sales');
+
+    $table->timestamps();
+
+    $table->unique(
+        ['uid', 'currency', 'status'],
+        'useraccount_unique'
+    );
+});
     }
 
     public function down(): void
