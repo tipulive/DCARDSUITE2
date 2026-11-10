@@ -1102,6 +1102,7 @@ Authorization: Bearer {{Auth_token}}
 "currentQtyEdit":15,
 "uid":"UID_9R_1717426384",
 "uidClient":"ERICMUSHI_1688628812",
+"currency":"currencyId",
 "statusForm":"editOrder"
 
 
@@ -1376,7 +1377,7 @@ content-type: application/json;charset=UTF-8
 Authorization: Bearer {{Auth_token}}
 
 {
-"currency":"RWF"
+"currency":"LOCAL_USD"
 
 
 }

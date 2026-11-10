@@ -4897,6 +4897,7 @@ else{
                                "subscriber"=>Auth::user()->subscriber,
                                'productCode'=>$productCode,
                                'price'=>$checkProduct[0]->price,
+                               'currency'=>$input["currency"],
                                'qty'=>$searchResult[$i]->qty,
                                'qty_count'=>$searchResult[$i]->qty,
                                'total'=>$searchResult[$i]->qty*$checkProduct[0]->price,
@@ -5009,8 +5010,9 @@ else{
                            $ids[]=$results[$i]->id;
                            $orderId=$results[$i]->uid;
 
-                          DB::update("update safariproducts set qty=qty+:qty,SoldOut=SoldOut-:SoldOut,TotSoldAmount=TotSoldAmount-:TotSoldAmout where safariId=:safariId and productCode=:productCode limit 100 ",array(
+                          DB::update("update safariproducts set qty=qty+:qty,SoldOut=SoldOut-:SoldOut,TotSoldAmount=TotSoldAmount-:TotSoldAmout where safariId=:safariId and productCode=:productCode and subscriber=:subscriber limit 100 ",array(
                                   "qty"=>$results[$i]->qty,
+                                  "subscriber"=>Auth::user()->subscriber,
                                   "SoldOut"=>$results[$i]->qty,
                                   "TotSoldAmout"=>$results[$i]->total,
                                   "safariId"=>$results[$i]->SafariId,
@@ -5113,9 +5115,10 @@ else{
                 $orderId=$results[$i]->uid;
                 $qty=$results[$i]->qty;
 
-               DB::update("update safariproducts set qty=qty+:qty,SoldOut=SoldOut-:SoldOut,TotSoldAmount=TotSoldAmount-:TotSoldAmout where safariId=:safariId and productCode=:productCode limit 100 ",array(
+               DB::update("update safariproducts set qty=qty+:qty,SoldOut=SoldOut-:SoldOut,TotSoldAmount=TotSoldAmount-:TotSoldAmout where safariId=:safariId and productCode=:productCode and subscriber=:subscriber limit 100 ",array(
                        "qty"=>$results[$i]->qty,
                        "SoldOut"=>$results[$i]->qty,
+                       "subscriber"=>Auth::user()->subscriber,
                        "TotSoldAmout"=>$results[$i]->total,
                        "safariId"=>$results[$i]->SafariId,
                        "productCode"=>$results[$i]->productCode
